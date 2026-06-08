@@ -363,7 +363,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
     <div class="login-error" id="login-error">Login yoki parol noto'g'ri</div>
     <div class="form-group">
       <label class="form-label">Login</label>
-      <input class="form-input" id="login-user" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <input class="form-input" id="login-user" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-pass').focus()}"/>
     </div>
     <div class="form-group">
       <label class="form-label">Parol</label>
