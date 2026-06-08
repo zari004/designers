@@ -675,6 +675,21 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
           <button class="btn btn-primary btn-sm" onclick="changeOwnPassword()">Parolni o'zgartirish</button>
         </div>
       </div>
+      <div class="card" id="admin-creds-card" style="margin-bottom:14px;display:none">
+        <div class="card-header">
+          <span class="card-title">Art Direktor login sozlamalari</span>
+          <span class="badge badge-a" style="font-size:10px">Faqat admin</span>
+        </div>
+        <div style="padding:18px">
+          <div class="form-group">
+            <label class="form-label">Login (username)</label>
+            <input class="form-input" id="admin-uname" style="font-family:'JetBrains Mono',monospace"/>
+          </div>
+          <div class="form-group"><label class="form-label">Yangi parol <small>(bo'sh qoldirsa o'zgarmaydi)</small></label><input class="form-input" id="admin-newpass" type="password" placeholder="••••••••"/></div>
+          <div class="form-group"><label class="form-label">Tasdiqlash uchun joriy parol</label><input class="form-input" id="admin-curpass" type="password" placeholder="••••••••"/></div>
+          <button class="btn btn-primary btn-sm" onclick="saveAdminCreds()">Saqlash</button>
+        </div>
+      </div>
       <div class="card">
         <div class="card-header"><span class="card-title">Kategoriya narxlari</span></div>
         <div style="padding:18px" id="cat-price-editor"></div>
@@ -1840,6 +1855,21 @@ function renderSettingsPage(){
   const tok=localStorage.getItem('gh_token')||'';
   const s2=document.getElementById('s-token2');
   if(s2) s2.value=tok;
+
+  // Faqat admin o'z login/parolini o'zgartira oladi
+  const cur=getCurrentUser();
+  const adminCard=document.getElementById('admin-creds-card');
+  if(adminCard){
+    if(cur?.role==='admin'){
+      adminCard.style.display='';
+      const users=getUsers();
+      const adminUser=users.find(u=>u.id==='admin');
+      const unameEl=document.getElementById('admin-uname');
+      if(unameEl) unameEl.value=adminUser?.username||'admin';
+    } else {
+      adminCard.style.display='none';
+    }
+  }
   const cpe=document.getElementById('cat-price-editor');
   if(cpe) cpe.innerHTML=['A','B','C'].map(c=>{
     const ci=CAT_INFO[c];
@@ -1881,6 +1911,26 @@ function changeOwnPassword(){
   sessionStorage.setItem('exon_session',JSON.stringify({...cur,password:n1}));
   toast("✓ Parol o'zgartirildi");
   ['chpw-old','chpw-new','chpw-new2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+
+function saveAdminCreds(){
+  const cur=getCurrentUser();
+  if(cur?.role!=='admin'){toast("Ruxsat yo'q!");return;}
+  const newUname=document.getElementById('admin-uname')?.value?.trim();
+  const newPass=document.getElementById('admin-newpass')?.value;
+  const curPass=document.getElementById('admin-curpass')?.value;
+  if(!newUname){toast("Login bo'sh bo'lishi mumkin emas!");return;}
+  const users=getUsers();
+  const u=users.find(x=>x.id==='admin');
+  if(!u){toast("Admin topilmadi!");return;}
+  if(u.password!==curPass){toast("Joriy parol noto'g'ri!");return;}
+  u.username=newUname;
+  if(newPass) u.password=newPass;
+  saveUsers(users);
+  // Sessiyani yangilash
+  sessionStorage.setItem('exon_session',JSON.stringify({...cur,username:newUname,...(newPass?{password:newPass}:{})}));
+  toast("✓ Art Direktor login ma'lumotlari saqlandi");
+  ['admin-newpass','admin-curpass'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
 }
 
 // ═══════════════════════════════════════════════
