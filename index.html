@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Z·DSGN — Art Director</title>
+<title>EXON — Dizaynerlar Paneli</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -314,9 +314,64 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
   color:rgba(181,245,66,.7);font-family:'JetBrains Mono',monospace;
   line-height:1.6;margin-bottom:16px;
 }
+
+/* ── BILDIRISHNOMA ── */
+.notif-btn{position:relative;background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 8px;line-height:1;transition:color .15s}
+.notif-btn:hover{color:var(--text)}
+.notif-badge{position:absolute;top:0;right:0;background:var(--error);color:#fff;border-radius:8px;font-size:9px;font-weight:700;padding:1px 5px;font-family:'JetBrains Mono',monospace;line-height:1.4;display:none}
+.notif-badge.show{display:block}
+.notif-panel{position:fixed;top:60px;right:16px;width:340px;background:var(--panel);border:1px solid var(--border);border-radius:10px;z-index:150;box-shadow:0 8px 32px rgba(0,0,0,.5);display:none;max-height:460px;overflow-y:auto}
+.notif-panel.open{display:block;animation:fadePanel .2s ease}
+.notif-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.notif-head-title{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
+.notif-item{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);cursor:default}
+.notif-item:last-child{border-bottom:none}
+.notif-item.unread{background:rgba(181,245,66,.03)}
+.notif-item-title{font-size:12px;font-weight:600;margin-bottom:3px}
+.notif-item-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.notif-item-time{font-size:10px;color:var(--muted2);margin-top:4px;font-family:'JetBrains Mono',monospace}
+
+/* ── IZOH ── */
+.comment-box{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px}
+.comment-item{padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.comment-item:last-child{border-bottom:none}
+.comment-author{font-size:11px;font-weight:700;color:var(--accent)}
+.comment-text{font-size:12px;color:var(--text);margin-top:2px;line-height:1.5}
+.comment-time{font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:3px}
+
+/* ── LOGIN ── */
+#login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
+.login-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:380px}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo-mark{width:56px;height:56px;background:var(--accent);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#0d0d0d;margin-bottom:12px}
+.login-title{font-size:20px;font-weight:800;letter-spacing:.5px}
+.login-title span{color:var(--accent)}
+.login-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px}
+.login-error{background:#1a0808;border:1px solid #3a1a1a;border-radius:6px;padding:10px 14px;font-size:12px;color:var(--error);font-family:'JetBrains Mono',monospace;margin-bottom:14px;display:none}
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-mark">E</div>
+      <div class="login-title">EX<span>ON</span></div>
+      <div class="login-sub">Dizaynerlar boshqaruv tizimi</div>
+    </div>
+    <div class="login-error" id="login-error">Login yoki parol noto'g'ri</div>
+    <div class="form-group">
+      <label class="form-label">Login</label>
+      <input class="form-input" id="login-user" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Parol</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doLogin()">Kirish</button>
+  </div>
+</div>
 
 <!-- BURGER -->
 <div class="burger" id="burger" onclick="toggleSidebar()">
@@ -327,10 +382,10 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-mark">Z</div>
+    <div class="logo-mark">E</div>
     <div>
-      <div class="logo-text">Z·<span>DSGN</span></div>
-      <div class="logo-sub">ART DIRECTOR</div>
+      <div class="logo-text">EX<span>ON</span></div>
+      <div class="logo-sub">DIZAYNERLAR</div>
     </div>
   </div>
   <div class="sidebar-section">
@@ -339,24 +394,48 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
       Asosiy sahifa
     </button>
-    <button class="nav-item" onclick="showPanel('designers');closeSidebar()">
+    <button class="nav-item" id="nav-designers" onclick="showPanel('designers');closeSidebar()">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5"/><circle cx="13" cy="6" r="2"/><path d="M11 14c0-2 .9-3 2-3"/></svg>
       Dizaynerlar
       <span class="nav-count" id="nav-count-d">0</span>
     </button>
-    <button class="nav-item" onclick="showPanel('projects');closeSidebar()">
+    <button class="nav-item" id="nav-projects" onclick="showPanel('projects');closeSidebar()">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M5 6h6M5 9h6M5 12h4"/></svg>
       Loyihalar
       <span class="nav-count" id="nav-count-p">0</span>
     </button>
   </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Moliya</div>
+    <button class="nav-item" id="nav-payments" onclick="showPanel('payments');closeSidebar()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="14" height="10" rx="1.5"/><path d="M1 7h14"/><path d="M4 11h2"/></svg>
+      To'lovlar
+      <span class="nav-count" id="nav-count-pay">0</span>
+    </button>
+    <button class="nav-item" id="nav-reports" onclick="showPanel('reports');closeSidebar()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12V4l4 4 4-4 4 3"/><path d="M2 12h12"/></svg>
+      Hisobotlar
+    </button>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-label">Tizim</div>
+    <button class="nav-item" id="nav-users" onclick="showPanel('users');closeSidebar()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M12 2l2 2-2 2"/></svg>
+      Foydalanuvchilar
+      <span class="nav-count" id="nav-count-u">0</span>
+    </button>
+    <button class="nav-item" id="nav-settings" onclick="showPanel('settings');closeSidebar()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4"/></svg>
+      Sozlamalar
+    </button>
+  </div>
   <div class="sidebar-footer">
-    <div class="user-avatar">AD</div>
-    <div>
-      <div class="user-name">Art Director</div>
-      <div class="user-role">boshqaruvchi · z-dsgn.uz</div>
+    <div class="user-avatar" id="sidebar-avatar">AD</div>
+    <div style="flex:1;min-width:0">
+      <div class="user-name" id="sidebar-username">Art Direktor</div>
+      <div class="user-role">exon-designers.uz</div>
     </div>
-    <div class="pulse-dot"></div>
+    <button onclick="doLogout()" title="Chiqish" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:0;line-height:1;flex-shrink:0" title="Chiqish">⏻</button>
   </div>
 </aside>
 
@@ -364,8 +443,20 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 <div class="topbar">
   <div class="topbar-title" id="topbar-title">Asosiy sahifa</div>
   <div class="topbar-right" id="topbar-right">
-    <button class="btn btn-ghost btn-xs" onclick="openSettings()" title="Sinxronizatsiya sozlamalari" style="font-size:16px;padding:4px 10px">⚙</button>
+    <button class="notif-btn" onclick="toggleNotifPanel()" title="Bildirishnomalar">
+      🔔
+      <span class="notif-badge" id="notif-badge">0</span>
+    </button>
   </div>
+</div>
+
+<!-- BILDIRISHNOMA PANELI -->
+<div class="notif-panel" id="notif-panel">
+  <div class="notif-head">
+    <span class="notif-head-title">Bildirishnomalar</span>
+    <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace">Barchasini o'qi</button>
+  </div>
+  <div id="notif-list"></div>
 </div>
 
 <!-- SYNC BAR -->
@@ -387,7 +478,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
   <div class="panel active" id="panel-dashboard">
     <div class="page-header">
       <div class="page-title">Umumiy ko'rinish</div>
-      <div class="page-sub">// art direktor paneli · z-dsgn.uz</div>
+      <div class="page-sub">// art direktor paneli · exon-designers.uz</div>
     </div>
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-val" id="st-active" style="color:var(--success)">0</div><div class="stat-label">Faol dizayner</div></div>
@@ -395,6 +486,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
       <div class="stat-card"><div class="stat-val" id="st-wip" style="color:var(--accent2)">0</div><div class="stat-label">Jarayondagi loyiha</div></div>
       <div class="stat-card"><div class="stat-val" id="st-budget" style="color:var(--accent)">0</div><div class="stat-label">Jami to'lov (so'm)</div></div>
     </div>
+    <div id="dash-alerts"></div>
     <div class="dash-grid">
       <div class="card">
         <div class="card-header"><span class="card-title">Dizaynerlar</span></div>
@@ -413,7 +505,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div class="page-title">Dizaynerlar</div>
-          <div class="page-sub">// autsors jamoasi</div>
+          <div class="page-sub">// exon dizayn jamoasi</div>
         </div>
         <button class="btn btn-primary" onclick="openDesignerModal()">+ Dizayner qo'shish</button>
       </div>
@@ -460,6 +552,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
         <button class="tab-btn" data-f="review" onclick="setProjFilter('review')">Ko'rib chiqilmoqda</button>
         <button class="tab-btn" data-f="done" onclick="setProjFilter('done')">Bajarildi</button>
       </div>
+      <input class="search-input" id="search-p" placeholder="Loyiha qidirish..." oninput="renderProjects()" style="width:200px"/>
       <select class="mini-select" id="proj-d-filter" onchange="renderProjects()">
         <option value="all">Barcha dizaynerlar</option>
       </select>
@@ -469,8 +562,124 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
         <option value="B">B kategoriya</option>
         <option value="C">C kategoriya</option>
       </select>
+      <select class="mini-select" id="proj-priority-filter" onchange="renderProjects()">
+        <option value="all">Barcha muhimlik</option>
+        <option value="high">🔴 Yuqori</option>
+        <option value="medium">🟡 O'rta</option>
+        <option value="low">🟢 Past</option>
+      </select>
     </div>
     <div id="projects-list"></div>
+  </div>
+
+  <!-- ── TO'LOVLAR ── -->
+  <div class="panel" id="panel-payments">
+    <div class="page-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="page-title">To'lovlar</div>
+          <div class="page-sub">// bajarilgan ishlar bo'yicha hisob-kitob</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="exportPaymentsCSV()">⬇ CSV eksport</button>
+          <button class="btn btn-ghost btn-sm" onclick="printPayments()">🖨 Chop etish</button>
+        </div>
+      </div>
+    </div>
+    <div class="stat-grid" id="pay-stats"></div>
+    <div class="filter-bar">
+      <select class="mini-select" id="pay-d-filter" onchange="renderPayments()">
+        <option value="all">Barcha dizaynerlar</option>
+      </select>
+      <select class="mini-select" id="pay-month-filter" onchange="renderPayments()">
+        <option value="all">Barcha vaqt</option>
+        <option value="this_month">Shu oy</option>
+        <option value="last_month">O'tgan oy</option>
+        <option value="this_year">Shu yil</option>
+      </select>
+    </div>
+    <div id="payments-list"></div>
+  </div>
+
+  <!-- ── HISOBOTLAR ── -->
+  <div class="panel" id="panel-reports">
+    <div class="page-header">
+      <div class="page-title">Hisobotlar</div>
+      <div class="page-sub">// ish faoliyati tahlili</div>
+    </div>
+    <div class="stat-grid" id="rep-stats"></div>
+    <div class="card" style="margin:14px 0">
+      <div class="card-header"><span class="card-title">Dizaynerlar ish yuki</span></div>
+      <div id="rep-workload" style="padding:16px"></div>
+    </div>
+    <div class="dash-grid" style="margin-top:14px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Kategoriya bo'yicha bajarilgan</span></div>
+        <div id="rep-cat-chart" style="padding:16px"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Top dizaynerlar (bajarilgan)</span></div>
+        <div id="rep-top-designers" style="padding:0 0 8px"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FOYDALANUVCHILAR ── -->
+  <div class="panel" id="panel-users">
+    <div class="page-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="page-title">Foydalanuvchilar</div>
+          <div class="page-sub">// login va huquqlar boshqaruvi</div>
+        </div>
+        <button class="btn btn-primary" onclick="openUserModal()">+ Foydalanuvchi qo'shish</button>
+      </div>
+    </div>
+    <div id="users-list"></div>
+  </div>
+
+  <!-- ── SOZLAMALAR ── -->
+  <div class="panel" id="panel-settings">
+    <div class="page-header">
+      <div class="page-title">Sozlamalar</div>
+      <div class="page-sub">// tizim va sinxronizatsiya</div>
+    </div>
+    <div style="max-width:560px">
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><span class="card-title">GitHub Sinxronizatsiya</span></div>
+        <div style="padding:18px">
+          <div class="settings-note">
+            📡 Ma'lumotlar <strong>github.com/zari004/designers</strong> repodagi (EXON)
+            <strong>data.json</strong> fayliga saqlanadi.
+          </div>
+          <div class="form-group">
+            <label class="form-label">GitHub Personal Access Token
+              <small><a href="https://github.com/settings/tokens/new?scopes=repo&description=exon-panel" target="_blank" style="color:var(--accent2)">↗ Yaratish</a></small>
+            </label>
+            <input class="form-input" id="s-token2" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              style="font-family:'JetBrains Mono',monospace;letter-spacing:1px"/>
+            <div class="form-hint">Scope: <strong>repo</strong> → Contents read/write</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-ghost btn-sm" onclick="clearToken()">Tokenni o'chirish</button>
+            <button class="btn btn-primary btn-sm" onclick="saveTokenFromSettings()">Saqlash</button>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><span class="card-title">Parolni o'zgartirish</span></div>
+        <div style="padding:18px">
+          <div class="form-group"><label class="form-label">Eski parol</label><input class="form-input" id="chpw-old" type="password" placeholder="••••••••"/></div>
+          <div class="form-group"><label class="form-label">Yangi parol</label><input class="form-input" id="chpw-new" type="password" placeholder="••••••••"/></div>
+          <div class="form-group"><label class="form-label">Yangi parolni tasdiqlang</label><input class="form-input" id="chpw-new2" type="password" placeholder="••••••••"/></div>
+          <button class="btn btn-primary btn-sm" onclick="changeOwnPassword()">Parolni o'zgartirish</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Kategoriya narxlari</span></div>
+        <div style="padding:18px" id="cat-price-editor"></div>
+      </div>
+    </div>
   </div>
 
 </main>
@@ -488,6 +697,53 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 
 <script>
 // ═══════════════════════════════════════════════
+// AUTH — Login / Foydalanuvchilar
+// ═══════════════════════════════════════════════
+const DEFAULT_USERS = [
+  {
+    id:'admin',username:'admin',password:'exon2024',
+    role:'admin',displayName:'Art Direktor',
+    permissions:{designers:true,projects:true,settings:true,users:true,reports:true,payments:true},
+  },
+];
+
+function getUsers(){
+  const s=localStorage.getItem('exon_users');
+  return s ? JSON.parse(s) : [...DEFAULT_USERS];
+}
+function saveUsers(u){ localStorage.setItem('exon_users',JSON.stringify(u)); }
+
+function getCurrentUser(){
+  const s=sessionStorage.getItem('exon_session');
+  return s ? JSON.parse(s) : null;
+}
+
+function doLogin(){
+  const uname=document.getElementById('login-user').value.trim();
+  const pass=document.getElementById('login-pass').value;
+  const users=getUsers();
+  const user=users.find(u=>u.username===uname && u.password===pass);
+  const err=document.getElementById('login-error');
+  if(!user){ err.style.display='block'; return; }
+  err.style.display='none';
+  sessionStorage.setItem('exon_session',JSON.stringify(user));
+  document.getElementById('login-screen').style.display='none';
+  initApp(user);
+}
+
+function doLogout(){
+  sessionStorage.removeItem('exon_session');
+  location.reload();
+}
+
+function hasPermission(key){
+  const u=getCurrentUser();
+  if(!u) return false;
+  if(u.role==='admin') return true;
+  return !!(u.permissions&&u.permissions[key]);
+}
+
+// ═══════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════
 const CAT_INFO = {
@@ -503,11 +759,11 @@ let designers = [
 ];
 
 let projects = [
-  {id:1,designerId:1,title:"Maverick App — Onboarding oqimi",date:"2025-06-04",doneDate:null,status:"done",category:"A",units:7,pricePerUnit:18000,description:"Onboarding oqimining to'liq redesayn qilindi. 7 ta screen, micro-animatsiyalar va accessibility standartlariga moslashtirildi.",files:["onboarding_v3.fig","screens_export.zip"]},
-  {id:2,designerId:1,title:"Landing Page — Hero Section",date:"2025-06-02",doneDate:null,status:"wip",category:"A",units:3,pricePerUnit:17000,description:"Hero section uchun 3 ta variant tayyorlanmoqda. Responsive versiyalari qo'shiladi.",files:["hero_v2.fig"]},
-  {id:3,designerId:2,title:"Brand Identity — Logo variants",date:"2025-06-01",doneDate:"2025-06-03",status:"done",category:"B",units:5,pricePerUnit:12000,description:"Asosiy logo va 4 ta variant. Qora, oq va rangli versiyalar. Brand book bilan birga.",files:["logo_final.ai","brand_guide.pdf"]},
-  {id:4,designerId:3,title:"Product Intro — 30 sec animation",date:"2025-05-30",doneDate:null,status:"review",category:"A",units:1,pricePerUnit:20000,description:"Birinchi draft tayyor. Timing va transition effektlarni qayta ko'rib chiqish kerak.",files:["intro_v1.mp4"]},
-  {id:5,designerId:2,title:"Instagram Stories — 10 ta shablon",date:"2025-06-05",doneDate:null,status:"wip",category:"C",units:10,pricePerUnit:9000,description:"10 ta animatsion stories shablon. Brand ranglari bilan.",files:[]},
+  {id:1,designerId:1,title:"Maverick App — Onboarding oqimi",date:"2025-06-04",deadline:"2025-06-10",doneDate:null,status:"done",category:"A",units:7,pricePerUnit:18000,description:"Onboarding oqimining to'liq redesayn qilindi. 7 ta screen, micro-animatsiyalar va accessibility standartlariga moslashtirildi.",files:["onboarding_v3.fig","screens_export.zip"],priority:"high"},
+  {id:2,designerId:1,title:"Landing Page — Hero Section",date:"2025-06-02",deadline:"2026-06-15",doneDate:null,status:"wip",category:"A",units:3,pricePerUnit:17000,description:"Hero section uchun 3 ta variant tayyorlanmoqda. Responsive versiyalari qo'shiladi.",files:["hero_v2.fig"],priority:"medium"},
+  {id:3,designerId:2,title:"Brand Identity — Logo variants",date:"2025-06-01",deadline:"2025-06-03",doneDate:"2025-06-03",status:"done",category:"B",units:5,pricePerUnit:12000,description:"Asosiy logo va 4 ta variant. Qora, oq va rangli versiyalar. Brand book bilan birga.",files:["logo_final.ai","brand_guide.pdf"],priority:"medium"},
+  {id:4,designerId:3,title:"Product Intro — 30 sec animation",date:"2025-05-30",deadline:"2026-06-12",doneDate:null,status:"review",category:"A",units:1,pricePerUnit:20000,description:"Birinchi draft tayyor. Timing va transition effektlarni qayta ko'rib chiqish kerak.",files:["intro_v1.mp4"],priority:"high"},
+  {id:5,designerId:2,title:"Instagram Stories — 10 ta shablon",date:"2025-06-05",deadline:"2026-06-20",doneDate:null,status:"wip",category:"C",units:10,pricePerUnit:9000,description:"10 ta animatsion stories shablon. Brand ranglari bilan.",files:[],priority:"low"},
 ];
 
 let nextDId = 4, nextPId = 6;
@@ -524,13 +780,17 @@ function showPanel(name) {
   document.getElementById('panel-'+name).classList.add('active');
   const nav = document.querySelector(`[onclick="showPanel('${name}')"]`);
   if(nav) nav.classList.add('active');
-  const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',detail:'Dizayner profili'};
+  const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',detail:'Dizayner profili',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
   document.getElementById('topbar-title').textContent = titles[name]||'';
   updateTopbar(name);
   if(name==='dashboard') renderDashboard();
   if(name==='designers') renderDesigners();
   if(name==='projects') renderProjects();
   if(name==='detail') renderDetail();
+  if(name==='payments') renderPayments();
+  if(name==='reports') renderReports();
+  if(name==='users') renderUsers();
+  if(name==='settings') renderSettingsPage();
   updateCounts();
 }
 
@@ -547,14 +807,31 @@ function updateTopbar(name) {
   if(name==='projects'){
     const wip=projects.filter(p=>p.status==='wip').length;
     const review=projects.filter(p=>p.status==='review').length;
+    const overdue=projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).length;
+    if(overdue>0) tr.innerHTML+=`<span class="badge" style="background:#2a0a0a;color:var(--error);border:1px solid #4a1a1a">⚠ ${overdue} MUDDATI O'TDI</span>`;
     if(wip>0) tr.innerHTML+=`<span class="badge badge-blue">${wip} JARAYONDA</span>`;
     if(review>0) tr.innerHTML+=`<span class="badge badge-warn">${review} KO'RIB CHIQILMOQDA</span>`;
+  }
+  if(name==='payments'){
+    const total=projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+    tr.innerHTML=`<span class="badge badge-green">JAMI: ${fmtPrice(total)} so'm</span>`;
+  }
+  if(name==='reports'){
+    const done=projects.filter(p=>p.status==='done').length;
+    tr.innerHTML=`<span class="badge badge-green">${done} BAJARILGAN</span>`;
+  }
+  if(name==='users'){
+    tr.innerHTML=`<span class="badge badge-blue">${getUsers().length} FOYDALANUVCHI</span>`;
   }
 }
 
 function updateCounts(){
-  document.getElementById('nav-count-d').textContent = designers.length;
-  document.getElementById('nav-count-p').textContent = projects.length;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('nav-count-d', designers.length);
+  set('nav-count-p', projects.length);
+  set('nav-count-pay', projects.filter(p=>p.status==='done').length);
+  set('nav-count-u', getUsers().length);
+  renderNotifPanel();
 }
 
 // ═══════════════════════════════════════════════
@@ -580,16 +857,36 @@ function renderDashboard(){
       ${statusBadge(d.status)}
     </div>`).join('');
 
+  // Muddati o'tgan yoki bugun tugaydigan loyihalar
+  const overdue=projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<=3);
+  const dashAlerts=document.getElementById('dash-alerts');
+  if(dashAlerts){
+    if(overdue.length){
+      dashAlerts.innerHTML=`<div style="background:#1a0808;border:1px solid #4a1a1a;border-radius:8px;padding:14px 18px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--error);letter-spacing:1px;margin-bottom:8px">⚠ DIQQAT — ${overdue.length} ta loyiha muddati yaqin yoki o'tgan</div>
+        ${overdue.map(p=>{const d=designers.find(x=>x.id===p.designerId);const days=deadlineDays(p.deadline);
+          return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:600;flex:1">${p.title}</span>
+            <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${d?.name||''}</span>
+            ${days<0?`<span class="status s-away">${Math.abs(days)} kun o'tdi</span>`:days===0?`<span class="status s-away">Bugun!</span>`:`<span class="status s-idle">${days} kun qoldi</span>`}
+          </div>`;}).join('')}
+      </div>`;
+    } else {
+      dashAlerts.innerHTML='';
+    }
+  }
+
   const recent=[...projects].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,6);
   document.getElementById('dash-projects').innerHTML = recent.map(p=>{
     const d=designers.find(x=>x.id===p.designerId);
     return `<div class="table-row" style="grid-template-columns:1fr auto">
       <div>
         <div style="font-size:12px;font-weight:600;margin-bottom:2px">${p.title}</div>
-        <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${d?.name||''} · ${p.date}</div>
+        <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace">${d?.name||''} · ${p.date}${p.deadline?' · ⏳ '+p.deadline:''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
         ${projStatusBadge(p.status)}
+        ${deadlineBadge(p)}
         <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)}</span>
       </div>
     </div>`;
@@ -730,20 +1027,33 @@ function setProjFilter(f){
 }
 
 function renderProjects(){
-  // update designer select
   const dsel=document.getElementById('proj-d-filter');
-  const dval=dsel.value;
-  dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+  const dval=dsel?.value||'all';
+  if(dsel) dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
     designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${d.name}</option>`).join('');
 
-  const cval=document.getElementById('proj-cat-filter').value;
+  const cval=document.getElementById('proj-cat-filter')?.value||'all';
+  const prval=document.getElementById('proj-priority-filter')?.value||'all';
+  const qval=(document.getElementById('search-p')?.value||'').toLowerCase();
   let list=projects;
   if(projStatusFilter!=='all') list=list.filter(p=>p.status===projStatusFilter);
   if(dval!=='all') list=list.filter(p=>p.designerId===parseInt(dval));
   if(cval!=='all') list=list.filter(p=>p.category===cval);
-  list=[...list].sort((a,b)=>b.date.localeCompare(a.date));
+  if(prval!=='all') list=list.filter(p=>p.priority===prval);
+  if(qval) list=list.filter(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    return p.title.toLowerCase().includes(qval)||(d?.name||'').toLowerCase().includes(qval)||(p.description||'').toLowerCase().includes(qval);
+  });
+  list=[...list].sort((a,b)=>{
+    // Deadline bo'yicha: muddati o'tgani birinchi, keyin yaqinlari
+    const da=a.status!=='done'&&a.deadline?deadlineDays(a.deadline):9999;
+    const db=b.status!=='done'&&b.deadline?deadlineDays(b.deadline):9999;
+    if(da!==db) return da-db;
+    return b.date.localeCompare(a.date);
+  });
 
   const el=document.getElementById('projects-list');
+  if(!el) return;
   if(!list.length){el.innerHTML='<div class="empty">Hech narsa topilmadi</div>';return;}
   el.innerHTML=list.map(p=>projCardHtml(p,true)).join('');
 }
@@ -752,15 +1062,19 @@ function projCardHtml(p,showDesigner){
   const d=designers.find(x=>x.id===p.designerId);
   const ci=CAT_INFO[p.category];
   const total=p.units*p.pricePerUnit;
-  return `<div class="report-card" id="pcard-${p.id}">
+  const dlBadge=deadlineBadge(p);
+  const prBadge=priorityBadge(p.priority);
+  return `<div class="report-card" id="pcard-${p.id}" style="${p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0?'border-color:#4a1a1a;':''}">
     <div class="report-header">
       <div>
         <div class="report-title">${p.title}</div>
         ${showDesigner&&d?`<div style="display:flex;align-items:center;gap:8px;margin-top:4px">${photoAvatar(d,18)}<span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${d.name}</span></div>`:''}
       </div>
       <div class="report-controls">
+        ${prBadge}
         <span class="d-cat-badge ${ci.cls}" style="font-size:10px">${p.category}</span>
         ${projStatusBadge(p.status)}
+        ${dlBadge}
         <select class="mini-select" onchange="changeProjStatus(${p.id},this.value)">
           <option value="wip"${p.status==='wip'?' selected':''}>Jarayonda</option>
           <option value="review"${p.status==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
@@ -771,7 +1085,8 @@ function projCardHtml(p,showDesigner){
       </div>
     </div>
     <div class="report-meta">
-      <span>📅 ${p.date}</span>
+      <span>📅 Boshlangan: ${p.date}</span>
+      ${p.deadline?`<span>·</span><span>⏳ Muddat: <strong style="color:${p.status==='done'?'var(--muted)':deadlineDays(p.deadline)<0?'var(--error)':deadlineDays(p.deadline)<=3?'var(--warning)':'var(--text)'}">${p.deadline}</strong></span>`:''}
       <span>·</span>
       <span>${p.units} birlik</span>
       <span>·</span>
@@ -780,7 +1095,21 @@ function projCardHtml(p,showDesigner){
       <span class="report-price">Jami: ${fmtPrice(total)}</span>
     </div>
     ${p.description?`<div class="report-desc">${p.description}</div>`:''}
-    ${p.files.length?`<div class="report-files">${p.files.map(f=>`<span class="file-tag">📎 ${f}</span>`).join('')}</div>`:''}
+    ${p.files&&p.files.length?`<div class="report-files">${p.files.map(f=>`<span class="file-tag">📎 ${f}</span>`).join('')}</div>`:''}
+    <div style="border-top:1px solid rgba(255,255,255,.04);margin-top:10px;padding-top:10px">
+      ${(p.comments||[]).map(c=>`
+        <div class="comment-item">
+          <div style="display:flex;justify-content:space-between">
+            <span class="comment-author">${c.author}</span>
+            <span class="comment-time">${c.time}</span>
+          </div>
+          <div class="comment-text">${c.text}</div>
+        </div>`).join('')}
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input class="form-input" id="cmt-${p.id}" placeholder="Izoh qo'shish..." style="font-size:11px;padding:6px 10px" onkeydown="if(event.key==='Enter')addComment(${p.id})"/>
+        <button class="btn btn-ghost btn-xs" onclick="addComment(${p.id})">→</button>
+      </div>
+    </div>
   </div>`;
 }
 
@@ -914,12 +1243,22 @@ function openProjectModal(id=null, preDesignerId=null){
     </div>
     <div style="font-size:10px;color:var(--muted2);font-family:'JetBrains Mono',monospace;margin-top:-10px;margin-bottom:14px" id="price-hint"></div>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Sana</label><input class="form-input" id="f-pdate" type="date" value="${p?.date||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="form-group"><label class="form-label">Boshlangan sana</label><input class="form-input" id="f-pdate" type="date" value="${p?.date||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="form-group"><label class="form-label">Muddat (deadline)</label><input class="form-input" id="f-pdeadline" type="date" value="${p?.deadline||''}"/></div>
+    </div>
+    <div class="form-grid">
       <div class="form-group"><label class="form-label">Status</label>
         <select class="form-select" id="f-pstatus">
           <option value="wip"${(p?.status||'wip')==='wip'?' selected':''}>Jarayonda</option>
           <option value="review"${(p?.status||'wip')==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
           <option value="done"${(p?.status||'wip')==='done'?' selected':''}>Bajarildi</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Muhimlik darajasi</label>
+        <select class="form-select" id="f-priority">
+          <option value="low"${(p?.priority||'medium')==='low'?' selected':''}>🟢 Past</option>
+          <option value="medium"${(p?.priority||'medium')==='medium'?' selected':''}>🟡 O'rta</option>
+          <option value="high"${(p?.priority||'medium')==='high'?' selected':''}>🔴 Yuqori</option>
         </select>
       </div>
     </div>
@@ -1006,7 +1345,9 @@ function saveProject(id){
     units:parseInt(document.getElementById('f-units').value)||1,
     pricePerUnit:parseInt(document.getElementById('f-price').value)||0,
     date:document.getElementById('f-pdate').value,
+    deadline:document.getElementById('f-pdeadline')?.value||null,
     status:document.getElementById('f-pstatus').value,
+    priority:document.getElementById('f-priority')?.value||'medium',
     files,
   };
   if(id!=='null'&&id){
@@ -1043,6 +1384,29 @@ function projStatusBadge(s){
   const map={wip:'s-wip',review:'s-review',done:'s-done'};
   const labels={wip:'JARAYONDA',review:"KO'RIB CHIQILMOQDA",done:'BAJARILDI'};
   return `<span class="status ${map[s]||'s-draft'}">${labels[s]||s.toUpperCase()}</span>`;
+}
+
+// ── DEADLINE HELPERS ──
+function deadlineDays(dl){
+  if(!dl) return null;
+  const now=new Date(); now.setHours(0,0,0,0);
+  const d=new Date(dl); d.setHours(0,0,0,0);
+  return Math.round((d-now)/(1000*60*60*24));
+}
+function deadlineBadge(p){
+  if(p.status==='done') return '';
+  if(!p.deadline) return '';
+  const days=deadlineDays(p.deadline);
+  if(days<0) return `<span class="status s-away">⚠ ${Math.abs(days)} kun o'tdi</span>`;
+  if(days===0) return `<span class="status s-away">🔴 Bugun!</span>`;
+  if(days<=3) return `<span class="status s-idle">⏰ ${days} kun</span>`;
+  if(days<=7) return `<span class="status s-wip">📅 ${days} kun</span>`;
+  return `<span class="status s-draft">📅 ${days} kun</span>`;
+}
+function priorityBadge(pr){
+  if(!pr) return '';
+  const map={high:`<span class="status" style="background:#2a0a0a;color:#ff6b6b;border:1px solid #4a1a1a">🔴 Yuqori</span>`,medium:`<span class="status" style="background:#2a1a08;color:var(--warning);border:1px solid #4a3010">🟡 O'rta</span>`,low:`<span class="status s-draft">🟢 Past</span>`};
+  return map[pr]||'';
 }
 
 function fmtPrice(n){
@@ -1167,50 +1531,11 @@ async function syncLoad(){
 // SETTINGS MODAL
 // ═══════════════════════════════════════════════
 function openSettings(){
-  const token = localStorage.getItem('gh_token')||'';
-  document.getElementById('modal-title-text').textContent = 'Sinxronizatsiya sozlamalari';
-  document.getElementById('modal-body').innerHTML=`
-    <div class="settings-note">
-      📡 Ma'lumotlar <strong>github.com/zari004/designers</strong> repodagi
-      <strong>data.json</strong> fayliga saqlanadi.<br/>
-      Ixtiyoriy qurilmadan "Yuklash" tugmasini bossangiz — oxirgi saqlangan ma'lumot keladi.<br/>
-      Token faqat shu qurilmada saqlanadi (localStorage).
-    </div>
-    <div class="form-group">
-      <label class="form-label">GitHub Personal Access Token
-        <small><a href="https://github.com/settings/tokens/new?scopes=repo&description=designers-panel" target="_blank" style="color:var(--accent2)">↗ Yaratish</a></small>
-      </label>
-      <input class="form-input" id="s-token" type="password"
-        value="${token}" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-        style="font-family:'JetBrains Mono',monospace;letter-spacing:1px"/>
-      <div class="form-hint">Scope: <strong>repo</strong> → Contents read/write</div>
-    </div>
-    <div class="form-group" style="margin-top:4px">
-      <label class="form-label">Repo ma'lumotlari</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <input class="form-input" value="${REPO_OWNER}/${REPO_NAME}" readonly
-          style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px"/>
-        <input class="form-input" value="${DATA_FILE}" readonly
-          style="color:var(--muted);font-family:'JetBrains Mono',monospace;font-size:12px"/>
-      </div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;line-height:1.8">
-      <div style="color:var(--text);font-weight:600;margin-bottom:6px">Qanday ishlaydi:</div>
-      1. Token kiriting → Saqlash<br/>
-      2. <strong>↑ Saqlash</strong> — ma'lumotlarni GitHub'ga yuklaydi<br/>
-      3. Boshqa qurilmada saytni oching → <strong>↓ Yuklash</strong><br/>
-      4. Token o'sha qurilmada ham bir marta kiritilishi kerak
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-danger btn-sm" onclick="clearToken()">Tokenni o'chirish</button>
-      <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
-      <button class="btn btn-primary" onclick="saveToken()">Saqlash</button>
-    </div>`;
-  document.getElementById('modal').style.display='flex';
+  showPanel('settings');
 }
 
 function saveToken(){
-  const t = document.getElementById('s-token').value.trim();
+  const t = document.getElementById('s-token')?.value?.trim();
   if(!t){ clearToken(); return; }
   localStorage.setItem('gh_token', t);
   closeModal();
@@ -1225,15 +1550,501 @@ function clearToken(){
   toast("Token o'chirildi");
 }
 
-// ═══════════════════════════════════════════════
-// INIT
-// ═══════════════════════════════════════════════
-updateCounts();
-renderDashboard();
+function saveTokenFromSettings(){
+  const t=document.getElementById('s-token2')?.value?.trim();
+  if(!t){ clearToken(); return; }
+  localStorage.setItem('gh_token',t);
+  setSyncStatus('ok',"Token saqlandi — tayyor");
+  toast("✓ Token saqlandi");
+}
 
-// Sahifa yuklanganda HAR DOIM avtomatik yukla (ommaviy repo — token shart emas)
-setSyncStatus('load', "Yuklanmoqda...");
-syncLoad();
+// ═══════════════════════════════════════════════
+// TO'LOVLAR
+// ═══════════════════════════════════════════════
+function filterByMonth(list, mval){
+  if(mval==='all') return list;
+  const now=new Date();
+  return list.filter(p=>{
+    const d=new Date(p.date);
+    if(mval==='this_month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(mval==='last_month'){const lm=new Date(now.getFullYear(),now.getMonth()-1,1);return d.getMonth()===lm.getMonth()&&d.getFullYear()===lm.getFullYear();}
+    if(mval==='this_year') return d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+
+function renderPayments(){
+  const dsel=document.getElementById('pay-d-filter');
+  if(dsel){
+    const v=dsel.value;
+    dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+      designers.map(d=>`<option value="${d.id}"${v==d.id?' selected':''}>${d.name}</option>`).join('');
+  }
+  const dval=document.getElementById('pay-d-filter')?.value||'all';
+  const mval=document.getElementById('pay-month-filter')?.value||'all';
+  let doneProjs=projects.filter(p=>p.status==='done'&&(dval==='all'||p.designerId===parseInt(dval)));
+  doneProjs=filterByMonth(doneProjs,mval);
+  const totalAll=projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const totalFiltered=doneProjs.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+
+  const ps=document.getElementById('pay-stats');
+  if(ps) ps.innerHTML=[
+    {v:fmtPrice(totalAll),l:"Umumiy jami",c:'var(--accent)'},
+    {v:fmtPrice(totalFiltered),l:"Tanlangan davr",c:'var(--success)'},
+    {v:doneProjs.length,l:'Bajarilgan loyiha',c:'var(--text)'},
+    {v:doneProjs.reduce((s,p)=>s+p.units,0),l:'Jami birlik',c:'var(--accent2)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.c}">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
+
+  const el=document.getElementById('payments-list');
+  if(!el) return;
+  const byD=designers.filter(d=>dval==='all'||d.id===parseInt(dval)).map(d=>{
+    const dp=doneProjs.filter(p=>p.designerId===d.id).sort((a,b)=>b.date.localeCompare(a.date));
+    if(!dp.length) return '';
+    const total=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+    const ci=CAT_INFO[d.category];
+    return `<div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          ${photoAvatar(d,30)}
+          <span style="font-size:13px;font-weight:700">${d.name}</span>
+          <span class="d-cat-badge ${ci.cls}" style="font-size:10px">${d.category}</span>
+          <span class="card-num">${d.cardNumber||'—'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${dp.length} ta loyiha</span>
+          <span class="price-tag" style="font-size:13px">Jami: ${fmtPrice(total)}</span>
+        </div>
+      </div>
+      ${dp.map(p=>`<div class="table-row" style="grid-template-columns:1fr auto auto auto">
+        <div style="font-size:12px;font-weight:600">${p.title}</div>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.date}</span>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.units} birlik × ${p.pricePerUnit.toLocaleString()}</span>
+        <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)}</span>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  el.innerHTML=byD||'<div class="empty">Bajarilgan loyiha yo\'q</div>';
+}
+
+function exportPaymentsCSV(){
+  const dval=document.getElementById('pay-d-filter')?.value||'all';
+  const mval=document.getElementById('pay-month-filter')?.value||'all';
+  let doneProjs=projects.filter(p=>p.status==='done'&&(dval==='all'||p.designerId===parseInt(dval)));
+  doneProjs=filterByMonth(doneProjs,mval);
+  const rows=[['Dizayner','Karta raqami','Kategoriya','Loyiha','Sana','Birlik','Narx/birlik','Jami (so\'m)']];
+  doneProjs.forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    rows.push([d?.name||'',d?.cardNumber||'',p.category,p.title,p.date,p.units,p.pricePerUnit,p.units*p.pricePerUnit]);
+  });
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`exon-tolovlar-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  toast("CSV fayl yuklab olindi");
+}
+
+function printPayments(){
+  window.print();
+}
+
+// ═══════════════════════════════════════════════
+// HISOBOTLAR
+// ═══════════════════════════════════════════════
+function renderReports(){
+  const done=projects.filter(p=>p.status==='done');
+  const wip=projects.filter(p=>p.status==='wip');
+  const totalPay=done.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+
+  const rs=document.getElementById('rep-stats');
+  if(rs) rs.innerHTML=[
+    {v:done.length,l:'Bajarilgan',c:'var(--success)'},
+    {v:wip.length,l:'Jarayonda',c:'var(--accent2)'},
+    {v:fmtPrice(totalPay),l:"Jami to'lov",c:'var(--accent)'},
+    {v:designers.filter(d=>d.status==='active').length,l:'Faol dizayner',c:'var(--text)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.c}">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
+
+  // Ish yuki grafigi
+  const wlEl=document.getElementById('rep-workload');
+  if(wlEl){
+    const maxWip=Math.max(1,...designers.map(d=>projects.filter(p=>p.designerId===d.id&&p.status==='wip').length));
+    wlEl.innerHTML=designers.map(d=>{
+      const dWip=projects.filter(p=>p.designerId===d.id&&p.status==='wip');
+      const dReview=projects.filter(p=>p.designerId===d.id&&p.status==='review');
+      const dDone=projects.filter(p=>p.designerId===d.id&&p.status==='done');
+      const dOverdue=dWip.filter(p=>p.deadline&&deadlineDays(p.deadline)<0);
+      const pct=Math.round(dWip.length/maxWip*100);
+      const ci=CAT_INFO[d.category];
+      return `<div style="display:grid;grid-template-columns:180px 1fr auto;gap:12px;align-items:center;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${photoAvatar(d,24)}
+          <div>
+            <div style="font-size:12px;font-weight:600">${d.name}</div>
+            <span class="d-cat-badge ${ci.cls}" style="font-size:9px;padding:1px 6px">${d.category}</span>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;gap:4px;margin-bottom:5px;flex-wrap:wrap">
+            ${dOverdue.length?`<span class="status s-away" style="font-size:9px">⚠ ${dOverdue.length} muddati o'tdi</span>`:''}
+            <span class="status s-wip" style="font-size:9px">${dWip.length} jarayonda</span>
+            ${dReview.length?`<span class="status s-review" style="font-size:9px">${dReview.length} ko'rib chiqilmoqda</span>`:''}
+          </div>
+          <div style="background:var(--bg);border-radius:4px;height:5px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${dOverdue.length?'var(--error)':ci.color};border-radius:4px;transition:width .4s"></div>
+          </div>
+        </div>
+        <span class="price-tag">${dDone.length} bajarildi</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Kategoriya bo'yicha
+  const catEl=document.getElementById('rep-cat-chart');
+  if(catEl){
+    const rows=['A','B','C'].map(c=>{
+      const cp=done.filter(p=>p.category===c);
+      const total=cp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      const ci=CAT_INFO[c];
+      const pct=done.length?Math.round(cp.length/done.length*100):0;
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px">
+          <span class="d-cat-badge ${ci.cls}">${c} Kategoriya</span>
+          <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${cp.length} loyiha · ${fmtPrice(total)}</span>
+        </div>
+        <div style="background:var(--bg);border-radius:4px;height:6px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${ci.color};border-radius:4px;transition:width .4s"></div>
+        </div>
+      </div>`;
+    }).join('');
+    catEl.innerHTML=rows;
+  }
+
+  // Top dizaynerlar
+  const topEl=document.getElementById('rep-top-designers');
+  if(topEl){
+    const ranked=[...designers].map(d=>{
+      const dp=done.filter(p=>p.designerId===d.id);
+      return {...d,doneCount:dp.length,earned:dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0)};
+    }).sort((a,b)=>b.earned-a.earned);
+    topEl.innerHTML=ranked.map((d,i)=>`
+      <div class="table-row" style="grid-template-columns:24px 1fr auto auto">
+        <span style="font-size:11px;color:var(--muted2);font-family:'JetBrains Mono',monospace">${i+1}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${photoAvatar(d,24)}
+          <span style="font-size:13px;font-weight:600">${d.name}</span>
+        </div>
+        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${d.doneCount} ta</span>
+        <span class="price-tag">${fmtPrice(d.earned)}</span>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FOYDALANUVCHILAR
+// ═══════════════════════════════════════════════
+function renderUsers(){
+  const users=getUsers();
+  const el=document.getElementById('users-list');
+  if(!el) return;
+  const nc=document.getElementById('nav-count-u');
+  if(nc) nc.textContent=users.length;
+
+  el.innerHTML=`<div class="card">
+    ${users.map(u=>`
+      <div class="table-row" style="grid-template-columns:1fr auto auto auto">
+        <div>
+          <div style="font-size:13px;font-weight:700">${u.displayName||u.username}</div>
+          <div style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">@${u.username} · ${u.role==='admin'?'<span style="color:var(--accent)">Admin</span>':'Foydalanuvchi'}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${Object.entries(u.permissions||{}).filter(([k,v])=>v).map(([k])=>`<span class="skill-tag">${PERM_LABELS[k]||k}</span>`).join('')}
+        </div>
+        ${u.role!=='admin'?`<button class="btn btn-ghost btn-xs" onclick="openUserModal('${u.id}')">Tahrir</button>`:'<span></span>'}
+        ${u.role!=='admin'?`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">O'chir</button>`:'<span style="font-size:10px;color:var(--muted2);font-family:JetBrains Mono,monospace">himoyalangan</span>'}
+      </div>`).join('')}
+  </div>`;
+}
+
+const PERM_LABELS={designers:'Dizaynerlar',projects:'Loyihalar',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
+
+function openUserModal(id=null){
+  const users=getUsers();
+  const u=id?users.find(x=>x.id===id):null;
+  document.getElementById('modal-title-text').textContent=u?"Foydalanuvchini tahrirlash":"Yangi foydalanuvchi";
+  const perms=u?.permissions||{designers:true,projects:true,payments:false,reports:false,users:false,settings:false};
+  document.getElementById('modal-body').innerHTML=`
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Login (username)</label><input class="form-input" id="fu-uname" value="${u?.username||''}" placeholder="username" ${u?.role==='admin'?'disabled':''}/></div>
+      <div class="form-group"><label class="form-label">Ism</label><input class="form-input" id="fu-dname" value="${u?.displayName||''}" placeholder="Ism Familiya"/></div>
+    </div>
+    ${!u?`<div class="form-group"><label class="form-label">Parol</label><input class="form-input" id="fu-pass" type="password" placeholder="••••••••"/></div>`:''}
+    <div class="form-group">
+      <label class="form-label">Huquqlar</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+        ${Object.entries(PERM_LABELS).map(([k,lbl])=>`
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px">
+            <input type="checkbox" id="fp-${k}" ${perms[k]?'checked':''} style="accent-color:var(--accent)"/>
+            ${lbl}
+          </label>`).join('')}
+      </div>
+    </div>
+    ${u?`<div class="form-group"><label class="form-label">Yangi parol <small>(bo'sh qoldirsa o'zgarmaydi)</small></label><input class="form-input" id="fu-newpass" type="password" placeholder="••••••••"/></div>`:''}
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Bekor</button>
+      <button class="btn btn-primary" onclick="saveUser('${id||'null'}')">Saqlash</button>
+    </div>`;
+  document.getElementById('modal').style.display='flex';
+}
+
+function saveUser(id){
+  const users=getUsers();
+  const uname=document.getElementById('fu-uname')?.value?.trim();
+  const dname=document.getElementById('fu-dname')?.value?.trim();
+  if(!uname||!dname){alert("Login va ism kiritilmagan!");return;}
+  const permissions={};
+  Object.keys(PERM_LABELS).forEach(k=>{permissions[k]=!!document.getElementById('fp-'+k)?.checked;});
+  if(id!=='null'&&id){
+    const idx=users.findIndex(u=>u.id===id);
+    if(idx!==-1){
+      users[idx].displayName=dname;
+      users[idx].permissions=permissions;
+      const np=document.getElementById('fu-newpass')?.value?.trim();
+      if(np) users[idx].password=np;
+    }
+    toast("Foydalanuvchi yangilandi");
+  } else {
+    const pass=document.getElementById('fu-pass')?.value?.trim();
+    if(!pass){alert("Parol kiritilmagan!");return;}
+    if(users.find(u=>u.username===uname)){alert("Bu login allaqachon mavjud!");return;}
+    users.push({id:'u'+Date.now(),username:uname,password:pass,role:'user',displayName:dname,permissions});
+    toast("Foydalanuvchi qo'shildi");
+  }
+  saveUsers(users);
+  closeModal();
+  renderUsers();
+}
+
+function deleteUser(id){
+  if(!confirm("Foydalanuvchini o'chirishni tasdiqlaysizmi?")) return;
+  const users=getUsers().filter(u=>u.id!==id);
+  saveUsers(users);
+  renderUsers();
+  toast("Foydalanuvchi o'chirildi");
+}
+
+// ═══════════════════════════════════════════════
+// SOZLAMALAR SAHIFASI
+// ═══════════════════════════════════════════════
+function renderSettingsPage(){
+  const tok=localStorage.getItem('gh_token')||'';
+  const s2=document.getElementById('s-token2');
+  if(s2) s2.value=tok;
+  const cpe=document.getElementById('cat-price-editor');
+  if(cpe) cpe.innerHTML=['A','B','C'].map(c=>{
+    const ci=CAT_INFO[c];
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span class="d-cat-badge ${ci.cls}" style="width:36px;justify-content:center">${c}</span>
+      <div style="flex:1">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><label class="form-label">Min (so'm)</label>
+            <input class="form-input" id="cp-${c}-min" type="number" value="${ci.priceRange[0]}" style="font-family:'JetBrains Mono',monospace"/></div>
+          <div><label class="form-label">Max (so'm)</label>
+            <input class="form-input" id="cp-${c}-max" type="number" value="${ci.priceRange[1]}" style="font-family:'JetBrains Mono',monospace"/></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('')+`<button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveCatPrices()">Saqlash</button>`;
+}
+
+function saveCatPrices(){
+  ['A','B','C'].forEach(c=>{
+    const mn=parseInt(document.getElementById('cp-'+c+'-min')?.value)||CAT_INFO[c].priceRange[0];
+    const mx=parseInt(document.getElementById('cp-'+c+'-max')?.value)||CAT_INFO[c].priceRange[1];
+    CAT_INFO[c].priceRange=[mn,mx];
+  });
+  toast("Narxlar saqlandi");
+}
+
+function changeOwnPassword(){
+  const old=document.getElementById('chpw-old')?.value;
+  const n1=document.getElementById('chpw-new')?.value;
+  const n2=document.getElementById('chpw-new2')?.value;
+  const cur=getCurrentUser();
+  if(!cur){return;}
+  const users=getUsers();
+  const u=users.find(x=>x.id===cur.id);
+  if(!u||u.password!==old){toast("Eski parol noto'g'ri!");return;}
+  if(!n1||n1!==n2){toast("Yangi parollar mos emas!");return;}
+  u.password=n1;
+  saveUsers(users);
+  sessionStorage.setItem('exon_session',JSON.stringify({...cur,password:n1}));
+  toast("✓ Parol o'zgartirildi");
+  ['chpw-old','chpw-new','chpw-new2'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+
+// ═══════════════════════════════════════════════
+// BILDIRISHNOMALAR
+// ═══════════════════════════════════════════════
+let notifications = [];
+
+function buildNotifications(){
+  const list=[];
+  const now=new Date();
+  // Muddati o'tgan
+  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'od-'+p.id,type:'overdue',title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
+  });
+  // Bugun tugaydi
+  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)===0).forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'td-'+p.id,type:'today',title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+  });
+  // 1-3 kun qoldi
+  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)>0&&deadlineDays(p.deadline)<=3).forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'soon-'+p.id,type:'soon',title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+  });
+  // Ko'rib chiqishda
+  projects.filter(p=>p.status==='review').forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'rev-'+p.id,type:'review',title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
+  });
+  const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
+  list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
+  notifications=list;
+}
+
+function renderNotifPanel(){
+  buildNotifications();
+  const unread=notifications.filter(n=>!n.read).length;
+  const badge=document.getElementById('notif-badge');
+  if(badge){ badge.textContent=unread; badge.classList.toggle('show',unread>0); }
+  const el=document.getElementById('notif-list');
+  if(!el) return;
+  if(!notifications.length){ el.innerHTML='<div class="notif-item" style="color:var(--muted2);font-size:12px;font-family:JetBrains Mono,monospace">Bildirishnomalar yo\'q</div>'; return; }
+  const icons={overdue:'🔴',today:'🔴',soon:'⏰',review:'🔵'};
+  el.innerHTML=notifications.map(n=>`
+    <div class="notif-item${n.read?'':' unread'}">
+      <div class="notif-item-title">${icons[n.type]||'•'} ${n.title}</div>
+      ${n.sub?`<div class="notif-item-sub">${n.sub}</div>`:''}
+      <div class="notif-item-time">${n.time||''}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel(){
+  const el=document.getElementById('notif-panel');
+  el.classList.toggle('open');
+  if(el.classList.contains('open')) renderNotifPanel();
+}
+
+function markAllRead(){
+  buildNotifications();
+  const ids=notifications.map(n=>n.id);
+  localStorage.setItem('exon_notif_read',JSON.stringify(ids));
+  renderNotifPanel();
+  document.getElementById('notif-panel').classList.remove('open');
+}
+
+// Tashqariga bosish → yopish
+document.addEventListener('click',e=>{
+  const np=document.getElementById('notif-panel');
+  if(!np) return;
+  if(!np.contains(e.target)&&!e.target.closest('.notif-btn')){
+    np.classList.remove('open');
+  }
+});
+
+// ═══════════════════════════════════════════════
+// IZOHLAR
+// ═══════════════════════════════════════════════
+function addComment(projId){
+  const inp=document.getElementById('cmt-'+projId);
+  if(!inp) return;
+  const text=inp.value.trim();
+  if(!text) return;
+  const cur=getCurrentUser();
+  const author=cur?.displayName||cur?.username||'Admin';
+  const now=new Date().toLocaleString('uz',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  projects=projects.map(p=>{
+    if(p.id!==projId) return p;
+    const comments=[...(p.comments||[]),{author,text,time:now}];
+    return {...p,comments};
+  });
+  inp.value='';
+  // Rerender
+  const card=document.getElementById('pcard-'+projId);
+  if(card){
+    const p=projects.find(x=>x.id===projId);
+    const showD=document.getElementById('panel-projects').classList.contains('active');
+    if(p) card.outerHTML=projCardHtml(p,showD);
+  }
+  // Bildirishnoma soni yangilansin
+  renderNotifPanel();
+  toast("Izoh qo'shildi");
+}
+
+// ═══════════════════════════════════════════════
+// INIT — Login tekshirish
+// ═══════════════════════════════════════════════
+function initApp(user){
+  // Asosiy kontentni ko'rsat
+  document.getElementById('sidebar').style.visibility='';
+  document.querySelector('.main').style.visibility='';
+  document.querySelector('.topbar').style.visibility='';
+  document.getElementById('sync-bar').style.visibility='';
+
+  // Sidebar username
+  const sbu=document.getElementById('sidebar-username');
+  if(sbu) sbu.textContent=user.displayName||user.username;
+  const sba=document.getElementById('sidebar-avatar');
+  if(sba) sba.textContent=(user.displayName||user.username).slice(0,2).toUpperCase();
+
+  // Faqat ruxsat berilgan nav itemlarni ko'rsat
+  applyNavPermissions(user);
+
+  updateCounts();
+  renderDashboard();
+  renderNotifPanel();
+
+  if(localStorage.getItem('gh_token')){
+    setSyncStatus('ok', "Token mavjud — sinxronlashga tayyor");
+    syncLoad();
+  } else {
+    setSyncStatus('', "Mahalliy rejim · ⚙ tugmasini bosib sozlang");
+  }
+}
+
+function applyNavPermissions(user){
+  const map={
+    'nav-designers':'designers',
+    'nav-projects':'projects',
+    'nav-settings':'settings',
+    'nav-users':'users',
+    'nav-reports':'reports',
+    'nav-payments':'payments',
+  };
+  Object.entries(map).forEach(([elId,perm])=>{
+    const el=document.getElementById(elId);
+    if(!el) return;
+    const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
+    el.style.display=ok?'':'none';
+  });
+}
+
+// Sahifa yuklanganda
+const _sessionUser = getCurrentUser();
+if(_sessionUser){
+  document.getElementById('login-screen').style.display='none';
+  initApp(_sessionUser);
+} else {
+  // Login ekranini ko'rsat, asosiy kontentni yashir
+  document.getElementById('sidebar').style.visibility='hidden';
+  document.querySelector('.main').style.visibility='hidden';
+  document.querySelector('.topbar').style.visibility='hidden';
+  document.getElementById('sync-bar').style.visibility='hidden';
+}
 </script>
 </body>
 </html>
