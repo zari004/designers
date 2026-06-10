@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>EXON — Dizaynerlar Paneli</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='90' fill='%230d0d0d'/%3E%3Cpath fill='%23b5f542' d='M256 80c-97.2 0-176 78.8-176 176 0 58.4 28.5 110.2 72.4 142.4 8.6 6.3 13.6 16.2 13.6 26.8V432c0 8.8 7.2 16 16 16h148c8.8 0 16-7.2 16-16v-6.8c0-10.6 5-20.5 13.6-26.8C407.5 366.2 432 314.4 432 256c0-97.2-78.8-176-176-176zm-64 200c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-80c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm64 80c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-80c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z'/%3E%3C/svg%3E"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -37,7 +38,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 /* ── SIDEBAR ── */
 .sidebar{position:fixed;top:0;left:0;width:var(--sidebar);height:100vh;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:60}
 .sidebar-logo{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.logo-mark{width:34px;height:34px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#0d0d0d;flex-shrink:0}
+.logo-mark{width:34px;height:34px;background:var(--card);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--border2)}
 .logo-text{font-size:15px;font-weight:800;letter-spacing:1px}
 .logo-text span{color:var(--accent)}
 .logo-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-top:1px;font-family:'JetBrains Mono',monospace}
@@ -343,7 +344,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 #login-screen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999}
 .login-box{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:40px;width:100%;max-width:380px}
 .login-logo{text-align:center;margin-bottom:32px}
-.login-logo-mark{width:56px;height:56px;background:var(--accent);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#0d0d0d;margin-bottom:12px}
+.login-logo-mark{width:56px;height:56px;background:var(--card);border-radius:10px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:12px;border:1px solid var(--border2)}
 .login-title{font-size:20px;font-weight:800;letter-spacing:.5px}
 .login-title span{color:var(--accent)}
 .login-sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:4px}
@@ -356,7 +357,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">
-      <div class="login-logo-mark">E</div>
+      <div class="login-logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="30" height="30" fill="white"><path d="M204.3 5C104.9 24.4 24.8 104.3 5.2 203.4c-37 187 131.7 326.4 258.8 306.7 41.2-6.4 61.4-54.6 42.5-91.7-23.1-45.4 9.9-98.4 60.9-98.4h79.7c35.8 0 64.8-29.6 64.9-65.3C511.5 97.1 368.1-26.9 204.3 5zM96 320c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-128c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128-64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128 64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg></div>
       <div class="login-title">EX<span>ON</span></div>
       <div class="login-sub">Dizaynerlar boshqaruv tizimi</div>
     </div>
@@ -382,7 +383,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <div class="logo-mark">E</div>
+    <div class="logo-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="20" height="20" fill="white"><path d="M204.3 5C104.9 24.4 24.8 104.3 5.2 203.4c-37 187 131.7 326.4 258.8 306.7 41.2-6.4 61.4-54.6 42.5-91.7-23.1-45.4 9.9-98.4 60.9-98.4h79.7c35.8 0 64.8-29.6 64.9-65.3C511.5 97.1 368.1-26.9 204.3 5zM96 320c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm32-128c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128-64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128 64c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg></div>
     <div>
       <div class="logo-text">EX<span>ON</span></div>
       <div class="logo-sub">DIZAYNERLAR</div>
