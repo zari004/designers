@@ -581,7 +581,7 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
           <div class="page-sub">// bajarilgan ishlar bo'yicha hisob-kitob</div>
         </div>
         <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="exportPaymentsCSV()">⬇ CSV eksport</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportToGoogleSheets()" id="gs-export-btn">📊 Google Sheets'ga saqlash</button>
           <button class="btn btn-ghost btn-sm" onclick="printPayments()">🖨 Chop etish</button>
         </div>
       </div>
@@ -664,6 +664,31 @@ button,input,textarea,select{font-family:'Syne',sans-serif;font-size:14px}
             <button class="btn btn-ghost btn-sm" onclick="clearToken()">Tokenni o'chirish</button>
             <button class="btn btn-primary btn-sm" onclick="saveTokenFromSettings()">Saqlash</button>
           </div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header"><span class="card-title">Google Sheets ulanish</span></div>
+        <div style="padding:18px">
+          <div class="settings-note" style="margin-bottom:14px">
+            📊 To'lovlar ma'lumotlari Google Sheets'ga saqlanadi.<br/>
+            <strong>1.</strong> <a href="https://sheets.new" target="_blank" style="color:var(--accent2)">sheets.new</a> — yangi sheet oching<br/>
+            <strong>2.</strong> URL'dan Sheet ID nusxalang: <span style="color:var(--muted);font-family:'JetBrains Mono',monospace">docs.google.com/spreadsheets/d/<strong style="color:var(--accent)">SHEET_ID</strong>/edit</span><br/>
+            <strong>3.</strong> <a href="https://developers.google.com/oauthplayground" target="_blank" style="color:var(--accent2)">OAuth Playground</a> → <em>Sheets API v4</em> → token oling
+          </div>
+          <div class="form-group">
+            <label class="form-label">Google Sheet ID</label>
+            <input class="form-input" id="gs-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" style="font-family:'JetBrains Mono',monospace;font-size:12px"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">OAuth Access Token</label>
+            <input class="form-input" id="gs-token" type="password" placeholder="ya29.xxxxxxxxxxxx" style="font-family:'JetBrains Mono',monospace"/>
+            <div class="form-hint">Token 1 soat amal qiladi. Har safar yangilanishi kerak.</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-ghost btn-sm" onclick="clearGSToken()">O'chirish</button>
+            <button class="btn btn-primary btn-sm" onclick="saveGSSettings()">Saqlash</button>
+          </div>
+          <div id="gs-status" style="margin-top:10px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted)"></div>
         </div>
       </div>
       <div class="card" style="margin-bottom:14px">
@@ -774,11 +799,11 @@ let designers = [
 ];
 
 let projects = [
-  {id:1,designerId:1,title:"Maverick App — Onboarding oqimi",date:"2025-06-04",deadline:"2025-06-10",doneDate:null,status:"done",category:"A",units:7,pricePerUnit:18000,description:"Onboarding oqimining to'liq redesayn qilindi. 7 ta screen, micro-animatsiyalar va accessibility standartlariga moslashtirildi.",files:["onboarding_v3.fig","screens_export.zip"],priority:"high"},
-  {id:2,designerId:1,title:"Landing Page — Hero Section",date:"2025-06-02",deadline:"2026-06-15",doneDate:null,status:"wip",category:"A",units:3,pricePerUnit:17000,description:"Hero section uchun 3 ta variant tayyorlanmoqda. Responsive versiyalari qo'shiladi.",files:["hero_v2.fig"],priority:"medium"},
-  {id:3,designerId:2,title:"Brand Identity — Logo variants",date:"2025-06-01",deadline:"2025-06-03",doneDate:"2025-06-03",status:"done",category:"B",units:5,pricePerUnit:12000,description:"Asosiy logo va 4 ta variant. Qora, oq va rangli versiyalar. Brand book bilan birga.",files:["logo_final.ai","brand_guide.pdf"],priority:"medium"},
-  {id:4,designerId:3,title:"Product Intro — 30 sec animation",date:"2025-05-30",deadline:"2026-06-12",doneDate:null,status:"review",category:"A",units:1,pricePerUnit:20000,description:"Birinchi draft tayyor. Timing va transition effektlarni qayta ko'rib chiqish kerak.",files:["intro_v1.mp4"],priority:"high"},
-  {id:5,designerId:2,title:"Instagram Stories — 10 ta shablon",date:"2025-06-05",deadline:"2026-06-20",doneDate:null,status:"wip",category:"C",units:10,pricePerUnit:9000,description:"10 ta animatsion stories shablon. Brand ranglari bilan.",files:[],priority:"low"},
+  {id:1,designerId:1,title:"Maverick App — Onboarding oqimi",date:"2025-06-04",deadline:"2025-06-10",doneDate:"2025-06-09",status:"done",category:"A",units:7,pricePerUnit:18000,description:"Onboarding oqimining to'liq redesayn qilindi. 7 ta screen, micro-animatsiyalar va accessibility standartlariga moslashtirildi.",files:["onboarding_v3.fig","screens_export.zip"],priority:"high",paymentPaid:true,paymentDate:"2025-06-10"},
+  {id:2,designerId:1,title:"Landing Page — Hero Section",date:"2025-06-02",deadline:"2026-06-15",doneDate:null,status:"wip",category:"A",units:3,pricePerUnit:17000,description:"Hero section uchun 3 ta variant tayyorlanmoqda. Responsive versiyalari qo'shiladi.",files:["hero_v2.fig"],priority:"medium",paymentPaid:false,paymentDate:null},
+  {id:3,designerId:2,title:"Brand Identity — Logo variants",date:"2025-06-01",deadline:"2025-06-03",doneDate:"2025-06-03",status:"done",category:"B",units:5,pricePerUnit:12000,description:"Asosiy logo va 4 ta variant. Qora, oq va rangli versiyalar. Brand book bilan birga.",files:["logo_final.ai","brand_guide.pdf"],priority:"medium",paymentPaid:false,paymentDate:null},
+  {id:4,designerId:3,title:"Product Intro — 30 sec animation",date:"2025-05-30",deadline:"2026-06-12",doneDate:null,status:"review",category:"A",units:1,pricePerUnit:20000,description:"Birinchi draft tayyor. Timing va transition effektlarni qayta ko'rib chiqish kerak.",files:["intro_v1.mp4"],priority:"high",paymentPaid:false,paymentDate:null},
+  {id:5,designerId:2,title:"Instagram Stories — 10 ta shablon",date:"2025-06-05",deadline:"2026-06-20",doneDate:null,status:"wip",category:"C",units:10,pricePerUnit:9000,description:"10 ta animatsion stories shablon. Brand ranglari bilan.",files:[],priority:"low",paymentPaid:false,paymentDate:null},
 ];
 
 let nextDId = 4, nextPId = 6;
@@ -1365,6 +1390,13 @@ function saveProject(id){
     priority:document.getElementById('f-priority')?.value||'medium',
     files,
   };
+  // paymentPaid saqlansin (o'zgartirilmasin)
+  if(id!=='null'&&id){
+    const existing=projects.find(p=>p.id===parseInt(id));
+    if(existing){ obj.paymentPaid=existing.paymentPaid||false; obj.paymentDate=existing.paymentDate||null; }
+  } else {
+    obj.paymentPaid=false; obj.paymentDate=null;
+  }
   if(id!=='null'&&id){
     projects=projects.map(p=>p.id===parseInt(id)?{...p,...obj}:p);
     toast('Loyiha yangilandi');
@@ -1630,12 +1662,25 @@ function renderPayments(){
           <span class="price-tag" style="font-size:13px">Jami: ${fmtPrice(total)}</span>
         </div>
       </div>
-      ${dp.map(p=>`<div class="table-row" style="grid-template-columns:1fr auto auto auto">
-        <div style="font-size:12px;font-weight:600">${p.title}</div>
-        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.date}</span>
-        <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.units} birlik × ${p.pricePerUnit.toLocaleString()}</span>
-        <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)}</span>
-      </div>`).join('')}
+      ${dp.map(p=>{
+        const isOverdue=p.deadline&&p.doneDate&&p.doneDate>p.deadline;
+        const bg=p.paymentPaid?'rgba(34,197,94,.07)':(isOverdue?'rgba(239,68,68,.07)':'');
+        const border=p.paymentPaid?'border-left:3px solid var(--success)':(isOverdue?'border-left:3px solid var(--error)':'border-left:3px solid transparent');
+        return `<div class="table-row" style="grid-template-columns:1fr auto auto auto auto;background:${bg};${border}">
+          <div>
+            <div style="font-size:12px;font-weight:600">${p.title}</div>
+            <div style="font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:2px">
+              ${p.date}${p.deadline?' · muddat: '+p.deadline:''}${isOverdue?' · <span style="color:var(--error)">kechikkan</span>':''}
+              ${p.paymentDate?' · to\'langan: '+p.paymentDate:''}
+            </div>
+          </div>
+          <span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace">${p.units} birlik × ${p.pricePerUnit.toLocaleString()}</span>
+          <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)}</span>
+          <button onclick="togglePayment(${p.id})" class="btn btn-xs" style="${p.paymentPaid?'background:rgba(34,197,94,.15);color:var(--success);border:1px solid rgba(34,197,94,.3)':'background:rgba(239,68,68,.1);color:var(--error);border:1px solid rgba(239,68,68,.25)'}">
+            ${p.paymentPaid?'✓ To\'langan':"To'lanmagan"}
+          </button>
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('');
   el.innerHTML=byD||'<div class="empty">Bajarilgan loyiha yo\'q</div>';
@@ -1856,6 +1901,14 @@ function renderSettingsPage(){
   const s2=document.getElementById('s-token2');
   if(s2) s2.value=tok;
 
+  // Google Sheets sozlamalarini yuklash
+  const gsId=document.getElementById('gs-sheet-id');
+  const gsTok=document.getElementById('gs-token');
+  if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';
+  if(gsTok) gsTok.value=localStorage.getItem('gs_token')||'';
+  const gsSt=document.getElementById('gs-status');
+  if(gsSt) gsSt.textContent=localStorage.getItem('gs_sheet_id')?'✓ Sheet ID saqlangan — tayyor':'Sheet ID kiritilmagan';
+
   // Faqat admin o'z login/parolini o'zgartira oladi
   const cur=getCurrentUser();
   const adminCard=document.getElementById('admin-creds-card');
@@ -1931,6 +1984,216 @@ function saveAdminCreds(){
   sessionStorage.setItem('exon_session',JSON.stringify({...cur,username:newUname,...(newPass?{password:newPass}:{})}));
   toast("✓ Art Direktor login ma'lumotlari saqlandi");
   ['admin-newpass','admin-curpass'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
+
+// ═══════════════════════════════════════════════
+// GOOGLE SHEETS
+// ═══════════════════════════════════════════════
+function togglePayment(projId){
+  projects=projects.map(p=>{
+    if(p.id!==projId) return p;
+    const paid=!p.paymentPaid;
+    return {...p,paymentPaid:paid,paymentDate:paid?new Date().toISOString().slice(0,10):null};
+  });
+  renderPayments();
+  updateCounts();
+  const p=projects.find(x=>x.id===projId);
+  toast(p?.paymentPaid?"✓ To'langan deb belgilandi":"To'lanmagan deb belgilandi");
+}
+
+function saveGSSettings(){
+  const id=document.getElementById('gs-sheet-id')?.value?.trim();
+  const tok=document.getElementById('gs-token')?.value?.trim();
+  if(!id){toast("Sheet ID kiritilmagan!");return;}
+  localStorage.setItem('gs_sheet_id',id);
+  if(tok) localStorage.setItem('gs_token',tok);
+  const gsSt=document.getElementById('gs-status');
+  if(gsSt) gsSt.textContent='✓ Saqlandi — tayyor';
+  toast("✓ Google Sheets sozlamalari saqlandi");
+}
+
+function clearGSToken(){
+  localStorage.removeItem('gs_sheet_id');
+  localStorage.removeItem('gs_token');
+  const gsId=document.getElementById('gs-sheet-id');
+  const gsTok=document.getElementById('gs-token');
+  if(gsId) gsId.value='';
+  if(gsTok) gsTok.value='';
+  const gsSt=document.getElementById('gs-status');
+  if(gsSt) gsSt.textContent="O'chirildi";
+  toast("Google Sheets sozlamalari o'chirildi");
+}
+
+async function exportToGoogleSheets(){
+  const sheetId=localStorage.getItem('gs_sheet_id');
+  const token=localStorage.getItem('gs_token');
+  if(!sheetId||!token){
+    toast("⚙ Sozlamalar → Google Sheets ulanishini to'ldiring");
+    showPanel('settings');
+    return;
+  }
+  const btn=document.getElementById('gs-export-btn');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Yuklanmoqda...';}
+
+  const dval=document.getElementById('pay-d-filter')?.value||'all';
+  const mval=document.getElementById('pay-month-filter')?.value||'all';
+  let doneProjs=projects.filter(p=>p.status==='done'&&(dval==='all'||p.designerId===parseInt(dval)));
+  doneProjs=filterByMonth(doneProjs,mval);
+
+  const H={Authorization:`Bearer ${token}`,'Content-Type':'application/json'};
+  const BASE=`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}`;
+
+  try{
+    // 1. Mavjud varaqlar ro'yxatini olamiz
+    const metaRes=await fetch(BASE,{headers:H});
+    if(!metaRes.ok) throw new Error('Spreadsheet topilmadi ('+metaRes.status+')');
+    const meta=await metaRes.json();
+    const existingSheets=meta.sheets.map(s=>({id:s.properties.sheetId,title:s.properties.title}));
+
+    // 2. Kerakli varaqlar: "Umumiy Hisobot" + har bir dizayner
+    const neededNames=['Umumiy Hisobot',...designers.map(d=>d.name.slice(0,30))];
+    const requests=[];
+
+    // Mavjud bo'lmagan varaqlarni yaratish
+    for(const name of neededNames){
+      if(!existingSheets.find(s=>s.title===name)){
+        requests.push({addSheet:{properties:{title:name}}});
+      }
+    }
+    // Kerak bo'lmagan eski varaqlarni o'chirish emas — saqlab qolamiz
+
+    let sheetIdMap={};
+    if(requests.length){
+      const addRes=await fetch(`${BASE}:batchUpdate`,{method:'POST',headers:H,body:JSON.stringify({requests})});
+      if(!addRes.ok) throw new Error('Varaq yaratishda xatolik');
+      const addData=await addRes.json();
+      addData.replies.forEach((r,i)=>{if(r.addSheet) sheetIdMap[r.addSheet.properties.title]=r.addSheet.properties.sheetId;});
+    }
+    // Mavjud varaqlarning ID'lari
+    existingSheets.forEach(s=>{if(!sheetIdMap[s.title]) sheetIdMap[s.title]=s.id;});
+
+    // 3. Ma'lumotlarni yozish (batchUpdate values)
+    const valueUpdates=[];
+    const formatRequests=[];
+
+    // ── UMUMIY HISOBOT varaqi ──
+    const summaryRows=[
+      ['EXON Dizaynerlar — To\'lovlar Xisoboti'],
+      [`Sana: ${new Date().toLocaleDateString('uz-UZ')}`],
+      [],
+      ['Dizayner','Karta raqami','Kat.','Loyiha nomi','Boshlangan','Muddat','Bajarilgan','Holat','Birlik','Narx/birlik',"Jami (so'm)",'To\'lov holati'],
+    ];
+    const colorRequests=[];
+    let rowIdx=4; // 0-indexed: sarlavha=0,sana=1,bo'sh=2,ustun=3, data 4dan
+
+    designers.forEach(d=>{
+      const dp=doneProjs.filter(p=>p.designerId===d.id);
+      if(!dp.length) return;
+      dp.forEach(p=>{
+        const isOverdue=p.deadline&&p.doneDate&&p.doneDate>p.deadline;
+        const payStatus=p.paymentPaid?"TO'LANGAN":(isOverdue?"KECHIKKAN":"KUTILMOQDA");
+        summaryRows.push([
+          d.name, d.cardNumber||'', p.category, p.title,
+          p.date, p.deadline||'', p.doneDate||'',
+          payStatus, p.units, p.pricePerUnit, p.units*p.pricePerUnit,
+          p.paymentDate||''
+        ]);
+        // Rang
+        const sId=sheetIdMap['Umumiy Hisobot'];
+        if(p.paymentPaid){
+          colorRequests.push({repeatCell:{range:{sheetId:sId,startRowIndex:rowIdx,endRowIndex:rowIdx+1,startColumnIndex:0,endColumnIndex:12},cell:{userEnteredFormat:{backgroundColor:{red:0.85,green:0.97,blue:0.87}}},fields:'userEnteredFormat.backgroundColor'}});
+        } else if(isOverdue){
+          colorRequests.push({repeatCell:{range:{sheetId:sId,startRowIndex:rowIdx,endRowIndex:rowIdx+1,startColumnIndex:0,endColumnIndex:12},cell:{userEnteredFormat:{backgroundColor:{red:0.99,green:0.87,blue:0.87}}},fields:'userEnteredFormat.backgroundColor'}});
+        }
+        rowIdx++;
+      });
+      // Dizayner jami
+      const tot=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      const paid=dp.filter(p=>p.paymentPaid).reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      summaryRows.push(['','','','','','','',`${d.name} JAMI:`,dp.reduce((s,p)=>s+p.units,0),'',tot,`To'langan: ${paid.toLocaleString()}`]);
+      const sId=sheetIdMap['Umumiy Hisobot'];
+      colorRequests.push({repeatCell:{range:{sheetId:sId,startRowIndex:rowIdx,endRowIndex:rowIdx+1,startColumnIndex:0,endColumnIndex:12},cell:{userEnteredFormat:{backgroundColor:{red:0.95,green:0.95,blue:0.95},textFormat:{bold:true}}},fields:'userEnteredFormat(backgroundColor,textFormat)'}});
+      summaryRows.push([]);
+      rowIdx+=2;
+    });
+
+    valueUpdates.push({range:`'Umumiy Hisobot'!A1:L${summaryRows.length}`,values:summaryRows});
+
+    // Sarlavha formatlash (Umumiy Hisobot)
+    const sumSId=sheetIdMap['Umumiy Hisobot'];
+    formatRequests.push(
+      {repeatCell:{range:{sheetId:sumSId,startRowIndex:0,endRowIndex:1},cell:{userEnteredFormat:{textFormat:{bold:true,fontSize:13}}},fields:'userEnteredFormat.textFormat'}},
+      {repeatCell:{range:{sheetId:sumSId,startRowIndex:3,endRowIndex:4},cell:{userEnteredFormat:{backgroundColor:{red:0.13,green:0.13,blue:0.13},textFormat:{bold:true,foregroundColor:{red:1,green:1,blue:1}}}},fields:'userEnteredFormat(backgroundColor,textFormat)'}},
+      ...colorRequests,
+      {updateDimensionProperties:{range:{sheetId:sumSId,dimension:'COLUMNS',startIndex:3,endIndex:4},properties:{pixelSize:250},fields:'pixelSize'}},
+      {updateDimensionProperties:{range:{sheetId:sumSId,dimension:'COLUMNS',startIndex:0,endIndex:1},properties:{pixelSize:160},fields:'pixelSize'}},
+    );
+
+    // ── HAR BIR DIZAYNER UCHUN ALOHIDA VARAQ ──
+    designers.forEach(d=>{
+      const dp=doneProjs.filter(p=>p.designerId===d.id);
+      const dSId=sheetIdMap[d.name.slice(0,30)];
+      if(!dSId) return;
+      const dRows=[
+        [`${d.name} — To'lovlar Xisoboti`],
+        [`Karta: ${d.cardNumber||'—'}  |  Kategoriya: ${d.category}  |  Sana: ${new Date().toLocaleDateString('uz-UZ')}`],
+        [],
+        ['#','Loyiha nomi','Boshlangan','Muddat','Bajarilgan','Kat.','Birlik',"Narx/birlik","Jami (so'm)","To'lov holati","To'langan sana"],
+      ];
+      let dRowIdx=4;
+      const dColorReqs=[];
+      dp.forEach((p,i)=>{
+        const isOverdue=p.deadline&&p.doneDate&&p.doneDate>p.deadline;
+        const payStatus=p.paymentPaid?"✓ TO'LANGAN":(isOverdue?"⚠ KECHIKKAN":"⏳ KUTILMOQDA");
+        dRows.push([i+1,p.title,p.date,p.deadline||'—',p.doneDate||'—',p.category,p.units,p.pricePerUnit,p.units*p.pricePerUnit,payStatus,p.paymentDate||'']);
+        if(p.paymentPaid){
+          dColorReqs.push({repeatCell:{range:{sheetId:dSId,startRowIndex:dRowIdx,endRowIndex:dRowIdx+1,startColumnIndex:0,endColumnIndex:11},cell:{userEnteredFormat:{backgroundColor:{red:0.85,green:0.97,blue:0.87}}},fields:'userEnteredFormat.backgroundColor'}});
+        } else if(isOverdue){
+          dColorReqs.push({repeatCell:{range:{sheetId:dSId,startRowIndex:dRowIdx,endRowIndex:dRowIdx+1,startColumnIndex:0,endColumnIndex:11},cell:{userEnteredFormat:{backgroundColor:{red:0.99,green:0.87,blue:0.87}}},fields:'userEnteredFormat.backgroundColor'}});
+        }
+        dRowIdx++;
+      });
+      // Jami
+      const tot=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      const paidTot=dp.filter(p=>p.paymentPaid).reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      const pendTot=tot-paidTot;
+      dRows.push([]);
+      dRows.push(['','JAMI:','','','','',dp.reduce((s,p)=>s+p.units,0),'',tot,'','']);
+      dRows.push(['','TO\'LANGAN:','','','','','','',paidTot,'','']);
+      dRows.push(['','QOLDI:','','','','','','',pendTot,'','']);
+
+      valueUpdates.push({range:`'${d.name.slice(0,30)}'!A1:K${dRows.length}`,values:dRows});
+
+      formatRequests.push(
+        {repeatCell:{range:{sheetId:dSId,startRowIndex:0,endRowIndex:1},cell:{userEnteredFormat:{textFormat:{bold:true,fontSize:13}}},fields:'userEnteredFormat.textFormat'}},
+        {repeatCell:{range:{sheetId:dSId,startRowIndex:3,endRowIndex:4},cell:{userEnteredFormat:{backgroundColor:{red:0.13,green:0.13,blue:0.13},textFormat:{bold:true,foregroundColor:{red:1,green:1,blue:1}}}},fields:'userEnteredFormat(backgroundColor,textFormat)'}},
+        ...dColorReqs,
+        {repeatCell:{range:{sheetId:dSId,startRowIndex:dRowIdx+1,endRowIndex:dRowIdx+4},cell:{userEnteredFormat:{textFormat:{bold:true}}},fields:'userEnteredFormat.textFormat'}},
+        {updateDimensionProperties:{range:{sheetId:dSId,dimension:'COLUMNS',startIndex:1,endIndex:2},properties:{pixelSize:240},fields:'pixelSize'}},
+      );
+    });
+
+    // 4. Qiymatlarni yozish
+    await fetch(`${BASE}/values:batchUpdate`,{
+      method:'POST',headers:H,
+      body:JSON.stringify({valueInputOption:'RAW',data:valueUpdates}),
+    });
+
+    // 5. Formatlash
+    if(formatRequests.length){
+      await fetch(`${BASE}:batchUpdate`,{method:'POST',headers:H,body:JSON.stringify({requests:formatRequests})});
+    }
+
+    toast(`✓ ${designers.length} ta varaq Google Sheets'ga saqlandi`);
+  }catch(e){
+    console.error(e);
+    toast('Xatolik: '+e.message);
+    if(e.message.includes('401')||e.message.includes('403')){
+      setTimeout(()=>toast("Token muddati o'tgan — Sozlamalarda yangilang"),800);
+    }
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent="📊 Google Sheets'ga saqlash";}
+  }
 }
 
 // ═══════════════════════════════════════════════
