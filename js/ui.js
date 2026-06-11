@@ -325,12 +325,19 @@ function renderProjects(){
 
   const el=document.getElementById('projects-list');
   if(!el) return;
-  if(!list.length){el.innerHTML='<div class="empty">Hech narsa topilmadi</div>';return;}
-  el.innerHTML=list.map(p=>projCardHtml(p,true)).join('');
-  // Chiqitdon tugmasi sonini yangilash
+  el.innerHTML = list.length
+    ? list.map(p=>projCardHtml(p,true)).join('')
+    : '<div class="empty">Hech narsa topilmadi</div>';
+  // Chiqitdon tugmasi sonini yangilash (ro'yxat bo'sh bo'lsa ham)
   const tb=document.getElementById('trash-toggle-btn');
   if(tb) tb.textContent=`🗑 Chiqitdon (${trashedProjects.length})`;
   if(document.getElementById('trash-box')?.classList.contains('open')) renderTrash();
+}
+
+// Kartani bosganda ochiladi — lekin tugma/select/izoh ustiga bosilsa yo'q
+function cardClick(e, id){
+  if(e.target.closest('button,select,input,textarea,a,.comment-box,.tag-chip,.report-desc')) return;
+  openProjectPeek(id);
 }
 
 function projCardHtml(p,showDesigner){
@@ -338,10 +345,10 @@ function projCardHtml(p,showDesigner){
   const ci=CAT_INFO[p.category];
   const total=p.units*p.pricePerUnit;
   const isOver=p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0;
-  return `<div class="report-card${isOver?' overdue':''}" id="pcard-${p.id}">
+  return `<div class="report-card${isOver?' overdue':''}" id="pcard-${p.id}" style="cursor:pointer" onclick="cardClick(event,${p.id})">
     <div class="report-header">
       <div>
-        <div class="report-title" style="cursor:pointer" onclick="openProjectPeek(${p.id})" title="Ochish">${esc(p.title)}</div>
+        <div class="report-title">${esc(p.title)}</div>
         ${showDesigner&&d?`<div style="display:flex;align-items:center;gap:7px;margin-top:5px">${photoAvatar(d,20)}<span style="font-size:12px;color:var(--muted)">${esc(d.name)}</span></div>`:''}
       </div>
       <div class="report-controls">
