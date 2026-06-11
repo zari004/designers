@@ -73,7 +73,7 @@ function maskCard(c){ if(!c) return '—'; return c.replace(/(\d{4})\s?(\d{4})\s
 // Faol panelni qayta chizish
 function rerenderActive(){
   const active = document.querySelector('.panel.active')?.id?.replace('panel-','');
-  const fns = {dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
+  const fns = {dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
   if(fns[active]) fns[active]();
   updateCounts();
 }
@@ -82,6 +82,7 @@ function updateCounts(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   set('nav-count-d', designers.length);
   set('nav-count-p', projects.length);
+  set('nav-count-trash', trashedProjects.length);
   set('nav-count-pay', projects.filter(p=>p.status==='done').length);
   set('nav-count-u', getUsers().length);
   renderNotifPanel();
@@ -328,10 +329,9 @@ function renderProjects(){
   el.innerHTML = list.length
     ? list.map(p=>projCardHtml(p,true)).join('')
     : '<div class="empty">Hech narsa topilmadi</div>';
-  // Chiqitdon tugmasi sonini yangilash (ro'yxat bo'sh bo'lsa ham)
-  const tb=document.getElementById('trash-toggle-btn');
-  if(tb) tb.textContent=`🗑 Chiqitdon (${trashedProjects.length})`;
-  if(document.getElementById('trash-box')?.classList.contains('open')) renderTrash();
+  // Chiqitdon sonini yon paneldagi badge'da yangilash
+  const tb=document.getElementById('nav-count-trash');
+  if(tb) tb.textContent=trashedProjects.length;
 }
 
 // Kartani bosganda ochiladi — lekin tugma/select/izoh ustiga bosilsa yo'q
@@ -405,13 +405,13 @@ function deleteProject(id){
 function renderTrash(){
   const el = byId('trash-list');
   if(!el) return;
-  const btn = byId('trash-toggle-btn');
+  const empBtn = byId('empty-trash-btn');
   if(!trashedProjects.length){
-    el.innerHTML = '<div style="padding:18px;color:var(--muted);font-size:13px;text-align:center">Chiqitdon bo\'sh</div>';
-    if(btn) btn.textContent = '🗑 Chiqitdon (0)';
+    el.innerHTML = '<div style="padding:40px 18px;color:var(--muted);font-size:13px;text-align:center">Chiqitdon bo\'sh</div>';
+    if(empBtn) empBtn.style.display = 'none';
     return;
   }
-  if(btn) btn.textContent = `🗑 Chiqitdon (${trashedProjects.length})`;
+  if(empBtn) empBtn.style.display = '';
   el.innerHTML = trashedProjects.slice().reverse().map(p=>{
     const d = designers.find(x=>x.id===p.designerId);
     const date = p.trashedAt ? new Date(p.trashedAt).toLocaleDateString('uz-UZ') : '';
@@ -441,11 +441,15 @@ function doPurgeProject(id){
   persist(); renderTrash();
   toast("Butunlay o'chirildi");
 }
-function toggleTrash(){
-  const box = byId('trash-box');
-  if(!box) return;
-  const open = box.classList.toggle('open');
-  if(open) renderTrash();
+function emptyTrash(){
+  if(!trashedProjects.length) return;
+  if(!confirm("Chiqitdondagi barcha loyihalar butunlay o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.")) return;
+  trashedProjects.slice().forEach(p=>{
+    if(p?.notionPageId && typeof archiveNotionPage==='function') archiveNotionPage(p.notionPageId);
+  });
+  trashedProjects = [];
+  persist(); renderTrash(); updateCounts();
+  toast("Chiqitdon tozalandi");
 }
 
 // ── IZOHLAR (qo'shish / tahrirlash / o'chirish) ──

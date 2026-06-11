@@ -72,10 +72,10 @@ function showPanel(name){
   const navName = name==='detail' ? 'designers' : name;
   const nav=document.querySelector(`.nav-item[data-panel="${navName}"]`);
   if(nav) nav.classList.add('active');
-  const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',detail:'Dizayner profili',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
+  const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',trash:'Chiqitdon',detail:'Dizayner profili',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
   document.getElementById('topbar-title').textContent=titles[name]||'';
   updateTopbar(name);
-  const fns={dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
+  const fns={dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
   if(fns[name]) fns[name]();
   updateCounts();
 }

@@ -73,6 +73,11 @@
       Loyihalar
       <span class="nav-count" id="nav-count-p">0</span>
     </button>
+    <button class="nav-item" id="nav-trash" data-panel="trash" onclick="showPanel('trash');closeSidebar()">
+      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12"/><path d="M5.5 4V2.5h5V4"/><path d="M3.5 4l.8 9a1 1 0 0 0 1 .9h5.4a1 1 0 0 0 1-.9l.8-9"/></svg>
+      Chiqitdon
+      <span class="nav-count" id="nav-count-trash">0</span>
+    </button>
   </div>
   <div class="sidebar-section">
     <div class="sidebar-label">Moliya</div>
@@ -243,12 +248,21 @@
       </select>
     </div>
     <div id="projects-list"></div>
-    <!-- CHIQITDON -->
-    <div class="trash-section">
-      <button class="trash-toggle-btn" id="trash-toggle-btn" onclick="toggleTrash()">🗑 Chiqitdon (0)</button>
-      <div class="trash-box" id="trash-box">
-        <div id="trash-list"></div>
+  </div>
+
+  <!-- CHIQITDON -->
+  <div class="panel" id="panel-trash">
+    <div class="page-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <div>
+          <div class="page-title">Chiqitdon</div>
+          <div class="page-sub">O'chirilgan loyihalar — tiklash yoki butunlay o'chirish</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="emptyTrash()" id="empty-trash-btn">Chiqitdonni tozalash</button>
       </div>
+    </div>
+    <div class="trash-box open" id="trash-box">
+      <div id="trash-list"></div>
     </div>
   </div>
 
