@@ -40,8 +40,8 @@
       "comments": [],
       "doneDate": null,
       "id": 2,
-      "notionUrl": null,
-      "notionPageId": null
+      "notionUrl": "https://app.notion.com/p/DSEDFS-37c13cf900798112b7b4cc98f8f2feaa",
+      "notionPageId": "37c13cf9-0079-8112-b7b4-cc98f8f2feaa"
     }
   ],
   "trashedProjects": [],
@@ -105,5 +105,5 @@
       "passHash": "43a487792d421de4dd3848f9e55c44da879a347169a4800edcd301e70014344a"
     }
   ],
-  "savedAt": "2026-06-11T14:11:52.094Z"
+  "savedAt": "2026-06-11T14:15:00.355Z"
 }
