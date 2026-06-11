@@ -127,14 +127,10 @@ function openProjectPeek(id = null, preDesignerId = null){
           catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(CAT_INFO[c].label||c)}</option>`).join('')
         }</select></div>`;
       })())}
-      ${propRow2(
-        'Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`,
-        'Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`
-      )}
-      ${propRow2(
-        'Birlik soni','hash',`<input type="number" min="1" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()"/>`,
-        "Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`
-      )}
+      ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
+      ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
+      ${propRow('Birlik soni','hash',`<input type="number" min="1" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()"/>`)}
+      ${propRow("Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`)}
       ${propRow("Jami to'lov",'sum',`<span class="prop-total" id="pk-total">—</span>`)}
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
       ${propRow('Fayllar','clip',`<input class="prop-input" id="pk-files" value="${esc(p?.files?.join(', ')||'')}" placeholder="design.fig, export.zip"/>`)}
