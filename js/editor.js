@@ -85,6 +85,14 @@ function propRow(label, icon, valueHtml){
   </div>`;
 }
 
+// Kategoriya select'ini rangli badge (pill) ko'rinishiga keltiruvchi uslub
+function catPillStyle(color){
+  const c = color || '#888';
+  // Chevron (pastga o'q) rangini ham kategoriya rangiga moslaymiz
+  const chevron = `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' fill='none' stroke='${encodeURIComponent(c)}' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/></svg>")`;
+  return `background-color:color-mix(in srgb,${c} 15%,transparent);color:${c};border:1.5px solid color-mix(in srgb,${c} 45%,transparent);background-image:${chevron};background-repeat:no-repeat;background-position:right 10px center`;
+}
+
 // Ikkita xususiyatni yonma-yon ko'rsatish (qator qisqaradi)
 function propRow2(l1, ic1, inp1, l2, ic2, inp2){
   return `<div class="prop-row2">
@@ -122,10 +130,9 @@ function openProjectPeek(id = null, preDesignerId = null){
       </select>`)}
       ${propRow('Kategoriya','cat',(()=>{
         const ci0=CAT_INFO[defCat]||Object.values(CAT_INFO)[0]||{color:'#888',label:defCat};
-        const badgeStyle=`background:color-mix(in srgb,${ci0.color} 15%,transparent);color:${ci0.color};border:1.5px solid color-mix(in srgb,${ci0.color} 45%,transparent);padding:2px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0`;
-        return `<div style="display:flex;align-items:center;gap:8px"><span id="pk-cat-badge" style="${badgeStyle}">${esc(ci0.label||defCat)}</span><select class="prop-input" id="pk-cat" onchange="peekCatChange()" style="flex:1;min-width:0">${
+        return `<select class="cat-pill-select" id="pk-cat" onchange="peekCatChange()" style="${catPillStyle(ci0.color)}">${
           catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(CAT_INFO[c].label||c)}</option>`).join('')
-        }</select></div>`;
+        }</select>`;
       })())}
       ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
       ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
@@ -193,6 +200,8 @@ function peekDesignerChange(){
   if(!d || !CAT_INFO[d.category]) return;
   byId('pk-cat').value = d.category;
   byId('pk-price').value = CAT_INFO[d.category].priceRange[0];
+  const sel = byId('pk-cat');
+  if(sel) sel.style.cssText = catPillStyle(CAT_INFO[d.category].color);
   calcPeekTotal();
 }
 
@@ -202,11 +211,8 @@ function peekCatChange(){
   if(!ci) return;
   byId('pk-price').value = ci.priceRange[0];
   calcPeekTotal();
-  const badge = byId('pk-cat-badge');
-  if(badge){
-    badge.textContent = ci.label||key;
-    badge.style.cssText = `background:color-mix(in srgb,${ci.color} 15%,transparent);color:${ci.color};border:1.5px solid color-mix(in srgb,${ci.color} 45%,transparent);padding:2px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0`;
-  }
+  const sel = byId('pk-cat');
+  if(sel) sel.style.cssText = catPillStyle(ci.color);
 }
 
 function calcPeekTotal(){

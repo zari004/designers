@@ -395,6 +395,17 @@ select.prop-input{cursor:pointer}
 .slash-label{font-size:13px;font-weight:600;display:block}
 .slash-desc{font-size:11px;color:var(--muted2);display:block}
 
+/* Kategoriya rangli pill select */
+.cat-pill-select{
+  appearance:none;-webkit-appearance:none;
+  padding:3px 28px 3px 14px;border-radius:20px;
+  font-size:12px;font-weight:700;cursor:pointer;outline:none;
+  font-family:var(--font);line-height:1.4;
+  transition:filter .12s;
+}
+.cat-pill-select:hover{filter:brightness(.97)}
+.cat-pill-select option{background:var(--card);color:var(--text);font-weight:600}
+
 /* Chiqitdon (Trash) */
 .trash-box{display:none;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--card);overflow:hidden}
 .trash-box.open{display:block}
