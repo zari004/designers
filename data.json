@@ -1,0 +1,136 @@
+{
+  "designers": [
+    {
+      "name": "Orifova Zarnigor",
+      "photo": null,
+      "role": "Art direktor",
+      "category": "A",
+      "phone": "+998906736181",
+      "cardNumber": "9860 1901 0167 2662",
+      "telegram": "@deardesign",
+      "status": "active",
+      "skills": [
+        "figma",
+        "photoshop",
+        "claude",
+        "AI",
+        "illustrator"
+      ],
+      "id": 1,
+      "joinedAt": "2026-06-11"
+    }
+  ],
+  "projects": [
+    {
+      "designerId": 1,
+      "title": "Kerasysda rasmlarni to'g'irlab chiqish",
+      "description": "!image.png ## 1-PAGE Shampun Oriental Premium Zaif va shikastlangan sochlar uchun Tiklaydi va mustahkamlaydi **600 ML** --- ## 2-PAGE **Oldin** - zaif soch - shikastlangan - jonsiz **Keyin** - mustahkam - tiklangan - yaltiroq --- ## 3-PAGE - Qizil kameliya yog‘i - Sochni oziqlantirib tiklaydi - Mustahkamlik va elastiklik beradi - Yumshoqlik hamda tabiiy jilo baxsh etadi --- ## 4-PAGE **Chap** - Har kuni foydalanish uchun - Zaif sochlarni oziqlantiradi **O‘ng** - Sochni og‘irlashtirmaydi - Mustahkam va sog‘lom ko‘rinish beradi",
+      "category": "A",
+      "units": 4,
+      "pricePerUnit": 20000,
+      "date": "2026-06-11",
+      "deadline": null,
+      "status": "done",
+      "priority": "medium",
+      "files": [],
+      "paymentPaid": false,
+      "paymentDate": null,
+      "comments": [
+        {
+          "author": "Art Direktor",
+          "text": "gfieshrsd",
+          "time": "11/06, 12:09"
+        }
+      ],
+      "doneDate": "2026-06-11",
+      "id": 1,
+      "descHtml": "<p>!image.png\n\n## 1-PAGE\n\nShampun\n\nOriental Premium\n\nZaif va shikastlangan sochlar uchun\n\nTiklaydi va mustahkamlaydi\n\n**600 ML**\n\n---\n\n## 2-PAGE\n\n**Oldin**\n\n- zaif soch\n- shikastlangan\n- jonsiz\n\n**Keyin**\n\n- mustahkam\n- tiklangan\n- yaltiroq\n\n---\n\n## 3-PAGE\n\n- Qizil kameliya yog‘i\n- Sochni oziqlantirib tiklaydi\n- Mustahkamlik va elastiklik beradi\n- Yumshoqlik hamda tabiiy jilo baxsh etadi\n\n---\n\n## 4-PAGE\n\n**Chap**\n\n- Har kuni foydalanish uchun\n- Zaif sochlarni oziqlantiradi\n\n**O‘ng**\n\n- Sochni og‘irlashtirmaydi\n- Mustahkam va sog‘lom ko‘rinish beradi</p>",
+      "tags": [],
+      "notionUrl": null,
+      "notionPageId": null
+    },
+    {
+      "title": "DSEDFS",
+      "designerId": 1,
+      "descHtml": "WEYHGFYHDGF",
+      "description": "WEYHGFYHDGF",
+      "category": "A",
+      "units": 1,
+      "pricePerUnit": 15000,
+      "date": "2026-06-11",
+      "deadline": null,
+      "status": "wip",
+      "priority": "medium",
+      "files": [],
+      "tags": [],
+      "paymentPaid": false,
+      "paymentDate": null,
+      "comments": [],
+      "doneDate": null,
+      "id": 2,
+      "notionUrl": null,
+      "notionPageId": null
+    }
+  ],
+  "categories": {
+    "A": {
+      "label": "A toifa",
+      "desc": "Eng yaxshi dizaynerlar",
+      "priceRange": [
+        15000,
+        20000
+      ],
+      "color": "#32c392"
+    },
+    "B": {
+      "label": "B toifa",
+      "desc": "O'rtacha dizaynerlar",
+      "priceRange": [
+        10000,
+        15000
+      ],
+      "color": "#0ea5e9"
+    },
+    "C": {
+      "label": "C toifa",
+      "desc": "Oddiy dizayn ishlari",
+      "priceRange": [
+        7000,
+        12000
+      ],
+      "color": "#f59e0b"
+    }
+  },
+  "catPrices": {
+    "A": [
+      15000,
+      20000
+    ],
+    "B": [
+      10000,
+      15000
+    ],
+    "C": [
+      7000,
+      12000
+    ]
+  },
+  "users": [
+    {
+      "id": "admin",
+      "username": "zari",
+      "role": "admin",
+      "displayName": "Art Direktor",
+      "permissions": {
+        "designers": true,
+        "projects": true,
+        "settings": true,
+        "users": true,
+        "reports": true,
+        "payments": true
+      },
+      "passHash": "43a487792d421de4dd3848f9e55c44da879a347169a4800edcd301e70014344a"
+    }
+  ],
+  "savedAt": "2026-06-11T13:32:55.137Z"
+}
