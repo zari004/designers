@@ -140,6 +140,7 @@ function initApp(user){
 
 // ── SAHIFA YUKLANGANDA ──
 loadLocal();
+applyCategoryStyles();
 updateThemeBtn();
 document.fonts.ready.then(drawFavicon);
 setTimeout(drawFavicon, 2500); // shrift kech yuklansa qayta urinish

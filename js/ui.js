@@ -169,7 +169,17 @@ function setCatFilter(c){
   renderDesigners();
 }
 
+// Dizaynerlar bo'limidagi kategoriya tablari (dinamik)
+function renderCatTabs(){
+  const el=document.getElementById('cat-tabs');
+  if(!el) return;
+  if(catFilter!=='all' && !CAT_INFO[catFilter]) catFilter='all';
+  el.innerHTML=`<button class="tab-btn${catFilter==='all'?' active':''}" data-cat="all" onclick="setCatFilter('all')">Barchasi</button>`+
+    catKeys().map(c=>`<button class="tab-btn${catFilter===c?' active':''}" data-cat="${esc(c)}" onclick="setCatFilter('${c}')">${esc(c)}</button>`).join('');
+}
+
 function renderDesigners(){
+  renderCatTabs();
   const q=(document.getElementById('search-d')?.value||'').toLowerCase();
   let list=designers.filter(d=>
     (catFilter==='all'||d.category===catFilter)&&
@@ -288,6 +298,12 @@ function renderProjects(){
   if(dsel) dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
     designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${esc(d.name)}</option>`).join('');
 
+  const catSel=document.getElementById('proj-cat-filter');
+  if(catSel){
+    const cv=catSel.value||'all';
+    catSel.innerHTML='<option value="all">Barcha kategoriyalar</option>'+
+      catKeys().map(c=>`<option value="${esc(c)}"${cv===c?' selected':''}>${esc(c)} kategoriya</option>`).join('');
+  }
   const cval=document.getElementById('proj-cat-filter')?.value||'all';
   const prval=document.getElementById('proj-priority-filter')?.value||'all';
   const qval=(document.getElementById('search-p')?.value||'').toLowerCase();
@@ -511,14 +527,14 @@ function openDesignerModal(id=null){
     <div class="form-group">
       <label class="form-label">Kategoriya</label>
       <div class="cat-select" id="cat-sel">
-        ${['A','B','C'].map(c=>{const ci=CAT_INFO[c];return `
-          <div class="cat-opt${(d?.category||'B')===c?' sel-'+c.toLowerCase():''}" onclick="selectCat('${c}',this)" data-cat="${c}">
-            <span class="cat-letter" style="color:${ci.color}">${c}</span>
-            <div class="cat-desc">${ci.desc}</div>
+        ${catKeys().map(c=>{const ci=CAT_INFO[c];const sel=(d?.category||firstCat())===c;return `
+          <div class="cat-opt${sel?' sel-'+ci.cls:''}" onclick="selectCat('${c}',this)" data-cat="${c}">
+            <span class="cat-letter" style="color:${ci.color}">${esc(c)}</span>
+            <div class="cat-desc">${esc(ci.desc)}</div>
             <div class="cat-price" style="color:${ci.color}">${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()}</div>
           </div>`;}).join('')}
       </div>
-      <input type="hidden" id="f-cat" value="${d?.category||'B'}"/>
+      <input type="hidden" id="f-cat" value="${d?.category||firstCat()}"/>
     </div>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Telefon raqami</label><input class="form-input" id="f-phone" value="${esc(d?.phone||'')}" placeholder="+998 90 123 45 67"/></div>
@@ -555,7 +571,7 @@ function handlePhoto(e){
 
 function selectCat(c, el){
   document.querySelectorAll('#cat-sel .cat-opt').forEach(o=>{o.className='cat-opt'});
-  el.classList.add('sel-'+c.toLowerCase());
+  el.classList.add('sel-'+(CAT_INFO[c]?.cls||catSlug(c)));
   document.getElementById('f-cat').value=c;
 }
 
@@ -737,7 +753,7 @@ function renderReports(){
 
   const catEl=document.getElementById('rep-cat-chart');
   if(catEl){
-    catEl.innerHTML=['A','B','C'].map(c=>{
+    catEl.innerHTML=catKeys().map(c=>{
       const cp=done.filter(p=>p.category===c);
       const total=cp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
       const ci=CAT_INFO[c];
@@ -875,6 +891,15 @@ function renderSettingsPage(){
   const gsSt=document.getElementById('gs-status');
   if(gsSt) gsSt.textContent=localStorage.getItem('gs_sheet_id')?'Sheet ID saqlangan — tayyor':'Sheet ID kiritilmagan';
 
+  // Notion sozlamalari
+  const ntT=document.getElementById('nt-token');
+  const ntP=document.getElementById('nt-parent');
+  const ntX=document.getElementById('nt-proxy');
+  if(ntT) ntT.value=localStorage.getItem('notion_token')||'';
+  if(ntP) ntP.value=localStorage.getItem('notion_parent')||'';
+  if(ntX) ntX.value=localStorage.getItem('notion_proxy')||'';
+  if(typeof updateNotionStatus==='function') updateNotionStatus();
+
   const cur=getCurrentUser();
   const adminCard=document.getElementById('admin-creds-card');
   if(adminCard){
@@ -888,31 +913,78 @@ function renderSettingsPage(){
     }
   }
 
-  const cpe=document.getElementById('cat-price-editor');
-  if(cpe) cpe.innerHTML=['A','B','C'].map(c=>{
-    const ci=CAT_INFO[c];
-    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-      <span class="d-cat-badge ${ci.cls}" style="width:38px;justify-content:center">${c}</span>
-      <div style="flex:1">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
-          <div><label class="form-label">Min (so'm)</label>
-            <input class="form-input" id="cp-${c}-min" type="number" value="${ci.priceRange[0]}"/></div>
-          <div><label class="form-label">Max (so'm)</label>
-            <input class="form-input" id="cp-${c}-max" type="number" value="${ci.priceRange[1]}"/></div>
-        </div>
-      </div>
-    </div>`;
-  }).join('')+`<button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveCatPrices()">Saqlash</button>`;
+  renderCatManager();
 }
 
-function saveCatPrices(){
-  ['A','B','C'].forEach(c=>{
-    const mn=parseInt(document.getElementById('cp-'+c+'-min')?.value)||CAT_INFO[c].priceRange[0];
-    const mx=parseInt(document.getElementById('cp-'+c+'-max')?.value)||CAT_INFO[c].priceRange[1];
-    CAT_INFO[c].priceRange=[mn,mx];
-  });
+// ── KATEGORIYA BOSHQARUVI ──
+function renderCatManager(){
+  const cpe=document.getElementById('cat-price-editor');
+  if(!cpe) return;
+  cpe.innerHTML = catKeys().map(c=>{
+    const ci=CAT_INFO[c];
+    const inUse = designers.filter(d=>d.category===c).length + projects.filter(p=>p.category===c).length;
+    return `<div class="cat-edit-row">
+      <div class="cat-edit-head">
+        <input class="cat-color-dot" type="color" value="${ci.color}" title="Rang" oninput="updateCatField('${c}','color',this.value)"/>
+        <input class="form-input cat-key-inp" value="${esc(c)}" title="Belgi (masalan A, VIP)" onchange="renameCat('${c}',this.value)"/>
+        <input class="form-input" style="flex:1" value="${esc(ci.label||'')}" placeholder="Nomi" onchange="updateCatField('${c}','label',this.value)"/>
+        <button class="btn btn-danger btn-xs" title="O'chirish" onclick="removeCat('${c}')">×</button>
+      </div>
+      <input class="form-input" style="margin-top:7px" value="${esc(ci.desc||'')}" placeholder="Izoh (ixtiyoriy)" onchange="updateCatField('${c}','desc',this.value)"/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:7px">
+        <div><label class="form-label">Min (so'm)</label>
+          <input class="form-input" type="number" value="${ci.priceRange[0]}" onchange="updateCatPrice('${c}',0,this.value)"/></div>
+        <div><label class="form-label">Max (so'm)</label>
+          <input class="form-input" type="number" value="${ci.priceRange[1]}" onchange="updateCatPrice('${c}',1,this.value)"/></div>
+      </div>
+      ${inUse?`<div class="form-hint" style="margin-top:5px">${inUse} ta joyda ishlatilgan</div>`:''}
+    </div>`;
+  }).join('') + `
+    <button class="btn btn-ghost btn-sm" style="margin-top:4px;width:100%" onclick="addCatPrompt()">+ Yangi kategoriya qo'shish</button>`;
+}
+
+function updateCatField(key,field,val){
+  if(!CAT_INFO[key]) return;
+  CAT_INFO[key][field]=val;
+  if(field==='color') applyCategoryStyles();
+  persist(); rerenderActive();
+}
+function updateCatPrice(key,idx,val){
+  if(!CAT_INFO[key]) return;
+  const r=[...CAT_INFO[key].priceRange]; r[idx]=parseInt(val)||0;
+  CAT_INFO[key].priceRange=r;
   persist();
-  toast("Narxlar saqlandi");
+}
+function renameCat(oldKey,newKeyRaw){
+  const newKey=String(newKeyRaw||'').trim();
+  if(!newKey||newKey===oldKey){ renderCatManager(); return; }
+  if(CAT_INFO[newKey]){ toast("Bu belgi band"); renderCatManager(); return; }
+  // Tartibni saqlagan holda kalitni almashtirish
+  const entries=catKeys().map(k=>[k===oldKey?newKey:k, CAT_INFO[k]]);
+  catKeys().forEach(k=>delete CAT_INFO[k]);
+  entries.forEach(([k,v])=>{ CAT_INFO[k]=v; CAT_INFO[k].cls=catSlug(k); });
+  // Bog'liq yozuvlarni yangilash
+  designers.forEach(d=>{ if(d.category===oldKey) d.category=newKey; });
+  projects.forEach(p=>{ if(p.category===oldKey) p.category=newKey; });
+  applyCategoryStyles();
+  persist(); renderCatManager(); rerenderActive();
+  toast("Kategoriya nomi o'zgartirildi");
+}
+function addCatPrompt(){
+  let base='Yangi', key=base, i=1;
+  while(CAT_INFO[key]) key=base+(++i);
+  addCategory(key,{label:'Yangi toifa',desc:'',priceRange:[10000,15000],color:'#16a34a'});
+  applyCategoryStyles();
+  persist(); renderCatManager(); rerenderActive();
+  toast("Kategoriya qo'shildi — belgisini va nomini o'zgartiring");
+}
+function removeCat(key){
+  const res=deleteCategory(key);
+  if(res==='inuse'){ toast("Bu kategoriya ishlatilmoqda — avval bo'shating"); return; }
+  if(res===false){ toast("Kamida bitta kategoriya qolishi kerak"); return; }
+  applyCategoryStyles();
+  persist(); renderCatManager(); rerenderActive();
+  toast("Kategoriya o'chirildi");
 }
 
 // ═══════════════ BILDIRISHNOMALAR ═══════════════

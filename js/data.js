@@ -9,11 +9,63 @@ const REPO_NAME  = 'designers';
 const DATA_FILE  = 'data.json';
 const LS_DATA    = 'exon_data';
 
+// Kategoriyalar — foydalanuvchi o'zi qo'shishi/sozlashi mumkin.
+// cls (CSS sinfi) va color avtomatik boshqariladi.
 const CAT_INFO = {
-  A:{label:'A Kategoriya',desc:'Eng yaxshi dizaynerlar',priceRange:[15000,20000],color:'var(--cat-a)',cls:'cat-a'},
-  B:{label:'B Kategoriya',desc:"O'rtacha dizaynerlar",priceRange:[10000,15000],color:'var(--cat-b)',cls:'cat-b'},
-  C:{label:'C Kategoriya',desc:'Oddiy dizayn ishlari',priceRange:[7000,12000],color:'var(--cat-c)',cls:'cat-c'},
+  A:{label:'A toifa',desc:'Eng yaxshi dizaynerlar',priceRange:[15000,20000],color:'#8b5cf6',cls:'cat-a'},
+  B:{label:'B toifa',desc:"O'rtacha dizaynerlar",priceRange:[10000,15000],color:'#0ea5e9',cls:'cat-b'},
+  C:{label:'C toifa',desc:'Oddiy dizayn ishlari',priceRange:[7000,12000],color:'#f59e0b',cls:'cat-c'},
 };
+
+function catKeys(){ return Object.keys(CAT_INFO); }
+function catSlug(k){ const s=String(k).toLowerCase().replace(/[^a-z0-9]/g,''); return 'cat'+(s||Math.random().toString(36).slice(2,6)); }
+function firstCat(){ return catKeys()[0]||'A'; }
+
+// Har bir kategoriya uchun cls qiymatini qayta hisoblash
+function refreshCatCls(){
+  catKeys().forEach(k=>{ CAT_INFO[k].cls = catSlug(k); });
+}
+
+// Kategoriya ranglarini sahifaga joriy etish (dinamik CSS)
+function applyCategoryStyles(){
+  refreshCatCls();
+  let css = '';
+  catKeys().forEach(k=>{
+    const ci = CAT_INFO[k];
+    const s = ci.cls, col = ci.color;
+    css += `.${s}{background:color-mix(in srgb,${col} 13%,transparent);color:${col}}`;
+    css += `.cat-opt.sel-${s}{border-color:${col};background:color-mix(in srgb,${col} 8%,transparent)}`;
+  });
+  let st = document.getElementById('dyn-cat-styles');
+  if(!st){ st = document.createElement('style'); st.id='dyn-cat-styles'; document.head.appendChild(st); }
+  st.textContent = css;
+}
+
+// Kategoriya boshqaruvi
+function addCategory(key, def){
+  key = String(key||'').trim();
+  if(!key) return false;
+  if(CAT_INFO[key]) return false;
+  CAT_INFO[key] = {
+    label: def.label||key+' toifa',
+    desc: def.desc||'',
+    priceRange: def.priceRange||[10000,15000],
+    color: def.color||'#16a34a',
+    cls: catSlug(key),
+  };
+  return true;
+}
+function updateCategory(key, def){
+  if(!CAT_INFO[key]) return;
+  Object.assign(CAT_INFO[key], def);
+  CAT_INFO[key].cls = catSlug(key);
+}
+function deleteCategory(key){
+  if(catKeys().length<=1) return false;            // kamida bitta qolsin
+  if(designers.some(d=>d.category===key) || projects.some(p=>p.category===key)) return 'inuse';
+  delete CAT_INFO[key];
+  return true;
+}
 
 let designers = [];
 let projects  = [];
@@ -28,9 +80,13 @@ function recalcIds(){
 }
 
 function snapshot(){
+  // Kategoriyalarni to'liq saqlaymiz (custom toifalar ham)
+  const categories = {};
+  catKeys().forEach(k=>{ const c=CAT_INFO[k]; categories[k]={label:c.label,desc:c.desc,priceRange:c.priceRange,color:c.color}; });
   return {
     designers, projects,
-    catPrices:{A:CAT_INFO.A.priceRange, B:CAT_INFO.B.priceRange, C:CAT_INFO.C.priceRange},
+    categories,
+    catPrices:{A:CAT_INFO.A?.priceRange, B:CAT_INFO.B?.priceRange, C:CAT_INFO.C?.priceRange},
     users:getUsers(),
     savedAt:new Date().toISOString(),
   };
@@ -39,7 +95,17 @@ function snapshot(){
 function applyData(d){
   if(Array.isArray(d.designers)) designers = d.designers;
   if(Array.isArray(d.projects))  projects  = d.projects;
-  if(d.catPrices) ['A','B','C'].forEach(c=>{ if(d.catPrices[c]) CAT_INFO[c].priceRange = d.catPrices[c]; });
+  // Yangi format: to'liq kategoriyalar
+  if(d.categories && typeof d.categories==='object' && Object.keys(d.categories).length){
+    catKeys().forEach(k=>delete CAT_INFO[k]);
+    Object.entries(d.categories).forEach(([k,c])=>{
+      CAT_INFO[k]={label:c.label||k,desc:c.desc||'',priceRange:c.priceRange||[10000,15000],color:c.color||'#16a34a',cls:catSlug(k)};
+    });
+  } else if(d.catPrices){
+    // Eski format: faqat narxlar
+    ['A','B','C'].forEach(c=>{ if(d.catPrices[c]&&CAT_INFO[c]) CAT_INFO[c].priceRange = d.catPrices[c]; });
+  }
+  applyCategoryStyles();
   if(Array.isArray(d.users) && d.users.length) saveUsersRaw(d.users);
   dataSavedAt = d.savedAt || null;
   recalcIds();

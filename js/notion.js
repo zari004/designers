@@ -1,0 +1,280 @@
+// ═══════════════════════════════════════════════
+// NOTION — loyihani Notionga chop etish
+// Tavsif HTML'i Notion bloklariga aylantiriladi:
+// sarlavhalar, ro'yxatlar, iqtibos, jadval, ochiladigan blok,
+// qalin/kursiv/rang/havola — tuzilishi saqlangan holda.
+// ═══════════════════════════════════════════════
+
+const NOTION_VERSION = '2022-06-28';
+
+function notionCfg(){
+  return {
+    token: (localStorage.getItem('notion_token')||'').trim(),
+    parent: (localStorage.getItem('notion_parent')||'').trim().replace(/-/g,''),
+    proxy: (localStorage.getItem('notion_proxy')||'').trim(),
+  };
+}
+
+function saveNotionSettings(){
+  const t = byId('nt-token')?.value.trim();
+  const p = byId('nt-parent')?.value.trim();
+  const px = byId('nt-proxy')?.value.trim();
+  if(t!==undefined) localStorage.setItem('notion_token', t||'');
+  if(p!==undefined) localStorage.setItem('notion_parent', p||'');
+  if(px!==undefined) localStorage.setItem('notion_proxy', px||'');
+  updateNotionStatus();
+  toast('Notion sozlamalari saqlandi');
+}
+function clearNotionSettings(){
+  ['notion_token','notion_parent','notion_proxy'].forEach(k=>localStorage.removeItem(k));
+  ['nt-token','nt-parent','nt-proxy'].forEach(id=>{const e=byId(id);if(e)e.value='';});
+  updateNotionStatus();
+  toast("Notion ulanishi o'chirildi");
+}
+function updateNotionStatus(){
+  const el = byId('nt-status');
+  if(!el) return;
+  const c = notionCfg();
+  el.textContent = (c.token && c.parent)
+    ? 'Tayyor — loyihalarni Notionga yuborish mumkin' + (c.proxy?' (proxy orqali)':'')
+    : 'Token va ota-sahifa ID kiritilmagan';
+  el.style.color = (c.token && c.parent) ? 'var(--success)' : 'var(--muted)';
+}
+
+// ── HTML → NOTION BLOKLARI ──
+function notionColorName(css, isBg){
+  if(!css) return null;
+  const m = css.match(/[\d.]+/g);
+  let name = null;
+  if(m && m.length>=3){
+    const [r,g,b] = m.map(Number);
+    const max = Math.max(r,g,b), min = Math.min(r,g,b);
+    if(max-min < 45) name = 'gray';                              // kulrang / oqimtir
+    else if(r>=g && g>=b && r-b>60 && g>110) name = (g>150?'yellow':'orange'); // sariq/to'q sariq
+    else if(r>=g && r>=b) name = (b>=110 ? 'pink' : 'red');      // qizil / pushti
+    else if(g>=r && g>=b) name = 'green';                        // yashil
+    else name = (r>110 ? 'purple' : 'blue');                    // siyohrang / ko'k
+  }
+  if(!name) return null;
+  return isBg ? name+'_background' : name;
+}
+
+function chunkText(s){
+  const out=[]; s=s||'';
+  if(!s){ return ['']; }
+  for(let i=0;i<s.length;i+=1900) out.push(s.slice(i,i+1900));
+  return out;
+}
+
+function mkRich(text, ann){
+  const a = ann||{};
+  return chunkText(text).map(t=>{
+    const o = {type:'text', text:{content:t}, annotations:{
+      bold:!!a.bold, italic:!!a.italic, underline:!!a.underline,
+      strikethrough:!!a.strikethrough, code:!!a.code, color:a.color||'default'
+    }};
+    if(a.link){ o.text.link = {url:a.link}; }
+    return o;
+  });
+}
+
+function inlineRich(node, ann, out){
+  if(node.nodeType===3){ if(node.textContent) out.push(...mkRich(node.textContent, ann)); return; }
+  if(node.nodeType!==1) return;
+  const a = {...ann};
+  const tag = node.tagName;
+  if(tag==='BR'){ out.push(...mkRich('\n', ann)); return; }
+  if(tag==='B'||tag==='STRONG') a.bold=true;
+  if(tag==='I'||tag==='EM') a.italic=true;
+  if(tag==='U') a.underline=true;
+  if(tag==='S'||tag==='STRIKE'||tag==='DEL') a.strikethrough=true;
+  if(tag==='CODE') a.code=true;
+  if(node.style){
+    const col = node.style.color, bg = node.style.backgroundColor;
+    const cn = notionColorName(col,false); if(cn) a.color=cn;
+    const bn = notionColorName(bg,true); if(bn && bg!=='transparent') a.color=bn;
+  }
+  if(tag==='A'){ const h=node.getAttribute('href'); if(h && /^https?:/.test(h)) a.link=h; }
+  node.childNodes.forEach(ch=>inlineRich(ch,a,out));
+}
+
+function richOf(el){
+  const out=[]; el.childNodes.forEach(n=>inlineRich(n,{},out));
+  return out.length?out:[{type:'text',text:{content:''},annotations:{color:'default'}}];
+}
+
+function para(rich){ return {object:'block',type:'paragraph',paragraph:{rich_text:rich}}; }
+
+function blockFromEl(el, blocks){
+  if(el.nodeType===3){
+    const t=el.textContent.trim();
+    if(t) blocks.push(para(mkRich(t)));
+    return;
+  }
+  if(el.nodeType!==1) return;
+  const tag = el.tagName;
+  switch(tag){
+    case 'H1': blocks.push({object:'block',type:'heading_1',heading_1:{rich_text:richOf(el)}}); break;
+    case 'H2': blocks.push({object:'block',type:'heading_2',heading_2:{rich_text:richOf(el)}}); break;
+    case 'H3': case 'H4': case 'H5': case 'H6':
+      blocks.push({object:'block',type:'heading_3',heading_3:{rich_text:richOf(el)}}); break;
+    case 'UL': el.querySelectorAll(':scope>li').forEach(li=>
+      blocks.push({object:'block',type:'bulleted_list_item',bulleted_list_item:{rich_text:richOf(li)}})); break;
+    case 'OL': el.querySelectorAll(':scope>li').forEach(li=>
+      blocks.push({object:'block',type:'numbered_list_item',numbered_list_item:{rich_text:richOf(li)}})); break;
+    case 'BLOCKQUOTE': blocks.push({object:'block',type:'quote',quote:{rich_text:richOf(el)}}); break;
+    case 'HR': blocks.push({object:'block',type:'divider',divider:{}}); break;
+    case 'PRE': blocks.push({object:'block',type:'code',code:{rich_text:mkRich(el.innerText),language:'plain text'}}); break;
+    case 'DETAILS': {
+      const sum = el.querySelector('summary');
+      const childEls = [...el.childNodes].filter(n=>!(n.nodeType===1&&n.tagName==='SUMMARY'));
+      const kids=[]; childEls.forEach(c=>blockFromEl(c,kids));
+      blocks.push({object:'block',type:'toggle',toggle:{
+        rich_text: sum?richOf(sum):mkRich('Batafsil'),
+        children: kids.slice(0,100)
+      }});
+      break;
+    }
+    case 'TABLE': {
+      const rows = [...el.querySelectorAll('tr')];
+      if(!rows.length) break;
+      const width = Math.max(...rows.map(r=>r.children.length));
+      const trBlocks = rows.map(r=>{
+        const cells=[];
+        for(let i=0;i<width;i++){ const td=r.children[i]; cells.push(td?richOf(td):[{type:'text',text:{content:''}}]); }
+        return {object:'block',type:'table_row',table_row:{cells}};
+      });
+      blocks.push({object:'block',type:'table',table:{table_width:width,has_column_header:false,has_row_header:false,children:trBlocks}});
+      break;
+    }
+    case 'P': case 'DIV': {
+      // ichida blok elementlari bo'lsa — ularni alohida ishlash
+      const hasBlock = [...el.children].some(c=>/^(H1|H2|H3|UL|OL|TABLE|BLOCKQUOTE|HR|DETAILS|PRE|DIV)$/.test(c.tagName));
+      if(hasBlock){ el.childNodes.forEach(c=>blockFromEl(c,blocks)); }
+      else { const r=richOf(el); if(r.some(x=>x.text.content.trim())) blocks.push(para(r)); }
+      break;
+    }
+    default: {
+      const r=richOf(el);
+      if(r.some(x=>x.text.content.trim())) blocks.push(para(r));
+    }
+  }
+}
+
+function htmlToNotionBlocks(html){
+  const root = document.createElement('div');
+  root.innerHTML = sanitizeHtml(html||'');
+  const blocks=[];
+  root.childNodes.forEach(n=>blockFromEl(n,blocks));
+  return blocks;
+}
+
+// ── API ──
+async function notionFetch(path, method, body){
+  const c = notionCfg();
+  const base = c.proxy ? c.proxy.replace(/\/$/,'') : 'https://api.notion.com';
+  const res = await fetch(base + '/v1' + path, {
+    method,
+    headers:{
+      'Authorization':`Bearer ${c.token}`,
+      'Notion-Version':NOTION_VERSION,
+      'Content-Type':'application/json',
+    },
+    body: body?JSON.stringify(body):undefined,
+  });
+  const j = await res.json().catch(()=>({}));
+  if(!res.ok){
+    const msg = j.message || ('HTTP '+res.status);
+    throw new Error(msg);
+  }
+  return j;
+}
+
+async function sendProjectToNotion(){
+  const c = notionCfg();
+  if(!c.token || !c.parent){
+    toast('Avval Notion sozlamalarini kiriting');
+    closePeek(); showPanel('settings');
+    setTimeout(()=>byId('notion-card')?.scrollIntoView({behavior:'smooth'}),200);
+    return;
+  }
+  // Joriy holatni saqlash
+  const data = collectPeekProject();
+  if(!data.title){ toast('Loyiha nomini kiriting'); byId('pk-title')?.focus(); return; }
+  savePeekProjectSilently(data);
+
+  const btn = byId('peek-notion-btn');
+  const old = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='Yuborilmoqda...'; }
+  try{
+    const d = designers.find(x=>x.id===data.designerId);
+    const blocks = buildProjectBlocks(data, d);
+    const first = blocks.slice(0,100);
+    const page = await notionFetch('/pages','POST',{
+      parent:{type:'page_id', page_id:c.parent},
+      properties:{ title:{ title:[{type:'text',text:{content:data.title}}] } },
+      children:first,
+    });
+    // 100 dan ortiq blok bo'lsa — qo'shimcha yuborish
+    for(let i=100;i<blocks.length;i+=100){
+      await notionFetch(`/blocks/${page.id}/children`,'PATCH',{children:blocks.slice(i,i+100)});
+    }
+    const url = page.url || ('https://notion.so/'+page.id.replace(/-/g,''));
+    if(peekProjId){
+      projects = projects.map(p=>p.id===peekProjId?{...p,notionUrl:url,notionPageId:page.id}:p);
+      persist();
+    }
+    toast('Notionga chop etildi ✓');
+    if(btn){ btn.innerHTML='Notionda ochish ↗'; btn.disabled=false; btn.onclick=()=>window.open(url,'_blank'); }
+    window.open(url,'_blank');
+  }catch(e){
+    if(btn){ btn.innerHTML=old; btn.disabled=false; }
+    const corsLike = /Failed to fetch|NetworkError|load failed/i.test(e.message);
+    toast(corsLike ? 'Notion to\'g\'ridan-to\'g\'ri ulanishni rad etdi — proxy kerak (Sozlamalar)' : ('Notion xatosi: '+e.message));
+  }
+}
+
+// Notion sarlavha + xususiyatlarni kontekst sifatida qo'shadi
+function buildProjectBlocks(data, d){
+  const blocks=[];
+  const meta=[];
+  if(d) meta.push(`Dizayner: ${d.name}`);
+  meta.push(`Kategoriya: ${data.category}`);
+  meta.push(`Holat: ${({wip:'Jarayonda',review:"Ko'rib chiqilmoqda",done:'Bajarildi'})[data.status]||data.status}`);
+  meta.push(`Muhimlik: ${({low:'Past',medium:"O'rta",high:'Yuqori'})[data.priority]||data.priority}`);
+  if(data.deadline) meta.push(`Muddat: ${data.deadline}`);
+  meta.push(`Jami: ${(data.units*data.pricePerUnit).toLocaleString()} so'm (${data.units}×${data.pricePerUnit.toLocaleString()})`);
+  blocks.push({object:'block',type:'callout',callout:{
+    rich_text:[{type:'text',text:{content:meta.join('  ·  ')}}],
+    icon:{type:'emoji',emoji:'📌'}, color:'gray_background'
+  }});
+  if(data.tags&&data.tags.length){
+    blocks.push(para([{type:'text',text:{content:'Teglar: '},annotations:{bold:true,color:'default'}},
+      {type:'text',text:{content:data.tags.join(', ')},annotations:{color:'default'}}]));
+  }
+  blocks.push({object:'block',type:'divider',divider:{}});
+  const body = htmlToNotionBlocks(data.descHtml||'');
+  blocks.push(...body);
+  return blocks;
+}
+
+// Notion yuborishdan oldin lokal saqlash (panelni yopmasdan)
+function savePeekProjectSilently(data){
+  const status = data.status;
+  if(peekProjId){
+    const ex = projects.find(p=>p.id===peekProjId);
+    const obj = {...data,
+      paymentPaid: ex?.paymentPaid||false, paymentDate: ex?.paymentDate||null,
+      comments: ex?.comments||[], notionUrl: ex?.notionUrl||null, notionPageId: ex?.notionPageId||null,
+      doneDate: status==='done' ? (ex?.doneDate||new Date().toISOString().slice(0,10)) : null,
+    };
+    projects = projects.map(p=>p.id===peekProjId?{...p,...obj}:p);
+  } else {
+    const obj = {...data, paymentPaid:false, paymentDate:null, comments:[],
+      doneDate: status==='done' ? new Date().toISOString().slice(0,10) : null, id: nextPId++};
+    projects.push(obj);
+    peekProjId = obj.id;
+    byId('peek-del-btn').style.display='';
+  }
+  persist();
+}

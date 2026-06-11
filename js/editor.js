@@ -1,7 +1,9 @@
 // ═══════════════════════════════════════════════
 // EDITOR — Notion uslubidagi loyiha sahifasi (yon panel)
-// teglar, boy matn muharriri (sarlavha, rang, jadval,
-// havola, ochilib-yopiladigan bloklar, tekislash)
+//  • chegaradan ushlab kengaytiriladigan panel
+//  • matnni belgilaganda chiqadigan suzuvchi asboblar paneli
+//  • "/" buyruq menyusi (jadval, ro'yxat, sarlavha, ochiladigan blok...)
+//  • teglar, izohlar, Notionga yuborish
 // ═══════════════════════════════════════════════
 
 const byId = id => document.getElementById(id);
@@ -48,7 +50,6 @@ function tagKey(e){
 function removeTag(i){ peekTags.splice(i,1); renderPeekTags(true); }
 
 // ── XAVFSIZ HTML ──
-// Tavsif HTML'i saqlashdan va ko'rsatishdan oldin tozalanadi
 function sanitizeHtml(html){
   const t = document.createElement('div');
   t.innerHTML = html || '';
@@ -63,7 +64,7 @@ function sanitizeHtml(html){
   return t.innerHTML;
 }
 
-// ── YON PANEL ──
+// ── XUSUSIYAT QATORLARI ──
 const PROP_ICONS = {
   user:'<svg viewBox="0 0 16 16"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>',
   status:'<svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5" fill="currentColor" stroke="none"/></svg>',
@@ -84,6 +85,7 @@ function propRow(label, icon, valueHtml){
   </div>`;
 }
 
+// ── PANELNI OCHISH ──
 function openProjectPeek(id = null, preDesignerId = null){
   if(!designers.length){ toast("Avval dizayner qo'shing"); return; }
   const p = id ? projects.find(x=>x.id===id) : null;
@@ -91,7 +93,8 @@ function openProjectPeek(id = null, preDesignerId = null){
   peekTags = [...(p?.tags||[])];
   const defDId = preDesignerId || p?.designerId || designers[0].id;
   const defDesigner = designers.find(d=>d.id===parseInt(defDId));
-  const defCat = p?.category || defDesigner?.category || 'B';
+  let defCat = p?.category || defDesigner?.category || firstCat();
+  if(!CAT_INFO[defCat]) defCat = firstCat();
   const defPrice = p?.pricePerUnit ?? (CAT_INFO[defCat]?.priceRange[0] || 10000);
   const today = new Date().toISOString().slice(0,10);
 
@@ -100,9 +103,9 @@ function openProjectPeek(id = null, preDesignerId = null){
 
   byId('peek-body').innerHTML = `
     <input class="peek-title" id="pk-title" placeholder="Loyiha nomi" value="${esc(p?.title||'')}"/>
-    <div class="prop-table">
+    <div class="prop-table" id="pk-props">
       ${propRow('Dizayner','user',`<select class="prop-input" id="pk-did" onchange="peekDesignerChange()">${
-        designers.map(d=>`<option value="${d.id}"${defDId==d.id?' selected':''}>${esc(d.name)} (${d.category})</option>`).join('')
+        designers.map(d=>`<option value="${d.id}"${defDId==d.id?' selected':''}>${esc(d.name)} (${esc(d.category)})</option>`).join('')
       }</select>`)}
       ${propRow('Holat','status',`<select class="prop-input" id="pk-status">
         <option value="wip"${(p?.status||'wip')==='wip'?' selected':''}>Jarayonda</option>
@@ -115,7 +118,7 @@ function openProjectPeek(id = null, preDesignerId = null){
         <option value="high"${p?.priority==='high'?' selected':''}>Yuqori</option>
       </select>`)}
       ${propRow('Kategoriya','cat',`<select class="prop-input" id="pk-cat" onchange="peekCatChange()">${
-        ['A','B','C'].map(c=>`<option value="${c}"${defCat===c?' selected':''}>${c} — ${CAT_INFO[c].desc}</option>`).join('')
+        catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(c)}${CAT_INFO[c].desc?' — '+esc(CAT_INFO[c].desc):''}</option>`).join('')
       }</select>`)}
       ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
       ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
@@ -125,12 +128,10 @@ function openProjectPeek(id = null, preDesignerId = null){
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
       ${propRow('Fayllar','clip',`<input class="prop-input" id="pk-files" value="${esc(p?.files?.join(', ')||'')}" placeholder="design.fig, export.zip"/>`)}
     </div>
-    <div class="form-hint" id="pk-price-hint" style="margin:2px 0 18px"></div>
-    <div class="section-label" style="display:block;margin-bottom:8px">Tavsif</div>
-    ${rteToolbarHtml()}
+    <div class="section-label" style="display:block;margin:18px 0 8px">Tavsif <span class="rte-tip">— matnni belgilang yoki yangi qatorda <b>/</b> bosing</span></div>
     <div class="rte rich" id="pk-rte" contenteditable="true"
-      data-placeholder="Tavsif yozing — sarlavhalar, ro'yxatlar, jadvallar, havolalar uchun yuqoridagi asboblardan foydalaning..."
-      onkeyup="rteSaveSel()" onmouseup="rteSaveSel()" onblur="rteSaveSel()"></div>
+      data-placeholder="Bu yerga loyiha tavsifini yozing. Formatlash uchun matnni belgilang. Blok qo'shish uchun yangi qatorda / bosing."
+      oninput="rteInput()" onkeydown="rteKeydown(event)" onkeyup="rteSaveSel()" onmouseup="rteSaveSel()"></div>
     ${p ? `<div class="section-label" style="display:block;margin:24px 0 2px">Izohlar</div>${commentBoxHtml(p,'peek')}` : ''}
   `;
 
@@ -138,17 +139,20 @@ function openProjectPeek(id = null, preDesignerId = null){
   try{ document.execCommand('styleWithCSS', false, true); }catch(e){}
   renderPeekTags(false);
   calcPeekTotal();
+  ensureBubble();
+  ensureSlash();
 
+  applyPeekWidth();
   byId('peek-overlay').classList.add('open');
   byId('peek').classList.add('open');
   document.body.style.overflow = 'hidden';
   if(!p) setTimeout(()=>byId('pk-title')?.focus(), 280);
 }
 
-// Eski nom bilan chaqiruvlar ham ishlasin
 function openProjectModal(id = null, preDesignerId = null){ openProjectPeek(id, preDesignerId); }
 
 function closePeek(){
+  hideBubble(); hideSlash();
   byId('peek-overlay').classList.remove('open');
   byId('peek').classList.remove('open');
   document.body.style.overflow = '';
@@ -158,18 +162,15 @@ function closePeek(){
 }
 
 document.addEventListener('keydown', e=>{
-  if(e.key === 'Escape' && byId('peek')?.classList.contains('open')) closePeek();
-});
-
-// Rang panelini tashqariga bosilganda yopish
-document.addEventListener('click', e=>{
-  const pop = byId('rte-colorpop');
-  if(pop && pop.classList.contains('open') && !e.target.closest('.rte-colorwrap')) pop.classList.remove('open');
+  if(e.key === 'Escape' && byId('peek')?.classList.contains('open')){
+    if(byId('rte-slash')?.classList.contains('open')){ hideSlash(); return; }
+    closePeek();
+  }
 });
 
 function peekDesignerChange(){
   const d = designers.find(x=>x.id===parseInt(byId('pk-did').value));
-  if(!d) return;
+  if(!d || !CAT_INFO[d.category]) return;
   byId('pk-cat').value = d.category;
   byId('pk-price').value = CAT_INFO[d.category].priceRange[0];
   calcPeekTotal();
@@ -186,21 +187,17 @@ function calcPeekTotal(){
   const u = parseInt(byId('pk-units')?.value)||0;
   const pr = parseInt(byId('pk-price')?.value)||0;
   if(byId('pk-total')) byId('pk-total').textContent = fmtPrice(u*pr)+" so'm";
-  const cat = byId('pk-cat')?.value||'B', ci = CAT_INFO[cat];
-  if(byId('pk-price-hint') && ci)
-    byId('pk-price-hint').textContent = `${cat} kategoriya uchun tavsiya: ${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()} so'm/birlik`;
 }
 
-function savePeekProject(){
+function collectPeekProject(){
   const title = byId('pk-title')?.value.trim();
-  if(!title){ toast('Loyiha nomini kiriting'); byId('pk-title')?.focus(); return; }
   const ed = byId('pk-rte');
   const plain = ed.innerText.replace(/\s+/g,' ').trim();
   const descHtml = sanitizeHtml(ed.innerHTML);
   const status = byId('pk-status').value;
-  const obj = {
-    designerId: parseInt(byId('pk-did').value),
+  return {
     title,
+    designerId: parseInt(byId('pk-did').value),
     descHtml: plain ? descHtml : '',
     description: plain.slice(0,3000),
     category: byId('pk-cat').value,
@@ -213,18 +210,28 @@ function savePeekProject(){
     files: byId('pk-files').value.split(',').map(s=>s.trim()).filter(Boolean),
     tags: [...peekTags],
   };
+}
+
+function savePeekProject(){
+  const obj = collectPeekProject();
+  if(!obj.title){ toast('Loyiha nomini kiriting'); byId('pk-title')?.focus(); return; }
+  const status = obj.status;
   if(peekProjId){
     const ex = projects.find(p=>p.id===peekProjId);
     obj.paymentPaid = ex?.paymentPaid||false;
     obj.paymentDate = ex?.paymentDate||null;
     obj.comments = ex?.comments||[];
+    obj.notionUrl = ex?.notionUrl||null;
+    obj.notionPageId = ex?.notionPageId||null;
     obj.doneDate = status==='done' ? (ex?.doneDate||new Date().toISOString().slice(0,10)) : null;
     projects = projects.map(p=>p.id===peekProjId?{...p,...obj}:p);
     toast('Loyiha yangilandi');
   } else {
     obj.paymentPaid=false; obj.paymentDate=null; obj.comments=[];
     obj.doneDate = status==='done' ? new Date().toISOString().slice(0,10) : null;
-    projects.push({...obj, id:nextPId++});
+    obj.id = nextPId++;
+    projects.push({...obj});
+    peekProjId = obj.id;
     toast("Loyiha qo'shildi");
   }
   closePeek();
@@ -242,13 +249,58 @@ function deleteProjectFromPeek(){
   toast("Loyiha o'chirildi");
 }
 
-// ── MATN MUHARRIRI ──
-// Asbob bosilganda tanlov yo'qolmasligi uchun saqlanadi
+// ═══════════════ PANELNI KENGAYTIRISH ═══════════════
+function getPeekWidth(){ return parseInt(localStorage.getItem('exon_peek_w'))||820; }
+function clampPeekWidth(w){ return Math.max(440, Math.min(window.innerWidth-40, w)); }
+
+function applyPeekWidth(){
+  const peek = byId('peek');
+  if(!peek) return;
+  if(peek.dataset.max==='1'){ peek.style.width = (window.innerWidth-32)+'px'; return; }
+  peek.style.width = clampPeekWidth(getPeekWidth())+'px';
+}
+
+function startPeekResize(e){
+  e.preventDefault();
+  const peek = byId('peek');
+  peek.dataset.max = '0';
+  document.body.style.cursor = 'ew-resize';
+  peek.style.transition = 'none';
+  const move = ev=>{
+    const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+    const w = clampPeekWidth(window.innerWidth - x);
+    peek.style.width = w + 'px';
+  };
+  const up = ()=>{
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    document.removeEventListener('touchmove', move);
+    document.removeEventListener('touchend', up);
+    document.body.style.cursor = '';
+    peek.style.transition = '';
+    localStorage.setItem('exon_peek_w', parseInt(peek.style.width)||820);
+  };
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+  document.addEventListener('touchmove', move, {passive:false});
+  document.addEventListener('touchend', up);
+}
+
+function toggleMaxPeek(){
+  const peek = byId('peek');
+  peek.dataset.max = peek.dataset.max==='1' ? '0' : '1';
+  applyPeekWidth();
+}
+
+window.addEventListener('resize', ()=>{ if(byId('peek')?.classList.contains('open')) applyPeekWidth(); });
+
+// ═══════════════ MATN MUHARRIRI ═══════════════
 let savedRange = null;
 
 function rteSaveSel(){
   const s = getSelection();
   if(s.rangeCount && byId('pk-rte')?.contains(s.anchorNode)) savedRange = s.getRangeAt(0);
+  scheduleBubble();
 }
 
 function rteRestoreSel(){
@@ -263,87 +315,203 @@ function rte(cmd, val = null){
   if(!ed) return;
   ed.focus();
   rteRestoreSel();
-  document.execCommand(cmd, false, val);
+  try{ document.execCommand(cmd, false, val); }catch(e){}
   rteSaveSel();
+  positionBubble();
 }
-
-function rteBlockSel(sel){ if(sel.value) rte('formatBlock', sel.value); sel.selectedIndex = 0; }
-function rteSizeSel(sel){ if(sel.value) rte('fontSize', sel.value); sel.selectedIndex = 0; }
 
 function rteLink(){
   const u = prompt('Havola manzili (URL):', 'https://');
   if(u && u !== 'https://') rte('createLink', u);
 }
 
-function rteTable(){
-  const row = '<tr>'+'<td><br></td>'.repeat(3)+'</tr>';
-  rte('insertHTML', '<table><tbody>'+row.repeat(3)+'</tbody></table><p><br></p>');
+// ── SUZUVCHI ASBOBLAR PANELI (matn belgilanganda) ──
+let bubbleTimer = null;
+
+function ensureBubble(){
+  if(byId('rte-bubble')) return;
+  const b = document.createElement('div');
+  b.id = 'rte-bubble';
+  b.className = 'rte-bubble';
+  const bn = (cmd,title,label)=>`<button class="bb-btn" title="${title}" onmousedown="event.preventDefault()" onclick="rte('${cmd}')">${label}</button>`;
+  const colorWrap = `<span class="bb-colorwrap">
+    <button class="bb-btn" title="Rang" onmousedown="event.preventDefault()" onclick="byId('bb-colorpop').classList.toggle('open')"><span style="border-bottom:3px solid var(--accent);font-weight:700">A</span></button>
+    <div class="bb-pop" id="bb-colorpop">
+      <div class="bb-pop-label">Matn rangi</div>
+      <div class="bb-swatches">${RTE_TEXT_COLORS.map(c=>`<button class="bb-swatch" style="color:${c}" onmousedown="event.preventDefault()" onclick="rte('foreColor','${c}');byId('bb-colorpop').classList.remove('open')">A</button>`).join('')}</div>
+      <div class="bb-pop-label">Fon</div>
+      <div class="bb-swatches">${RTE_BG_COLORS.map(c=>`<button class="bb-swatch" style="background:${c==='transparent'?'var(--card)':c}" onmousedown="event.preventDefault()" onclick="rte('backColor','${c}');byId('bb-colorpop').classList.remove('open')">${c==='transparent'?'×':''}</button>`).join('')}</div>
+    </div>
+  </span>`;
+  b.innerHTML = `
+    <button class="bb-btn bb-txt" title="Oddiy matn" onmousedown="event.preventDefault()" onclick="rte('formatBlock','p')">Matn</button>
+    <button class="bb-btn bb-txt" title="Sarlavha 1" onmousedown="event.preventDefault()" onclick="rte('formatBlock','h1')">H1</button>
+    <button class="bb-btn bb-txt" title="Sarlavha 2" onmousedown="event.preventDefault()" onclick="rte('formatBlock','h2')">H2</button>
+    <button class="bb-btn bb-txt" title="Sarlavha 3" onmousedown="event.preventDefault()" onclick="rte('formatBlock','h3')">H3</button>
+    <span class="bb-sep"></span>
+    ${bn('bold','Qalin','<b>B</b>')}
+    ${bn('italic','Kursiv','<i>I</i>')}
+    ${bn('underline','Tagiga chizish','<u>U</u>')}
+    ${bn('strikeThrough','Ustiga chizish','<s>S</s>')}
+    ${colorWrap}
+    <button class="bb-btn" title="Havola" onmousedown="event.preventDefault()" onclick="rteLink()"><svg viewBox="0 0 16 16" class="bb-ic"><path d="M6.5 9.5a3 3 0 0 0 4.2 0L13 7.2a3 3 0 1 0-4.2-4.2L7.6 4.2"/><path d="M9.5 6.5a3 3 0 0 0-4.2 0L3 8.8a3 3 0 1 0 4.2 4.2l1.2-1.2"/></svg></button>
+    <span class="bb-sep"></span>
+    <button class="bb-btn" title="Belgili ro'yxat" onmousedown="event.preventDefault()" onclick="rte('insertUnorderedList')"><svg viewBox="0 0 16 16" class="bb-ic"><circle cx="2.5" cy="3.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M5.5 3.5h9M5.5 8h9M5.5 12.5h9"/></svg></button>
+    <button class="bb-btn" title="Raqamli ro'yxat" onmousedown="event.preventDefault()" onclick="rte('insertOrderedList')"><b style="font-size:11px">1.</b></button>
+    ${bn('removeFormat','Formatni tozalash','<span style="font-size:11px">Tx</span>')}
+  `;
+  document.body.appendChild(b);
 }
 
-function rteToggle(){
-  rte('insertHTML', '<details open><summary>Sarlavha</summary><div>Matn yozing...</div></details><p><br></p>');
+function scheduleBubble(){
+  clearTimeout(bubbleTimer);
+  bubbleTimer = setTimeout(positionBubble, 10);
 }
 
+function positionBubble(){
+  const b = byId('rte-bubble');
+  const ed = byId('pk-rte');
+  if(!b || !ed) return;
+  const s = getSelection();
+  if(!s.rangeCount || s.isCollapsed || !ed.contains(s.anchorNode)){ hideBubble(); return; }
+  const r = s.getRangeAt(0).getBoundingClientRect();
+  if(r.width===0 && r.height===0){ hideBubble(); return; }
+  b.classList.add('open');
+  const bw = b.offsetWidth, bh = b.offsetHeight;
+  let left = r.left + r.width/2 - bw/2;
+  left = Math.max(10, Math.min(window.innerWidth - bw - 10, left));
+  let top = r.top - bh - 8;
+  if(top < 8) top = r.bottom + 8;
+  b.style.left = left + 'px';
+  b.style.top = top + 'px';
+}
+
+function hideBubble(){
+  const b = byId('rte-bubble');
+  if(b){ b.classList.remove('open'); byId('bb-colorpop')?.classList.remove('open'); }
+}
+
+document.addEventListener('selectionchange', ()=>{
+  if(byId('peek')?.classList.contains('open')) scheduleBubble();
+});
+document.addEventListener('scroll', ()=>{ if(byId('rte-bubble')?.classList.contains('open')) positionBubble(); }, true);
+
+// ── "/" BUYRUQ MENYUSI ──
 const RTE_TEXT_COLORS = ['#8b93a5','#ef4444','#f97316','#eab308','#22c55e','#38bdf8','#a78bfa','#ec4899'];
 const RTE_BG_COLORS = ['transparent','rgba(220,38,38,.16)','rgba(234,88,12,.16)','rgba(202,138,4,.18)','rgba(22,163,74,.16)','rgba(2,132,199,.16)','rgba(124,58,237,.14)','rgba(219,39,119,.14)'];
 
-function rteToolbarHtml(){
-  const b = (cmd,title,label) =>
-    `<button class="rte-btn" title="${title}" onmousedown="event.preventDefault()" onclick="rte('${cmd}')">${label}</button>`;
-  const alignL = '<svg viewBox="0 0 16 16"><path d="M2 3h12M2 6.5h8M2 10h12M2 13.5h8"/></svg>';
-  const alignC = '<svg viewBox="0 0 16 16"><path d="M2 3h12M4 6.5h8M2 10h12M4 13.5h8"/></svg>';
-  const alignR = '<svg viewBox="0 0 16 16"><path d="M2 3h12M6 6.5h8M2 10h12M6 13.5h8"/></svg>';
-  const listU = '<svg viewBox="0 0 16 16"><circle cx="2.5" cy="3.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M5.5 3.5h9M5.5 8h9M5.5 12.5h9"/></svg>';
-  const linkI = '<svg viewBox="0 0 16 16"><path d="M6.5 9.5a3 3 0 0 0 4.2 0L13 7.2a3 3 0 1 0-4.2-4.2L7.6 4.2"/><path d="M9.5 6.5a3 3 0 0 0-4.2 0L3 8.8a3 3 0 1 0 4.2 4.2l1.2-1.2"/></svg>';
-  const tableI = '<svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1"/><path d="M1.5 6.5h13M1.5 10h13M6 2.5v11M11 2.5v11"/></svg>';
-  const toggleI = '<svg viewBox="0 0 16 16"><path d="M5.5 3l5 5-5 5"/></svg>';
-  const hrI = '<svg viewBox="0 0 16 16"><path d="M2 8h12"/></svg>';
-  return `<div class="rte-bar">
-    <select class="rte-select" title="Blok turi" onchange="rteBlockSel(this)">
-      <option value="">Stil</option>
-      <option value="p">Matn</option>
-      <option value="h1">Sarlavha 1</option>
-      <option value="h2">Sarlavha 2</option>
-      <option value="h3">Sarlavha 3</option>
-      <option value="blockquote">Iqtibos</option>
-    </select>
-    <select class="rte-select" title="Shrift o'lchami" onchange="rteSizeSel(this)">
-      <option value="">O'lcham</option>
-      <option value="2">Kichik</option>
-      <option value="3">Oddiy</option>
-      <option value="4">Katta</option>
-      <option value="6">Juda katta</option>
-    </select>
-    <span class="rte-sep"></span>
-    ${b('bold','Qalin (Ctrl+B)','<b>B</b>')}
-    ${b('italic','Kursiv (Ctrl+I)','<i>I</i>')}
-    ${b('underline','Tagiga chizish (Ctrl+U)','<u>U</u>')}
-    ${b('strikeThrough','Ustiga chizish','<s>S</s>')}
-    <span class="rte-sep"></span>
-    <span class="rte-colorwrap">
-      <button class="rte-btn" title="Matn va fon rangi" onmousedown="event.preventDefault()" onclick="byId('rte-colorpop').classList.toggle('open')"><span style="border-bottom:3px solid var(--accent);font-weight:700;line-height:1.1">A</span></button>
-      <div class="rte-pop" id="rte-colorpop">
-        <div class="rte-pop-label">Matn rangi</div>
-        <div class="rte-swatches">${RTE_TEXT_COLORS.map(c=>
-          `<button class="rte-swatch" style="color:${c}" onmousedown="event.preventDefault()" onclick="rte('foreColor','${c}');byId('rte-colorpop').classList.remove('open')">A</button>`).join('')}</div>
-        <div class="rte-pop-label">Fon rangi</div>
-        <div class="rte-swatches">${RTE_BG_COLORS.map(c=>
-          `<button class="rte-swatch" style="background:${c}" title="${c==='transparent'?'Fonni olib tashlash':''}" onmousedown="event.preventDefault()" onclick="rte('backColor','${c}');byId('rte-colorpop').classList.remove('open')">${c==='transparent'?'×':''}</button>`).join('')}</div>
-      </div>
-    </span>
-    <span class="rte-sep"></span>
-    ${b('justifyLeft','Chapdan tekislash',alignL)}
-    ${b('justifyCenter',"O'rtadan tekislash",alignC)}
-    ${b('justifyRight',"O'ngdan tekislash",alignR)}
-    <span class="rte-sep"></span>
-    ${b('insertUnorderedList',"Belgili ro'yxat",listU)}
-    ${b('insertOrderedList',"Raqamli ro'yxat",'<span style="font-size:11px;font-weight:700">1.</span>')}
-    <span class="rte-sep"></span>
-    <button class="rte-btn" title="Havola qo'yish" onmousedown="event.preventDefault()" onclick="rteLink()">${linkI}</button>
-    <button class="rte-btn" title="Jadval qo'yish (3×3)" onmousedown="event.preventDefault()" onclick="rteTable()">${tableI}</button>
-    <button class="rte-btn" title="Ochilib-yopiladigan blok" onmousedown="event.preventDefault()" onclick="rteToggle()">${toggleI}</button>
-    <button class="rte-btn" title="Ajratuvchi chiziq" onmousedown="event.preventDefault()" onclick="rte('insertHorizontalRule')">${hrI}</button>
-    <span class="rte-sep"></span>
-    ${b('removeFormat','Formatni tozalash','<span style="font-size:11px;font-weight:600">Tx</span>')}
-  </div>`;
+const SLASH_ITEMS = [
+  {k:'text', label:'Matn', desc:'Oddiy paragraf', ic:'¶', run:()=>rte('formatBlock','p')},
+  {k:'h1', label:'Sarlavha 1', desc:'Katta sarlavha', ic:'H1', run:()=>rte('formatBlock','h1')},
+  {k:'h2', label:'Sarlavha 2', desc:"O'rta sarlavha", ic:'H2', run:()=>rte('formatBlock','h2')},
+  {k:'h3', label:'Sarlavha 3', desc:'Kichik sarlavha', ic:'H3', run:()=>rte('formatBlock','h3')},
+  {k:'ul', label:"Belgili ro'yxat", desc:'• punktlar', ic:'•', run:()=>rte('insertUnorderedList')},
+  {k:'ol', label:"Raqamli ro'yxat", desc:'1. 2. 3.', ic:'1.', run:()=>rte('insertOrderedList')},
+  {k:'quote', label:'Iqtibos', desc:'Ajratilgan matn', ic:'❝', run:()=>rte('formatBlock','blockquote')},
+  {k:'table', label:'Jadval', desc:'3×3 jadval', ic:'▦', run:()=>rte('insertHTML','<table><tbody>'+('<tr>'+'<td><br></td>'.repeat(3)+'</tr>').repeat(3)+'</tbody></table><p><br></p>')},
+  {k:'toggle', label:'Ochiladigan blok', desc:'Yashirinadigan matn', ic:'▸', run:()=>rte('insertHTML','<details open><summary>Sarlavha</summary><div>Matn...</div></details><p><br></p>')},
+  {k:'divider', label:'Ajratuvchi chiziq', desc:'Bo\'limlarni ajratish', ic:'—', run:()=>rte('insertHorizontalRule')},
+];
+
+let slashStart = null;   // {node, offset}
+let slashIdx = 0;
+
+function ensureSlash(){
+  if(byId('rte-slash')) return;
+  const m = document.createElement('div');
+  m.id = 'rte-slash';
+  m.className = 'rte-slash';
+  document.body.appendChild(m);
+}
+
+function rteKeydown(e){
+  const menu = byId('rte-slash');
+  const open = menu && menu.classList.contains('open');
+  if(open){
+    const items = currentSlashItems();
+    if(e.key==='ArrowDown'){ e.preventDefault(); slashIdx=(slashIdx+1)%items.length; renderSlash(items); return; }
+    if(e.key==='ArrowUp'){ e.preventDefault(); slashIdx=(slashIdx-1+items.length)%items.length; renderSlash(items); return; }
+    if(e.key==='Enter'){ e.preventDefault(); pickSlash(items[slashIdx]); return; }
+    if(e.key==='Escape'){ e.preventDefault(); hideSlash(); return; }
+  }
+}
+
+function rteInput(){
+  // Joriy caret oldidagi matnda "/" borligini tekshirish
+  const s = getSelection();
+  if(!s.rangeCount){ hideSlash(); return; }
+  const node = s.anchorNode;
+  if(!node || node.nodeType!==3){ hideSlash(); return; }
+  const text = node.textContent.slice(0, s.anchorOffset);
+  const m = text.match(/(?:^|\s)\/([^\s/]*)$/);
+  if(m){
+    slashStart = {node, offset: s.anchorOffset - m[1].length - 1};
+    showSlash(m[1]);
+  } else {
+    hideSlash();
+  }
+}
+
+function currentSlashItems(){
+  const q = (byId('rte-slash')?.dataset.q||'').toLowerCase();
+  if(!q) return SLASH_ITEMS;
+  return SLASH_ITEMS.filter(it=>it.label.toLowerCase().includes(q)||it.k.includes(q)) ;
+}
+
+function showSlash(query){
+  const menu = byId('rte-slash');
+  menu.dataset.q = query||'';
+  const items = currentSlashItems();
+  if(!items.length){ hideSlash(); return; }
+  slashIdx = 0;
+  renderSlash(items);
+  menu.classList.add('open');
+  // joylashuv — caret yonida
+  const s = getSelection();
+  const r = s.getRangeAt(0).getBoundingClientRect();
+  let top = r.bottom + 6, left = r.left;
+  const mh = menu.offsetHeight, mw = menu.offsetWidth;
+  if(top + mh > window.innerHeight - 10) top = r.top - mh - 6;
+  left = Math.min(left, window.innerWidth - mw - 10);
+  menu.style.top = top + 'px';
+  menu.style.left = Math.max(10,left) + 'px';
+}
+
+function renderSlash(items){
+  const menu = byId('rte-slash');
+  menu.innerHTML = items.map((it,i)=>`
+    <div class="slash-item${i===slashIdx?' sel':''}" onmousedown="event.preventDefault()" onclick="pickSlashByKey('${it.k}')">
+      <span class="slash-ic">${it.ic}</span>
+      <span><span class="slash-label">${it.label}</span><span class="slash-desc">${it.desc}</span></span>
+    </div>`).join('');
+}
+
+function pickSlashByKey(k){
+  const it = SLASH_ITEMS.find(x=>x.k===k);
+  if(it) pickSlash(it);
+}
+
+function pickSlash(it){
+  if(!it) return;
+  // "/query" matnini o'chirish
+  if(slashStart && slashStart.node){
+    const sel = getSelection();
+    const r = document.createRange();
+    try{
+      r.setStart(slashStart.node, slashStart.offset);
+      r.setEnd(sel.anchorNode, sel.anchorOffset);
+      sel.removeAllRanges();
+      sel.addRange(r);
+      document.execCommand('delete');
+    }catch(e){}
+  }
+  rteSaveSel();
+  hideSlash();
+  it.run();
+}
+
+function hideSlash(){
+  const m = byId('rte-slash');
+  if(m){ m.classList.remove('open'); m.dataset.q=''; }
+  slashStart = null;
 }

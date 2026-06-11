@@ -388,8 +388,37 @@
           <button class="btn btn-primary btn-sm" onclick="saveAdminCreds()">Saqlash</button>
         </div>
       </div>
+      <div class="card" id="notion-card" style="margin-bottom:14px">
+        <div class="card-header"><span class="card-title">Notion ulanish</span></div>
+        <div style="padding:18px">
+          <div class="settings-note">
+            Loyihalarni Notionga bir tugma bilan chop etish.<br/>
+            <strong>1.</strong> <a href="https://www.notion.so/my-integrations" target="_blank">notion.so/my-integrations</a> → <em>New integration</em> → <em>Internal</em> yarating, <strong>Internal Integration Secret</strong>'ni nusxalang (ntn_... yoki secret_...)<br/>
+            <strong>2.</strong> Notionda loyihalar saqlanadigan sahifani oching → <em>•••</em> → <em>Connections</em> → integratsiyangizni qo'shing<br/>
+            <strong>3.</strong> Sahifa URL'idan ID nusxalang: notion.so/<strong>SAHIFA_ID</strong>?v=... (oxirgi 32 ta belgi)
+          </div>
+          <div class="form-group">
+            <label class="form-label">Integration Secret (token)</label>
+            <input class="form-input" id="nt-token" type="password" placeholder="ntn_xxxxxxxx yoki secret_xxxxxxxx"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ota-sahifa ID</label>
+            <input class="form-input" id="nt-parent" placeholder="32 belgidan iborat sahifa ID"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CORS proxy URL <small>(brauzerdan to'g'ridan-to'g'ri ulanish uchun)</small></label>
+            <input class="form-input" id="nt-proxy" placeholder="https://sizning-proxy.workers.dev"/>
+            <div class="form-hint">Notion brauzerdan to'g'ridan-to'g'ri so'rovni rad etadi. Cloudflare Worker yoki shunga o'xshash oddiy proxy URL kiriting (api.notion.com'ga yo'naltiruvchi).</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:4px">
+            <button class="btn btn-ghost btn-sm" onclick="clearNotionSettings()">O'chirish</button>
+            <button class="btn btn-primary btn-sm" onclick="saveNotionSettings()">Saqlash</button>
+          </div>
+          <div id="nt-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+        </div>
+      </div>
       <div class="card">
-        <div class="card-header"><span class="card-title">Kategoriya narxlari</span></div>
+        <div class="card-header"><span class="card-title">Kategoriyalar</span></div>
         <div style="padding:18px" id="cat-price-editor"></div>
       </div>
     </div>
@@ -400,9 +429,13 @@
 <!-- LOYIHA YON PANELI (Notion uslubi) -->
 <div class="peek-overlay" id="peek-overlay" onclick="closePeek()"></div>
 <div class="peek" id="peek">
+  <div class="peek-resize" id="peek-resize" onmousedown="startPeekResize(event)" ontouchstart="startPeekResize(event)" title="Kengaytirish uchun torting"></div>
   <div class="peek-head">
     <button class="icon-btn" onclick="closePeek()" title="Yopish (Esc)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 5l7 7-7 7"/><path d="M13 5l7 7-7 7"/></svg>
+    </button>
+    <button class="icon-btn" onclick="toggleMaxPeek()" title="Kengaytirish / kichraytirish">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
     </button>
     <span id="peek-head-title" style="font-size:13px;font-weight:600;color:var(--muted)">Loyiha</span>
     <span style="flex:1"></span>
@@ -410,7 +443,10 @@
   </div>
   <div class="peek-body" id="peek-body"></div>
   <div class="peek-foot">
-    <span style="font-size:11.5px;color:var(--muted2)">Esc — yopish</span>
+    <button class="btn btn-ghost btn-sm" id="peek-notion-btn" onclick="sendProjectToNotion()" title="Loyihani Notionga chop etish">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>
+      Notionga yuborish
+    </button>
     <div style="display:flex;gap:8px">
       <button class="btn btn-ghost" onclick="closePeek()">Bekor qilish</button>
       <button class="btn btn-primary" onclick="savePeekProject()">Saqlash</button>
@@ -433,6 +469,7 @@
 <script src="js/data.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/editor.js"></script>
+<script src="js/notion.js"></script>
 <script src="js/sheets.js"></script>
 <script src="js/app.js"></script>
 </body>
