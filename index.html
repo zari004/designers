@@ -397,6 +397,27 @@
 
 </main>
 
+<!-- LOYIHA YON PANELI (Notion uslubi) -->
+<div class="peek-overlay" id="peek-overlay" onclick="closePeek()"></div>
+<div class="peek" id="peek">
+  <div class="peek-head">
+    <button class="icon-btn" onclick="closePeek()" title="Yopish (Esc)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 5l7 7-7 7"/><path d="M13 5l7 7-7 7"/></svg>
+    </button>
+    <span id="peek-head-title" style="font-size:13px;font-weight:600;color:var(--muted)">Loyiha</span>
+    <span style="flex:1"></span>
+    <button class="btn btn-danger btn-xs" id="peek-del-btn" style="display:none" onclick="deleteProjectFromPeek()">O'chirish</button>
+  </div>
+  <div class="peek-body" id="peek-body"></div>
+  <div class="peek-foot">
+    <span style="font-size:11.5px;color:var(--muted2)">Esc — yopish</span>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="closePeek()">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="savePeekProject()">Saqlash</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="modal" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal">
@@ -411,6 +432,7 @@
 <script src="js/auth.js"></script>
 <script src="js/data.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/editor.js"></script>
 <script src="js/sheets.js"></script>
 <script src="js/app.js"></script>
 </body>

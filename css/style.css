@@ -315,9 +315,91 @@ a{color:var(--accent-text)}
   .detail-hero{flex-direction:column}
 }
 
+/* ── LOYIHA YON PANELI (Notion uslubi) ── */
+.peek-overlay{position:fixed;inset:0;background:rgba(10,12,16,.35);z-index:90;opacity:0;pointer-events:none;transition:opacity .2s}
+.peek-overlay.open{opacity:1;pointer-events:auto}
+.peek{position:fixed;top:0;right:0;bottom:0;width:min(780px,100vw);background:var(--panel);border-left:1px solid var(--border);z-index:95;transform:translateX(102%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.18)}
+.peek.open{transform:none}
+.peek-head{display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--border);flex-shrink:0}
+.peek-body{flex:1;overflow-y:auto;padding:30px 46px 44px}
+.peek-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0;background:var(--panel)}
+.peek-title{width:100%;border:none;background:none;outline:none;font-size:27px;font-weight:800;letter-spacing:-.5px;color:var(--text);font-family:var(--font);padding:0;margin-bottom:8px}
+.peek-title::placeholder{color:var(--muted2)}
+
+/* Xususiyat qatorlari (Notion property rows) */
+.prop-table{margin:6px 0 8px;border-bottom:1px solid var(--border);padding-bottom:12px}
+.prop-row{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;min-height:34px;padding:1px 0}
+.prop-label{font-size:12.5px;color:var(--muted);display:flex;gap:8px;align-items:center;font-weight:500}
+.prop-label svg{width:14px;height:14px;flex-shrink:0;fill:none;stroke:currentColor;stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.prop-input{width:100%;background:transparent;border:1px solid transparent;border-radius:6px;padding:5px 8px;color:var(--text);font-size:13px;outline:none;transition:all .12s;font-family:var(--font)}
+.prop-input:hover{background:var(--hover)}
+.prop-input:focus{border-color:var(--accent);background:var(--card)}
+select.prop-input{cursor:pointer}
+.prop-total{font-size:13.5px;font-weight:700;color:var(--accent-text);font-variant-numeric:tabular-nums;padding:5px 8px;display:inline-block}
+
+/* Teglar */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:4px 8px;border-radius:6px;cursor:text;min-height:32px;transition:background .12s}
+.tags-wrap:hover{background:var(--hover)}
+.tag-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:5px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.tag-x{background:none;border:none;color:inherit;cursor:pointer;font-size:13px;line-height:1;padding:0 1px;opacity:.6}
+.tag-x:hover{opacity:1}
+.tag-inp{border:none;background:none;outline:none;font-size:12.5px;color:var(--text);min-width:80px;flex:1;font-family:var(--font)}
+.tag-inp::placeholder{color:var(--muted2)}
+
+/* Matn muharriri */
+.rte-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;padding:6px 8px;border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;background:var(--bg);position:sticky;top:0;z-index:6}
+.rte-btn{min-width:28px;height:28px;padding:0 6px;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--muted);font-size:13px;display:inline-flex;align-items:center;justify-content:center;transition:all .1s;font-family:var(--font)}
+.rte-btn:hover{background:var(--hover);color:var(--text)}
+.rte-btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.rte-select{border:1px solid transparent;background:none;color:var(--muted);font-size:12px;border-radius:6px;padding:4px 3px;cursor:pointer;outline:none;font-family:var(--font)}
+.rte-select:hover{background:var(--hover);color:var(--text)}
+.rte-sep{width:1px;height:18px;background:var(--border);margin:0 4px;flex-shrink:0}
+.rte{min-height:280px;border:1px solid var(--border);border-radius:0 0 8px 8px;padding:14px 16px;outline:none;background:var(--card);transition:border-color .12s}
+.rte:focus{border-color:var(--accent)}
+.rte:empty::before{content:attr(data-placeholder);color:var(--muted2);pointer-events:none}
+.rte-colorwrap{position:relative;display:inline-flex}
+.rte-pop{position:absolute;top:32px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);padding:10px;z-index:20;display:none;width:236px}
+.rte-pop.open{display:block}
+.rte-pop-label{font-size:10.5px;color:var(--muted2);font-weight:600;text-transform:uppercase;letter-spacing:.6px;margin:4px 0 6px}
+.rte-swatches{display:flex;gap:4px;flex-wrap:wrap}
+.rte-swatch{width:24px;height:24px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;background:var(--card);display:flex;align-items:center;justify-content:center;color:var(--muted);transition:transform .1s}
+.rte-swatch:hover{border-color:var(--border2);transform:scale(1.1)}
+
+/* Boy matn — muharrirda ham, kartada ham bir xil */
+.rich{font-size:14px;line-height:1.65;color:var(--text)}
+.rich h1{font-size:21px;font-weight:800;margin:14px 0 6px;letter-spacing:-.3px}
+.rich h2{font-size:17px;font-weight:700;margin:12px 0 5px}
+.rich h3{font-size:14.5px;font-weight:700;margin:10px 0 4px}
+.rich p{margin:3px 0}
+.rich ul,.rich ol{padding-left:24px;margin:4px 0}
+.rich li{margin:2px 0}
+.rich blockquote{border-left:3px solid var(--border2);padding:2px 14px;margin:8px 0;color:var(--muted)}
+.rich a{color:var(--accent-text);text-decoration:underline}
+.rich hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+.rich table{border-collapse:collapse;margin:10px 0;width:100%}
+.rich td,.rich th{border:1px solid var(--border2);padding:6px 10px;font-size:13px;min-width:48px;vertical-align:top}
+.rich details{border:1px solid var(--border);border-radius:8px;padding:9px 14px;margin:8px 0;background:var(--bg)}
+.rich summary{cursor:pointer;font-weight:600;font-size:13.5px}
+.rich details>*:not(summary){margin-top:6px}
+.report-desc.rich{max-height:300px;overflow-y:auto;color:var(--text)}
+
+/* Izoh amallar tugmalari */
+.comment-head{display:flex;align-items:center;gap:8px}
+.comment-actions{margin-left:auto;display:flex;gap:2px;opacity:0;transition:opacity .12s}
+.comment-item:hover .comment-actions{opacity:1}
+.cmt-act-btn{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:11px;font-weight:500;padding:2px 7px;border-radius:4px;font-family:var(--font)}
+.cmt-act-btn:hover{background:var(--hover);color:var(--text)}
+.cmt-act-btn.cmt-del:hover{color:var(--error)}
+
+@media(max-width:880px){
+  .peek-body{padding:22px 18px 34px}
+  .prop-row{grid-template-columns:118px 1fr}
+  .peek-title{font-size:22px}
+}
+
 /* ── PRINT ── */
 @media print{
-  .sidebar,.topbar,.sync-bar,.burger,.filter-bar,.btn,.notif-panel,.mini-select{display:none!important}
+  .sidebar,.topbar,.sync-bar,.burger,.filter-bar,.btn,.notif-panel,.mini-select,.peek,.peek-overlay,.comment-input-row,.comment-actions{display:none!important}
   .main{margin:0;padding:0}
   body{background:#fff;color:#000}
   .panel{display:none!important}
