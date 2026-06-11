@@ -120,9 +120,13 @@ function openProjectPeek(id = null, preDesignerId = null){
         <option value="medium"${(p?.priority||'medium')==='medium'?' selected':''}>O'rta</option>
         <option value="high"${p?.priority==='high'?' selected':''}>Yuqori</option>
       </select>`)}
-      ${propRow('Kategoriya','cat',`<select class="prop-input" id="pk-cat" onchange="peekCatChange()">${
-        catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(c)}${CAT_INFO[c].desc?' — '+esc(CAT_INFO[c].desc):''}</option>`).join('')
-      }</select>`)}
+      ${propRow('Kategoriya','cat',(()=>{
+        const ci0=CAT_INFO[defCat]||Object.values(CAT_INFO)[0]||{color:'#888',label:defCat};
+        const badgeStyle=`background:color-mix(in srgb,${ci0.color} 15%,transparent);color:${ci0.color};border:1.5px solid color-mix(in srgb,${ci0.color} 45%,transparent);padding:2px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0`;
+        return `<div style="display:flex;align-items:center;gap:8px"><span id="pk-cat-badge" style="${badgeStyle}">${esc(ci0.label||defCat)}</span><select class="prop-input" id="pk-cat" onchange="peekCatChange()" style="flex:1;min-width:0">${
+          catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(CAT_INFO[c].label||c)}</option>`).join('')
+        }</select></div>`;
+      })())}
       ${propRow2(
         'Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`,
         'Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`
@@ -197,10 +201,16 @@ function peekDesignerChange(){
 }
 
 function peekCatChange(){
-  const ci = CAT_INFO[byId('pk-cat').value];
+  const key = byId('pk-cat').value;
+  const ci = CAT_INFO[key];
   if(!ci) return;
   byId('pk-price').value = ci.priceRange[0];
   calcPeekTotal();
+  const badge = byId('pk-cat-badge');
+  if(badge){
+    badge.textContent = ci.label||key;
+    badge.style.cssText = `background:color-mix(in srgb,${ci.color} 15%,transparent);color:${ci.color};border:1.5px solid color-mix(in srgb,${ci.color} 45%,transparent);padding:2px 12px;border-radius:20px;font-size:12px;font-weight:700;white-space:nowrap;flex-shrink:0`;
+  }
 }
 
 function calcPeekTotal(){
