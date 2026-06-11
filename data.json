@@ -22,34 +22,6 @@
   ],
   "projects": [
     {
-      "designerId": 1,
-      "title": "Kerasysda rasmlarni to'g'irlab chiqish",
-      "description": "11111",
-      "category": "A",
-      "units": 4,
-      "pricePerUnit": 20000,
-      "date": "2026-06-11",
-      "deadline": null,
-      "status": "done",
-      "priority": "medium",
-      "files": [],
-      "paymentPaid": false,
-      "paymentDate": null,
-      "comments": [
-        {
-          "author": "Art Direktor",
-          "text": "gfieshrsd",
-          "time": "11/06, 12:09"
-        }
-      ],
-      "doneDate": "2026-06-11",
-      "id": 1,
-      "descHtml": "<p>11111</p>",
-      "tags": [],
-      "notionUrl": "https://app.notion.com/p/Kerasysda-rasmlarni-to-g-irlab-chiqish-37c13cf900798157adebced287772bb5",
-      "notionPageId": "37c13cf9-0079-8157-adeb-ced287772bb5"
-    },
-    {
       "title": "DSEDFS",
       "designerId": 1,
       "descHtml": "WEYHGFYHDGF",
@@ -132,5 +104,5 @@
       "passHash": "43a487792d421de4dd3848f9e55c44da879a347169a4800edcd301e70014344a"
     }
   ],
-  "savedAt": "2026-06-11T13:40:51.352Z"
+  "savedAt": "2026-06-11T13:44:40.212Z"
 }
