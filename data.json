@@ -24,8 +24,8 @@
     {
       "title": "DSEDFS",
       "designerId": 1,
-      "descHtml": "WEYHGFYHDGF",
-      "description": "WEYHGFYHDGF",
+      "descHtml": "WEYsdffsetsersdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfHDGF",
+      "description": "WEYsdffsetsersdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfdfHDGF",
       "category": "A",
       "units": 1,
       "pricePerUnit": 15000,
@@ -105,5 +105,5 @@
       "passHash": "43a487792d421de4dd3848f9e55c44da879a347169a4800edcd301e70014344a"
     }
   ],
-  "savedAt": "2026-06-11T14:15:00.355Z"
+  "savedAt": "2026-06-11T14:15:15.355Z"
 }
