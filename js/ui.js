@@ -1,0 +1,1023 @@
+// ═══════════════════════════════════════════════
+// UI — render funksiyalari, modallar, yordamchilar
+// ═══════════════════════════════════════════════
+
+let currentDesignerId = null;
+let catFilter = 'all', projStatusFilter = 'all';
+let photoData = {};
+
+// ── YORDAMCHILAR ──
+function esc(s){ return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function fmtPrice(n){
+  n = n||0;
+  if(n>=1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'M';
+  return n.toLocaleString('uz');
+}
+
+function toast(msg){
+  const el = document.createElement('div');
+  el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.style.animation='toastOut .25s ease forwards'; setTimeout(()=>el.remove(),250); },2600);
+}
+
+function photoAvatar(d,size){
+  const r = size>40?10:6;
+  if(d.photo) return `<div style="width:${size}px;height:${size}px;border-radius:${r}px;overflow:hidden;flex-shrink:0;border:1px solid var(--border)"><img src="${d.photo}" style="width:100%;height:100%;object-fit:cover"/></div>`;
+  const initials = d.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<div style="width:${size}px;height:${size}px;border-radius:${r}px;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:${Math.round(size*0.36)}px;font-weight:700;flex-shrink:0">${initials}</div>`;
+}
+
+function statusBadge(s){
+  const map={active:'s-active',idle:'s-idle',away:'s-away'};
+  const dot={active:'var(--success)',idle:'var(--warning)',away:'var(--error)'};
+  const labels={active:'Faol',idle:"Bo'sh",away:'Uzoqda'};
+  return `<span class="status ${map[s]||'s-idle'}"><span class="status-dot-sm" style="background:${dot[s]||'var(--muted)'}"></span>${labels[s]||s}</span>`;
+}
+
+function projStatusBadge(s){
+  const map={wip:'s-wip',review:'s-review',done:'s-done'};
+  const labels={wip:'Jarayonda',review:"Ko'rib chiqilmoqda",done:'Bajarildi'};
+  return `<span class="status ${map[s]||'s-draft'}">${labels[s]||s}</span>`;
+}
+
+function deadlineDays(dl){
+  if(!dl) return null;
+  const now=new Date(); now.setHours(0,0,0,0);
+  const d=new Date(dl); d.setHours(0,0,0,0);
+  return Math.round((d-now)/(1000*60*60*24));
+}
+
+function deadlineBadge(p){
+  if(p.status==='done'||!p.deadline) return '';
+  const days=deadlineDays(p.deadline);
+  if(days<0)  return `<span class="status s-away">${Math.abs(days)} kun o'tdi</span>`;
+  if(days===0)return `<span class="status s-away">Bugun!</span>`;
+  if(days<=3) return `<span class="status s-idle">${days} kun qoldi</span>`;
+  return `<span class="status s-draft">${days} kun qoldi</span>`;
+}
+
+function priorityBadge(pr){
+  if(!pr) return '';
+  const map={
+    high:`<span class="status s-away"><span class="status-dot-sm" style="background:var(--error)"></span>Yuqori</span>`,
+    medium:`<span class="status s-idle"><span class="status-dot-sm" style="background:var(--warning)"></span>O'rta</span>`,
+    low:`<span class="status s-draft"><span class="status-dot-sm" style="background:var(--muted2)"></span>Past</span>`,
+  };
+  return map[pr]||'';
+}
+
+function maskCard(c){ if(!c) return '—'; return c.replace(/(\d{4})\s?(\d{4})\s?(\d{4})\s?(\d{4})/,'$1 •••• •••• $4'); }
+
+// Faol panelni qayta chizish
+function rerenderActive(){
+  const active = document.querySelector('.panel.active')?.id?.replace('panel-','');
+  const fns = {dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
+  if(fns[active]) fns[active]();
+  updateCounts();
+}
+
+function updateCounts(){
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('nav-count-d', designers.length);
+  set('nav-count-p', projects.length);
+  set('nav-count-pay', projects.filter(p=>p.status==='done').length);
+  set('nav-count-u', getUsers().length);
+  renderNotifPanel();
+}
+
+function updateTopbar(name){
+  const tr = document.getElementById('topbar-right-badges');
+  if(!tr) return;
+  tr.innerHTML='';
+  if(name==='designers'){
+    const a=designers.filter(d=>d.status==='active').length;
+    tr.innerHTML=`<span class="badge badge-green">${a} faol</span>`;
+  }
+  if(name==='projects'){
+    const wip=projects.filter(p=>p.status==='wip').length;
+    const overdue=projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).length;
+    if(overdue>0) tr.innerHTML+=`<span class="badge badge-red">${overdue} muddati o'tdi</span>`;
+    if(wip>0) tr.innerHTML+=`<span class="badge badge-blue">${wip} jarayonda</span>`;
+  }
+  if(name==='payments'){
+    const total=projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+    tr.innerHTML=`<span class="badge badge-green">Jami: ${fmtPrice(total)} so'm</span>`;
+  }
+  if(name==='users'){
+    tr.innerHTML=`<span class="badge badge-blue">${getUsers().length} foydalanuvchi</span>`;
+  }
+}
+
+// ═══════════════ DASHBOARD ═══════════════
+function renderDashboard(){
+  document.getElementById('st-active').textContent = designers.filter(d=>d.status==='active').length;
+  document.getElementById('st-total').textContent = designers.length;
+  document.getElementById('st-wip').textContent = projects.filter(p=>p.status==='wip').length;
+  const total = projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  document.getElementById('st-budget').textContent = fmtPrice(total);
+
+  const dd = document.getElementById('dash-designers');
+  dd.innerHTML = designers.length ? designers.map(d=>`
+    <div class="table-row" style="grid-template-columns:1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${photoAvatar(d,32)}
+        <div>
+          <div style="font-size:13px;font-weight:600">${esc(d.name)}</div>
+          <div style="font-size:11.5px;color:var(--muted)">${esc(d.role)}</div>
+        </div>
+      </div>
+      <span class="d-cat-badge ${CAT_INFO[d.category].cls}">${d.category}</span>
+      ${statusBadge(d.status)}
+    </div>`).join('') : '<div class="empty">Hali dizayner qo\'shilmagan</div>';
+
+  const overdue=projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<=3);
+  const dashAlerts=document.getElementById('dash-alerts');
+  if(dashAlerts){
+    dashAlerts.innerHTML = overdue.length ? `<div class="card" style="border-color:color-mix(in srgb,var(--error) 35%,transparent);padding:14px 18px;margin-bottom:16px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--error);margin-bottom:8px">Diqqat — ${overdue.length} ta loyiha muddati yaqin yoki o'tgan</div>
+      ${overdue.map(p=>{const d=designers.find(x=>x.id===p.designerId);const days=deadlineDays(p.deadline);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+          <span style="font-size:12.5px;font-weight:600;flex:1;min-width:160px">${esc(p.title)}</span>
+          <span style="font-size:11.5px;color:var(--muted)">${esc(d?.name||'')}</span>
+          ${days<0?`<span class="status s-away">${Math.abs(days)} kun o'tdi</span>`:days===0?`<span class="status s-away">Bugun!</span>`:`<span class="status s-idle">${days} kun qoldi</span>`}
+        </div>`;}).join('')}
+    </div>` : '';
+  }
+
+  const recent=[...projects].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+  document.getElementById('dash-projects').innerHTML = recent.length ? recent.map(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    return `<div class="table-row" style="grid-template-columns:1fr auto">
+      <div>
+        <div style="font-size:12.5px;font-weight:600;margin-bottom:2px">${esc(p.title)}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${esc(d?.name||'')} · ${p.date}${p.deadline?' · muddat: '+p.deadline:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        ${projStatusBadge(p.status)}
+        <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Hali loyiha yo\'q</div>';
+}
+
+// ═══════════════ DIZAYNERLAR ═══════════════
+function setCatFilter(c){
+  catFilter=c;
+  document.querySelectorAll('#cat-tabs .tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===c));
+  renderDesigners();
+}
+
+function renderDesigners(){
+  const q=(document.getElementById('search-d')?.value||'').toLowerCase();
+  let list=designers.filter(d=>
+    (catFilter==='all'||d.category===catFilter)&&
+    (d.name.toLowerCase().includes(q)||(d.role||'').toLowerCase().includes(q))
+  );
+  const grid=document.getElementById('designers-grid');
+  if(!list.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Hech narsa topilmadi</div>';return;}
+  grid.innerHTML=list.map(d=>{
+    const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
+    const doneLastMonth=projects.filter(p=>p.designerId===d.id&&p.status==='done'&&new Date(p.doneDate||p.date)>=lastMonth).length;
+    const wipNow=projects.filter(p=>p.designerId===d.id&&p.status==='wip').length;
+    const ci=CAT_INFO[d.category];
+    return `<div class="d-card" onclick="openDetail(${d.id})">
+      <div class="d-card-top">
+        ${photoAvatar(d,64)}
+        <div class="d-info">
+          <div class="d-name">${esc(d.name)}</div>
+          <div class="d-role">${esc(d.role)}</div>
+          <span class="d-cat-badge ${ci.cls}">${d.category} kategoriya</span>
+        </div>
+        <div onclick="event.stopPropagation()" style="flex-shrink:0">${statusBadge(d.status)}</div>
+      </div>
+      <div class="d-card-stats">
+        <div class="d-stat">
+          <div class="d-stat-val" style="color:var(--success)">${doneLastMonth}</div>
+          <div class="d-stat-lbl">Oxirgi oy</div>
+        </div>
+        <div class="d-stat">
+          <div class="d-stat-val" style="color:var(--accent2)">${wipNow}</div>
+          <div class="d-stat-lbl">Jarayonda</div>
+        </div>
+      </div>
+      <div class="d-card-footer">
+        <div>
+          <div class="d-contact">${esc(d.phone||'—')}</div>
+          <div class="d-contact card-num">${maskCard(d.cardNumber)}</div>
+        </div>
+        <div class="d-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-xs" onclick="openDesignerModal(${d.id})">Tahrir</button>
+          <button class="btn btn-danger btn-xs" onclick="deleteDesigner(${d.id})">O'chirish</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteDesigner(id){
+  if(!confirm("Dizayner o'chirilsinmi? Uning barcha loyihalari ham o'chadi.")) return;
+  designers=designers.filter(d=>d.id!==id);
+  projects=projects.filter(p=>p.designerId!==id);
+  persist(); rerenderActive(); toast("Dizayner o'chirildi");
+}
+
+// ═══════════════ DIZAYNER PROFILI ═══════════════
+function openDetail(id){ currentDesignerId=id; showPanel('detail'); }
+
+function renderDetail(){
+  const d=designers.find(x=>x.id===currentDesignerId);
+  if(!d){ showPanel('designers'); return; }
+  const ci=CAT_INFO[d.category];
+  const dProjs=projects.filter(p=>p.designerId===d.id);
+  const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
+  const doneLastMonth=dProjs.filter(p=>p.status==='done'&&new Date(p.doneDate||p.date)>=lastMonth).length;
+  const wipNow=dProjs.filter(p=>p.status==='wip').length;
+  const totalEarned=dProjs.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const totalUnits=dProjs.filter(p=>p.status==='done').reduce((s,p)=>s+p.units,0);
+
+  document.getElementById('detail-hero-wrap').innerHTML=`
+    <div class="detail-hero">
+      <div class="detail-photo">${d.photo?`<img src="${d.photo}"/>`:esc(d.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase())}</div>
+      <div style="flex:1;min-width:0">
+        <div class="detail-name">${esc(d.name)}</div>
+        <div class="detail-role">${esc(d.role)}</div>
+        <div class="detail-tags">
+          <span class="d-cat-badge ${ci.cls}">${d.category} — ${ci.label}</span>
+          ${statusBadge(d.status)}
+          ${(d.skills||[]).map(s=>`<span class="skill-tag">${esc(s)}</span>`).join('')}
+        </div>
+        <div class="detail-contacts">
+          <span class="contact-item">Tel: ${esc(d.phone||'—')}</span>
+          <span class="contact-item">Karta: <span class="card-num">${esc(d.cardNumber||'—')}</span></span>
+          <span class="contact-item">Telegram: ${esc(d.telegram||'—')}</span>
+          <span class="contact-item">Qo'shilgan: ${d.joinedAt||'—'}</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+        <button class="btn btn-ghost btn-sm" onclick="openDesignerModal(${d.id})">Tahrirlash</button>
+        <div style="font-size:11px;color:var(--muted2);text-align:center">${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()} so'm/birlik</div>
+      </div>
+    </div>`;
+
+  document.getElementById('detail-stats').innerHTML=[
+    {l:'Oxirgi oy (bajarilgan)',v:doneLastMonth,c:'var(--success)'},
+    {l:'Jarayonda',v:wipNow,c:'var(--accent2)'},
+    {l:'Jami birlik',v:totalUnits,c:'var(--text)'},
+    {l:"Jami to'lov (so'm)",v:fmtPrice(totalEarned),c:'var(--accent-text)'},
+  ].map(s=>`<div class="det-stat"><div class="v" style="color:${s.c}">${s.v}</div><div class="l">${s.l}</div></div>`).join('');
+
+  document.getElementById('detail-add-btn').onclick=()=>openProjectModal(null,d.id);
+
+  const el=document.getElementById('detail-projects');
+  if(!dProjs.length){el.innerHTML='<div class="empty">Hali loyiha yo\'q</div>';return;}
+  el.innerHTML=[...dProjs].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(p=>projCardHtml(p,false)).join('');
+}
+
+// ═══════════════ LOYIHALAR ═══════════════
+function setProjFilter(f){
+  projStatusFilter=f;
+  document.querySelectorAll('#proj-status-tabs .tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  renderProjects();
+}
+
+function renderProjects(){
+  const dsel=document.getElementById('proj-d-filter');
+  const dval=dsel?.value||'all';
+  if(dsel) dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+    designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${esc(d.name)}</option>`).join('');
+
+  const cval=document.getElementById('proj-cat-filter')?.value||'all';
+  const prval=document.getElementById('proj-priority-filter')?.value||'all';
+  const qval=(document.getElementById('search-p')?.value||'').toLowerCase();
+  let list=projects;
+  if(projStatusFilter!=='all') list=list.filter(p=>p.status===projStatusFilter);
+  if(dval!=='all') list=list.filter(p=>p.designerId===parseInt(dval));
+  if(cval!=='all') list=list.filter(p=>p.category===cval);
+  if(prval!=='all') list=list.filter(p=>p.priority===prval);
+  if(qval) list=list.filter(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    return p.title.toLowerCase().includes(qval)||(d?.name||'').toLowerCase().includes(qval)||(p.description||'').toLowerCase().includes(qval);
+  });
+  list=[...list].sort((a,b)=>{
+    const da=a.status!=='done'&&a.deadline?deadlineDays(a.deadline):9999;
+    const db=b.status!=='done'&&b.deadline?deadlineDays(b.deadline):9999;
+    if(da!==db) return da-db;
+    return (b.date||'').localeCompare(a.date||'');
+  });
+
+  const el=document.getElementById('projects-list');
+  if(!el) return;
+  if(!list.length){el.innerHTML='<div class="empty">Hech narsa topilmadi</div>';return;}
+  el.innerHTML=list.map(p=>projCardHtml(p,true)).join('');
+}
+
+function projCardHtml(p,showDesigner){
+  const d=designers.find(x=>x.id===p.designerId);
+  const ci=CAT_INFO[p.category];
+  const total=p.units*p.pricePerUnit;
+  const isOver=p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0;
+  return `<div class="report-card${isOver?' overdue':''}" id="pcard-${p.id}">
+    <div class="report-header">
+      <div>
+        <div class="report-title">${esc(p.title)}</div>
+        ${showDesigner&&d?`<div style="display:flex;align-items:center;gap:7px;margin-top:5px">${photoAvatar(d,20)}<span style="font-size:12px;color:var(--muted)">${esc(d.name)}</span></div>`:''}
+      </div>
+      <div class="report-controls">
+        ${priorityBadge(p.priority)}
+        <span class="d-cat-badge ${ci.cls}">${p.category}</span>
+        ${projStatusBadge(p.status)}
+        ${deadlineBadge(p)}
+        <select class="mini-select" onchange="changeProjStatus(${p.id},this.value)">
+          <option value="wip"${p.status==='wip'?' selected':''}>Jarayonda</option>
+          <option value="review"${p.status==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
+          <option value="done"${p.status==='done'?' selected':''}>Bajarildi</option>
+        </select>
+        <button class="btn btn-ghost btn-xs" onclick="openProjectModal(${p.id})">Tahrir</button>
+        <button class="btn btn-danger btn-xs" onclick="deleteProject(${p.id})">×</button>
+      </div>
+    </div>
+    <div class="report-meta">
+      <span>Boshlangan: ${p.date}</span>
+      ${p.deadline?`<span>·</span><span>Muddat: <strong style="color:${p.status==='done'?'var(--muted)':deadlineDays(p.deadline)<0?'var(--error)':deadlineDays(p.deadline)<=3?'var(--warning)':'var(--text)'}">${p.deadline}</strong></span>`:''}
+      ${p.doneDate?`<span>·</span><span>Bajarilgan: ${p.doneDate}</span>`:''}
+      <span>·</span>
+      <span>${p.units} birlik × ${p.pricePerUnit.toLocaleString()} so'm</span>
+      <span>·</span>
+      <span class="report-price">Jami: ${fmtPrice(total)} so'm</span>
+    </div>
+    ${p.description?`<div class="report-desc">${esc(p.description)}</div>`:''}
+    ${p.files&&p.files.length?`<div class="report-files">${p.files.map(f=>`<span class="file-tag">${esc(f)}</span>`).join('')}</div>`:''}
+    <div class="comment-box">
+      ${(p.comments||[]).map(c=>`
+        <div class="comment-item">
+          <div style="display:flex;justify-content:space-between">
+            <span class="comment-author">${esc(c.author)}</span>
+            <span class="comment-time">${esc(c.time)}</span>
+          </div>
+          <div class="comment-text">${esc(c.text)}</div>
+        </div>`).join('')}
+      <div class="comment-input-row">
+        <input class="form-input" id="cmt-${p.id}" placeholder="Izoh qo'shish..." style="font-size:12px;padding:7px 11px" onkeydown="if(event.key==='Enter')addComment(${p.id})"/>
+        <button class="btn btn-ghost btn-xs" onclick="addComment(${p.id})">Yuborish</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function changeProjStatus(id,status){
+  projects=projects.map(p=>{
+    if(p.id!==id) return p;
+    const upd={...p,status};
+    // Bajarildi → bajarilgan sana yoziladi; aksincha tozalanadi
+    if(status==='done' && !p.doneDate) upd.doneDate=new Date().toISOString().slice(0,10);
+    if(status!=='done') upd.doneDate=null;
+    return upd;
+  });
+  persist();
+  const stLbl={wip:'Jarayonda',review:"Ko'rib chiqilmoqda",done:'Bajarildi'};
+  toast(`Holat o'zgartirildi: ${stLbl[status]||status}`);
+  rerenderActive();
+}
+
+function deleteProject(id){
+  if(!confirm("Loyiha o'chirilsinmi?")) return;
+  projects=projects.filter(p=>p.id!==id);
+  persist(); rerenderActive(); toast("Loyiha o'chirildi");
+}
+
+function addComment(projId){
+  const inp=document.getElementById('cmt-'+projId);
+  if(!inp) return;
+  const text=inp.value.trim();
+  if(!text) return;
+  const cur=getCurrentUser();
+  const author=cur?.displayName||cur?.username||'Admin';
+  const now=new Date().toLocaleString('uz',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  projects=projects.map(p=>{
+    if(p.id!==projId) return p;
+    return {...p,comments:[...(p.comments||[]),{author,text,time:now}]};
+  });
+  persist();
+  const card=document.getElementById('pcard-'+projId);
+  if(card){
+    const p=projects.find(x=>x.id===projId);
+    const showD=document.getElementById('panel-projects').classList.contains('active');
+    if(p) card.outerHTML=projCardHtml(p,showD);
+  }
+  toast("Izoh qo'shildi");
+}
+
+// ═══════════════ MODALLAR ═══════════════
+function closeModal(){ document.getElementById('modal').style.display='none'; }
+
+function openDesignerModal(id=null){
+  const d=id?designers.find(x=>x.id===id):null;
+  photoData.tempPhoto = d?.photo||null;
+  document.getElementById('modal-title-text').textContent = d ? "Dizaynerni tahrirlash" : "Yangi dizayner qo'shish";
+  document.getElementById('modal-body').innerHTML=`
+    <div style="display:flex;gap:16px;margin-bottom:16px;align-items:flex-start">
+      <div>
+        <div class="photo-upload" id="photo-prev" onclick="document.getElementById('photo-file').click()">
+          ${photoData.tempPhoto?`<img src="${photoData.tempPhoto}"/>`:'<span class="photo-upload-label">Rasm yuklash</span>'}
+        </div>
+        <input type="file" id="photo-file" accept="image/*" onchange="handlePhoto(event)" style="display:none"/>
+      </div>
+      <div style="flex:1">
+        <div class="form-group"><label class="form-label">Ism Familiya</label><input class="form-input" id="f-name" value="${esc(d?.name||'')}" placeholder="Aziz Karimov"/></div>
+        <div class="form-group"><label class="form-label">Rol / Mutaxassislik</label><input class="form-input" id="f-role" value="${esc(d?.role||'')}" placeholder="UI/UX Designer"/></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Kategoriya</label>
+      <div class="cat-select" id="cat-sel">
+        ${['A','B','C'].map(c=>{const ci=CAT_INFO[c];return `
+          <div class="cat-opt${(d?.category||'B')===c?' sel-'+c.toLowerCase():''}" onclick="selectCat('${c}',this)" data-cat="${c}">
+            <span class="cat-letter" style="color:${ci.color}">${c}</span>
+            <div class="cat-desc">${ci.desc}</div>
+            <div class="cat-price" style="color:${ci.color}">${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()}</div>
+          </div>`;}).join('')}
+      </div>
+      <input type="hidden" id="f-cat" value="${d?.category||'B'}"/>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Telefon raqami</label><input class="form-input" id="f-phone" value="${esc(d?.phone||'')}" placeholder="+998 90 123 45 67"/></div>
+      <div class="form-group"><label class="form-label">Karta raqami</label><input class="form-input" id="f-card" value="${esc(d?.cardNumber||'')}" placeholder="8600 1234 5678 9012" maxlength="19" oninput="formatCard(this)"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Telegram</label><input class="form-input" id="f-tg" value="${esc(d?.telegram||'')}" placeholder="@username"/></div>
+      <div class="form-group"><label class="form-label">Holat</label>
+        <select class="form-select" id="f-status">
+          <option value="active"${(d?.status||'active')==='active'?' selected':''}>Faol</option>
+          <option value="idle"${(d?.status||'active')==='idle'?' selected':''}>Bo'sh</option>
+          <option value="away"${(d?.status||'active')==='away'?' selected':''}>Uzoqda</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Ko'nikmalar <small>(vergul bilan)</small></label><input class="form-input" id="f-skills" value="${esc(d?.skills?.join(', ')||'')}" placeholder="Figma, Illustrator, After Effects"/></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveDesigner(${d?.id||'null'})">Saqlash</button>
+    </div>`;
+  document.getElementById('modal').style.display='flex';
+}
+
+function handlePhoto(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    photoData.tempPhoto=ev.target.result;
+    document.getElementById('photo-prev').innerHTML=`<img src="${ev.target.result}"/>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function selectCat(c, el){
+  document.querySelectorAll('#cat-sel .cat-opt').forEach(o=>{o.className='cat-opt'});
+  el.classList.add('sel-'+c.toLowerCase());
+  document.getElementById('f-cat').value=c;
+}
+
+function formatCard(inp){
+  let v=inp.value.replace(/\D/g,'').slice(0,16);
+  inp.value=v.replace(/(.{4})/g,'$1 ').trim();
+}
+
+function saveDesigner(id){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){alert("Ism Familiya kiritilmagan!");return;}
+  const skills=document.getElementById('f-skills').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const obj={
+    name,photo:photoData.tempPhoto||null,
+    role:document.getElementById('f-role').value.trim(),
+    category:document.getElementById('f-cat').value,
+    phone:document.getElementById('f-phone').value.trim(),
+    cardNumber:document.getElementById('f-card').value.trim(),
+    telegram:document.getElementById('f-tg').value.trim(),
+    status:document.getElementById('f-status').value,
+    skills,
+  };
+  if(id!=='null'&&id){
+    designers=designers.map(d=>d.id===parseInt(id)?{...d,...obj}:d);
+    toast('Dizayner yangilandi');
+  } else {
+    designers.push({...obj,id:nextDId++,joinedAt:new Date().toISOString().slice(0,10)});
+    toast("Dizayner qo'shildi");
+  }
+  closeModal(); photoData.tempPhoto=null;
+  persist(); rerenderActive();
+}
+
+function openProjectModal(id=null, preDesignerId=null){
+  if(!designers.length){ toast("Avval dizayner qo'shing"); return; }
+  const p=id?projects.find(x=>x.id===id):null;
+  const defDId=preDesignerId||(p?.designerId)||(designers[0]?.id)||'';
+  const defDesigner=designers.find(d=>d.id===parseInt(defDId));
+  const defCat=p?.category||(defDesigner?.category)||'B';
+  const defPrice=p?.pricePerUnit||(CAT_INFO[defCat]?.priceRange[0])||10000;
+
+  document.getElementById('modal-title-text').textContent=p?"Loyihani tahrirlash":"Yangi loyiha qo'shish";
+  document.getElementById('modal-body').innerHTML=`
+    <div class="form-group"><label class="form-label">Dizayner</label>
+      <select class="form-select" id="f-did" onchange="onDesignerChange(this)">
+        ${designers.map(d=>`<option value="${d.id}"${defDId==d.id?' selected':''}>${esc(d.name)} (${d.category})</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group"><label class="form-label">Loyiha sarlavhasi</label><input class="form-input" id="f-ptitle" value="${esc(p?.title||'')}" placeholder="Loyiha nomi — Vazifa"/></div>
+    <div class="form-group"><label class="form-label">Tavsif</label><textarea class="form-textarea" id="f-pdesc" placeholder="Bajarilishi kerak bo'lgan ishlar...">${esc(p?.description||'')}</textarea></div>
+    <div class="form-group">
+      <label class="form-label">Kategoriya <small>(dizaynerga qarab avtomatik)</small></label>
+      <div class="cat-select" id="proj-cat-sel">
+        ${['A','B','C'].map(c=>{const ci=CAT_INFO[c];return `
+          <div class="cat-opt${defCat===c?' sel-'+c.toLowerCase():''}" onclick="selectProjCat('${c}',this)" data-cat="${c}">
+            <span class="cat-letter" style="color:${ci.color}">${c}</span>
+            <div class="cat-desc">${ci.desc}</div>
+            <div class="cat-price" style="color:${ci.color}">${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()}</div>
+          </div>`;}).join('')}
+      </div>
+      <input type="hidden" id="f-pcat" value="${defCat}"/>
+    </div>
+    <div class="form-grid-3">
+      <div class="form-group"><label class="form-label">Birlik soni</label><input class="form-input" id="f-units" type="number" value="${p?.units||1}" min="1" oninput="calcTotal()"/></div>
+      <div class="form-group"><label class="form-label">Narx (so'm/birlik)</label><input class="form-input" id="f-price" type="number" value="${defPrice}" oninput="calcTotal()"/></div>
+      <div class="form-group"><label class="form-label">Jami to'lov</label><input class="form-input" id="f-total" readonly style="color:var(--accent-text);font-weight:700"/></div>
+    </div>
+    <div class="form-hint" style="margin:-8px 0 14px" id="price-hint"></div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Boshlangan sana</label><input class="form-input" id="f-pdate" type="date" value="${p?.date||new Date().toISOString().slice(0,10)}"/></div>
+      <div class="form-group"><label class="form-label">Muddat (deadline)</label><input class="form-input" id="f-pdeadline" type="date" value="${p?.deadline||''}"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Holat</label>
+        <select class="form-select" id="f-pstatus">
+          <option value="wip"${(p?.status||'wip')==='wip'?' selected':''}>Jarayonda</option>
+          <option value="review"${(p?.status||'wip')==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
+          <option value="done"${(p?.status||'wip')==='done'?' selected':''}>Bajarildi</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Muhimlik darajasi</label>
+        <select class="form-select" id="f-priority">
+          <option value="low"${(p?.priority||'medium')==='low'?' selected':''}>Past</option>
+          <option value="medium"${(p?.priority||'medium')==='medium'?' selected':''}>O'rta</option>
+          <option value="high"${(p?.priority||'medium')==='high'?' selected':''}>Yuqori</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Fayllar <small>(vergul bilan)</small></label><input class="form-input" id="f-pfiles" value="${esc(p?.files?.join(', ')||'')}" placeholder="design.fig, export.zip"/></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveProject(${p?.id||'null'})">Saqlash</button>
+    </div>`;
+  document.getElementById('modal').style.display='flex';
+  calcTotal();
+}
+
+function onDesignerChange(sel){
+  const d=designers.find(x=>x.id===parseInt(sel.value));
+  if(!d) return;
+  const cat=d.category;
+  document.getElementById('f-pcat').value=cat;
+  document.querySelectorAll('#proj-cat-sel .cat-opt').forEach(o=>{
+    o.className='cat-opt';
+    if(o.dataset.cat===cat) o.classList.add('sel-'+cat.toLowerCase());
+  });
+  document.getElementById('f-price').value=CAT_INFO[cat].priceRange[0];
+  calcTotal();
+}
+
+function selectProjCat(c,el){
+  document.querySelectorAll('#proj-cat-sel .cat-opt').forEach(o=>{o.className='cat-opt'});
+  el.classList.add('sel-'+c.toLowerCase());
+  document.getElementById('f-pcat').value=c;
+  document.getElementById('f-price').value=CAT_INFO[c].priceRange[0];
+  calcTotal();
+}
+
+function calcTotal(){
+  const units=parseInt(document.getElementById('f-units')?.value)||0;
+  const price=parseInt(document.getElementById('f-price')?.value)||0;
+  const cat=document.getElementById('f-pcat')?.value||'B';
+  const ci=CAT_INFO[cat];
+  if(document.getElementById('f-total')) document.getElementById('f-total').value=fmtPrice(units*price)+" so'm";
+  if(document.getElementById('price-hint'))
+    document.getElementById('price-hint').textContent=`${cat} kategoriya uchun tavsiya: ${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()} so'm/birlik`;
+}
+
+function saveProject(id){
+  const title=document.getElementById('f-ptitle').value.trim();
+  if(!title){alert("Loyiha sarlavhasi kiritilmagan!");return;}
+  const files=document.getElementById('f-pfiles').value.split(',').map(s=>s.trim()).filter(Boolean);
+  const status=document.getElementById('f-pstatus').value;
+  const obj={
+    designerId:parseInt(document.getElementById('f-did').value),
+    title,
+    description:document.getElementById('f-pdesc').value.trim(),
+    category:document.getElementById('f-pcat').value,
+    units:parseInt(document.getElementById('f-units').value)||1,
+    pricePerUnit:parseInt(document.getElementById('f-price').value)||0,
+    date:document.getElementById('f-pdate').value,
+    deadline:document.getElementById('f-pdeadline')?.value||null,
+    status,
+    priority:document.getElementById('f-priority')?.value||'medium',
+    files,
+  };
+  if(id!=='null'&&id){
+    const existing=projects.find(p=>p.id===parseInt(id));
+    // To'lov holati va izohlar saqlanib qoladi
+    obj.paymentPaid=existing?.paymentPaid||false;
+    obj.paymentDate=existing?.paymentDate||null;
+    obj.comments=existing?.comments||[];
+    obj.doneDate = status==='done' ? (existing?.doneDate||new Date().toISOString().slice(0,10)) : null;
+    projects=projects.map(p=>p.id===parseInt(id)?{...p,...obj}:p);
+    toast('Loyiha yangilandi');
+  } else {
+    obj.paymentPaid=false; obj.paymentDate=null; obj.comments=[];
+    obj.doneDate = status==='done' ? new Date().toISOString().slice(0,10) : null;
+    projects.push({...obj,id:nextPId++});
+    toast("Loyiha qo'shildi");
+  }
+  closeModal();
+  persist(); rerenderActive();
+}
+
+// ═══════════════ TO'LOVLAR ═══════════════
+function filterByMonth(list, mval){
+  if(mval==='all') return list;
+  const now=new Date();
+  return list.filter(p=>{
+    const d=new Date(p.doneDate||p.date);
+    if(mval==='this_month') return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(mval==='last_month'){const lm=new Date(now.getFullYear(),now.getMonth()-1,1);return d.getMonth()===lm.getMonth()&&d.getFullYear()===lm.getFullYear();}
+    if(mval==='this_year') return d.getFullYear()===now.getFullYear();
+    return true;
+  });
+}
+
+function renderPayments(){
+  const dsel=document.getElementById('pay-d-filter');
+  if(dsel){
+    const v=dsel.value;
+    dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+      designers.map(d=>`<option value="${d.id}"${v==d.id?' selected':''}>${esc(d.name)}</option>`).join('');
+  }
+  const dval=document.getElementById('pay-d-filter')?.value||'all';
+  const mval=document.getElementById('pay-month-filter')?.value||'all';
+  let doneProjs=projects.filter(p=>p.status==='done'&&(dval==='all'||p.designerId===parseInt(dval)));
+  doneProjs=filterByMonth(doneProjs,mval);
+  const totalAll=projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const totalFiltered=doneProjs.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const paidTotal=doneProjs.filter(p=>p.paymentPaid).reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+
+  const ps=document.getElementById('pay-stats');
+  if(ps) ps.innerHTML=[
+    {v:fmtPrice(totalAll),l:"Umumiy jami (so'm)",c:'var(--accent-text)'},
+    {v:fmtPrice(totalFiltered),l:"Tanlangan davr (so'm)",c:'var(--text)'},
+    {v:fmtPrice(paidTotal),l:"To'langan (so'm)",c:'var(--success)'},
+    {v:fmtPrice(totalFiltered-paidTotal),l:"Qolgan (so'm)",c:'var(--error)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.c}">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
+
+  const el=document.getElementById('payments-list');
+  if(!el) return;
+  const byD=designers.filter(d=>dval==='all'||d.id===parseInt(dval)).map(d=>{
+    const dp=doneProjs.filter(p=>p.designerId===d.id).sort((a,b)=>(b.doneDate||b.date||'').localeCompare(a.doneDate||a.date||''));
+    if(!dp.length) return '';
+    const total=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+    const ci=CAT_INFO[d.category];
+    return `<div class="card" style="margin-bottom:14px">
+      <div class="card-header">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          ${photoAvatar(d,30)}
+          <span style="font-size:13.5px;font-weight:700">${esc(d.name)}</span>
+          <span class="d-cat-badge ${ci.cls}">${d.category}</span>
+          <span class="card-num">${esc(d.cardNumber||'—')}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:12px;color:var(--muted)">${dp.length} ta loyiha</span>
+          <span class="price-tag" style="font-size:13px">Jami: ${fmtPrice(total)} so'm</span>
+        </div>
+      </div>
+      ${dp.map(p=>{
+        const isOverdue=p.deadline&&p.doneDate&&p.doneDate>p.deadline;
+        const rowCls=p.paymentPaid?'pay-row-paid':(isOverdue?'pay-row-overdue':'');
+        return `<div class="table-row ${rowCls}" style="grid-template-columns:1fr auto auto auto">
+          <div>
+            <div style="font-size:12.5px;font-weight:600">${esc(p.title)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">
+              ${p.doneDate||p.date}${p.deadline?' · muddat: '+p.deadline:''}${isOverdue?' · <span style="color:var(--error);font-weight:600">kechikkan</span>':''}
+              ${p.paymentDate?' · to\'langan: '+p.paymentDate:''}
+            </div>
+          </div>
+          <span style="font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums">${p.units} × ${p.pricePerUnit.toLocaleString()}</span>
+          <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)}</span>
+          <button onclick="togglePayment(${p.id})" class="btn btn-xs ${p.paymentPaid?'pay-btn-paid':'pay-btn-unpaid'}">
+            ${p.paymentPaid?"To'langan ✓":"To'lanmagan"}
+          </button>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+  el.innerHTML=byD||'<div class="empty">Bajarilgan loyiha yo\'q</div>';
+}
+
+function togglePayment(projId){
+  projects=projects.map(p=>{
+    if(p.id!==projId) return p;
+    const paid=!p.paymentPaid;
+    return {...p,paymentPaid:paid,paymentDate:paid?new Date().toISOString().slice(0,10):null};
+  });
+  persist();
+  renderPayments();
+  updateCounts();
+  const p=projects.find(x=>x.id===projId);
+  toast(p?.paymentPaid?"To'langan deb belgilandi":"To'lanmagan deb belgilandi");
+}
+
+function printPayments(){ window.print(); }
+
+// ═══════════════ HISOBOTLAR ═══════════════
+function renderReports(){
+  const done=projects.filter(p=>p.status==='done');
+  const wip=projects.filter(p=>p.status==='wip');
+  const totalPay=done.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+
+  const rs=document.getElementById('rep-stats');
+  if(rs) rs.innerHTML=[
+    {v:done.length,l:'Bajarilgan loyiha',c:'var(--success)'},
+    {v:wip.length,l:'Jarayonda',c:'var(--accent2)'},
+    {v:fmtPrice(totalPay),l:"Jami to'lov (so'm)",c:'var(--accent-text)'},
+    {v:designers.filter(d=>d.status==='active').length,l:'Faol dizayner',c:'var(--text)'},
+  ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.c}">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
+
+  const wlEl=document.getElementById('rep-workload');
+  if(wlEl){
+    if(!designers.length){ wlEl.innerHTML='<div class="empty">Dizayner yo\'q</div>'; }
+    else {
+      const maxWip=Math.max(1,...designers.map(d=>projects.filter(p=>p.designerId===d.id&&p.status==='wip').length));
+      wlEl.innerHTML=designers.map(d=>{
+        const dWip=projects.filter(p=>p.designerId===d.id&&p.status==='wip');
+        const dReview=projects.filter(p=>p.designerId===d.id&&p.status==='review');
+        const dDone=projects.filter(p=>p.designerId===d.id&&p.status==='done');
+        const dOverdue=dWip.filter(p=>p.deadline&&deadlineDays(p.deadline)<0);
+        const pct=Math.round(dWip.length/maxWip*100);
+        const ci=CAT_INFO[d.category];
+        return `<div style="display:grid;grid-template-columns:180px 1fr auto;gap:14px;align-items:center;margin-bottom:13px">
+          <div style="display:flex;align-items:center;gap:9px">
+            ${photoAvatar(d,26)}
+            <div>
+              <div style="font-size:12.5px;font-weight:600">${esc(d.name)}</div>
+              <span class="d-cat-badge ${ci.cls}" style="font-size:9.5px;padding:1px 7px">${d.category}</span>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap">
+              ${dOverdue.length?`<span class="status s-away" style="font-size:10px">${dOverdue.length} muddati o'tdi</span>`:''}
+              <span class="status s-wip" style="font-size:10px">${dWip.length} jarayonda</span>
+              ${dReview.length?`<span class="status s-review" style="font-size:10px">${dReview.length} ko'rib chiqilmoqda</span>`:''}
+            </div>
+            <div style="background:var(--hover);border-radius:4px;height:6px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${dOverdue.length?'var(--error)':ci.color};border-radius:4px;transition:width .4s"></div>
+            </div>
+          </div>
+          <span class="price-tag">${dDone.length} bajarildi</span>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  const catEl=document.getElementById('rep-cat-chart');
+  if(catEl){
+    catEl.innerHTML=['A','B','C'].map(c=>{
+      const cp=done.filter(p=>p.category===c);
+      const total=cp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      const ci=CAT_INFO[c];
+      const pct=done.length?Math.round(cp.length/done.length*100):0;
+      return `<div style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+          <span class="d-cat-badge ${ci.cls}">${c} kategoriya</span>
+          <span style="font-size:11.5px;color:var(--muted)">${cp.length} loyiha · ${fmtPrice(total)} so'm</span>
+        </div>
+        <div style="background:var(--hover);border-radius:4px;height:7px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:${ci.color};border-radius:4px;transition:width .4s"></div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  const topEl=document.getElementById('rep-top-designers');
+  if(topEl){
+    const ranked=[...designers].map(d=>{
+      const dp=done.filter(p=>p.designerId===d.id);
+      return {...d,doneCount:dp.length,earned:dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0)};
+    }).sort((a,b)=>b.earned-a.earned);
+    topEl.innerHTML=ranked.length ? ranked.map((d,i)=>`
+      <div class="table-row" style="grid-template-columns:24px 1fr auto auto">
+        <span style="font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums">${i+1}</span>
+        <div style="display:flex;align-items:center;gap:9px">
+          ${photoAvatar(d,26)}
+          <span style="font-size:13px;font-weight:600">${esc(d.name)}</span>
+        </div>
+        <span style="font-size:11.5px;color:var(--muted)">${d.doneCount} ta</span>
+        <span class="price-tag">${fmtPrice(d.earned)} so'm</span>
+      </div>`).join('') : '<div class="empty">Dizayner yo\'q</div>';
+  }
+}
+
+// ═══════════════ FOYDALANUVCHILAR ═══════════════
+function renderUsers(){
+  const users=getUsers();
+  const el=document.getElementById('users-list');
+  if(!el) return;
+  el.innerHTML=`<div class="card">
+    ${users.map(u=>`
+      <div class="table-row" style="grid-template-columns:1fr auto auto auto">
+        <div>
+          <div style="font-size:13px;font-weight:700">${esc(u.displayName||u.username)}</div>
+          <div style="font-size:11.5px;color:var(--muted)">@${esc(u.username)} · ${u.role==='admin'?'<span style="color:var(--accent-text);font-weight:600">Admin</span>':'Foydalanuvchi'}</div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
+          ${u.role==='admin'?'<span class="skill-tag">Barcha huquqlar</span>':Object.entries(u.permissions||{}).filter(([k,v])=>v).map(([k])=>`<span class="skill-tag">${PERM_LABELS[k]||k}</span>`).join('')}
+        </div>
+        ${u.role!=='admin'?`<button class="btn btn-ghost btn-xs" onclick="openUserModal('${u.id}')">Tahrir</button>`:'<span></span>'}
+        ${u.role!=='admin'?`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">O'chirish</button>`:'<span style="font-size:10.5px;color:var(--muted2)">himoyalangan</span>'}
+      </div>`).join('')}
+  </div>
+  <div class="settings-note" style="margin-top:14px">
+    Diqqat: foydalanuvchi loginlari boshqa qurilmalarda ishlashi uchun o'zgarishdan keyin
+    ma'lumotlar GitHub'ga saqlangan bo'lishi kerak (pastdagi holat panelini tekshiring).
+  </div>`;
+}
+
+function openUserModal(id=null){
+  const users=getUsers();
+  const u=id?users.find(x=>x.id===id):null;
+  document.getElementById('modal-title-text').textContent=u?"Foydalanuvchini tahrirlash":"Yangi foydalanuvchi";
+  const perms=u?.permissions||{designers:true,projects:true,payments:false,reports:false,users:false,settings:false};
+  document.getElementById('modal-body').innerHTML=`
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Login (username)</label><input class="form-input" id="fu-uname" value="${esc(u?.username||'')}" placeholder="username"/></div>
+      <div class="form-group"><label class="form-label">Ism</label><input class="form-input" id="fu-dname" value="${esc(u?.displayName||'')}" placeholder="Ism Familiya"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">${u?"Yangi parol <small>(bo'sh qoldirsa o'zgarmaydi)</small>":"Parol"}</label><input class="form-input" id="fu-pass" type="password" placeholder="••••••••"/></div>
+    <div class="form-group">
+      <label class="form-label">Huquqlar — qaysi bo'limlarni ko'ra oladi</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px">
+        ${Object.entries(PERM_LABELS).map(([k,lbl])=>`
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
+            <input type="checkbox" id="fp-${k}" ${perms[k]?'checked':''} style="accent-color:var(--accent)"/>
+            ${lbl}
+          </label>`).join('')}
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Bekor qilish</button>
+      <button class="btn btn-primary" onclick="saveUser('${id||'null'}')">Saqlash</button>
+    </div>`;
+  document.getElementById('modal').style.display='flex';
+}
+
+function saveUser(id){
+  const users=getUsers();
+  const uname=document.getElementById('fu-uname')?.value?.trim();
+  const dname=document.getElementById('fu-dname')?.value?.trim();
+  const pass=document.getElementById('fu-pass')?.value;
+  if(!uname||!dname){alert("Login va ism kiritilmagan!");return;}
+  const permissions={};
+  Object.keys(PERM_LABELS).forEach(k=>{permissions[k]=!!document.getElementById('fp-'+k)?.checked;});
+  if(id!=='null'&&id){
+    const idx=users.findIndex(u=>u.id===id);
+    if(idx===-1) return;
+    if(users.find(u=>u.id!==id && u.username===uname)){alert("Bu login allaqachon band!");return;}
+    users[idx].username=uname;
+    users[idx].displayName=dname;
+    users[idx].permissions=permissions;
+    if(pass) users[idx].passHash=hashPass(pass);
+    toast("Foydalanuvchi yangilandi");
+  } else {
+    if(!pass){alert("Parol kiritilmagan!");return;}
+    if(users.find(u=>u.username===uname)){alert("Bu login allaqachon mavjud!");return;}
+    users.push({id:'u'+Date.now(),username:uname,passHash:hashPass(pass),role:'user',displayName:dname,permissions});
+    toast("Foydalanuvchi qo'shildi");
+  }
+  saveUsers(users);
+  closeModal();
+  renderUsers();
+  updateCounts();
+}
+
+function deleteUser(id){
+  if(!confirm("Foydalanuvchini o'chirishni tasdiqlaysizmi?")) return;
+  saveUsers(getUsers().filter(u=>u.id!==id));
+  renderUsers();
+  updateCounts();
+  toast("Foydalanuvchi o'chirildi");
+}
+
+// ═══════════════ SOZLAMALAR ═══════════════
+function renderSettingsPage(){
+  const s2=document.getElementById('s-token2');
+  if(s2) s2.value=localStorage.getItem('gh_token')||'';
+
+  const gsId=document.getElementById('gs-sheet-id');
+  const gsTok=document.getElementById('gs-token');
+  if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';
+  if(gsTok) gsTok.value=localStorage.getItem('gs_token')||'';
+  const gsSt=document.getElementById('gs-status');
+  if(gsSt) gsSt.textContent=localStorage.getItem('gs_sheet_id')?'Sheet ID saqlangan — tayyor':'Sheet ID kiritilmagan';
+
+  const cur=getCurrentUser();
+  const adminCard=document.getElementById('admin-creds-card');
+  if(adminCard){
+    if(cur?.role==='admin'){
+      adminCard.style.display='';
+      const adminUser=getUsers().find(u=>u.id==='admin');
+      const unameEl=document.getElementById('admin-uname');
+      if(unameEl) unameEl.value=adminUser?.username||'admin';
+    } else {
+      adminCard.style.display='none';
+    }
+  }
+
+  const cpe=document.getElementById('cat-price-editor');
+  if(cpe) cpe.innerHTML=['A','B','C'].map(c=>{
+    const ci=CAT_INFO[c];
+    return `<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+      <span class="d-cat-badge ${ci.cls}" style="width:38px;justify-content:center">${c}</span>
+      <div style="flex:1">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+          <div><label class="form-label">Min (so'm)</label>
+            <input class="form-input" id="cp-${c}-min" type="number" value="${ci.priceRange[0]}"/></div>
+          <div><label class="form-label">Max (so'm)</label>
+            <input class="form-input" id="cp-${c}-max" type="number" value="${ci.priceRange[1]}"/></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('')+`<button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="saveCatPrices()">Saqlash</button>`;
+}
+
+function saveCatPrices(){
+  ['A','B','C'].forEach(c=>{
+    const mn=parseInt(document.getElementById('cp-'+c+'-min')?.value)||CAT_INFO[c].priceRange[0];
+    const mx=parseInt(document.getElementById('cp-'+c+'-max')?.value)||CAT_INFO[c].priceRange[1];
+    CAT_INFO[c].priceRange=[mn,mx];
+  });
+  persist();
+  toast("Narxlar saqlandi");
+}
+
+// ═══════════════ BILDIRISHNOMALAR ═══════════════
+let notifications = [];
+
+function buildNotifications(){
+  const list=[];
+  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'od-'+p.id,type:'overdue',title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
+  });
+  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)===0).forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'td-'+p.id,type:'today',title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+  });
+  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)>0&&deadlineDays(p.deadline)<=3).forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'soon-'+p.id,type:'soon',title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+  });
+  projects.filter(p=>p.status==='review').forEach(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    list.push({id:'rev-'+p.id,type:'review',title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
+  });
+  const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
+  list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
+  notifications=list;
+}
+
+function renderNotifPanel(){
+  buildNotifications();
+  const unread=notifications.filter(n=>!n.read).length;
+  const badge=document.getElementById('notif-badge');
+  if(badge){ badge.textContent=unread; badge.classList.toggle('show',unread>0); }
+  const el=document.getElementById('notif-list');
+  if(!el) return;
+  if(!notifications.length){ el.innerHTML='<div class="notif-item" style="color:var(--muted2);font-size:12.5px">Bildirishnomalar yo\'q</div>'; return; }
+  const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)'};
+  el.innerHTML=notifications.map(n=>`
+    <div class="notif-item${n.read?'':' unread'}">
+      <div class="notif-item-title"><span class="notif-dot" style="background:${dotColor[n.type]||'var(--muted)'}"></span>${esc(n.title)}</div>
+      ${n.sub?`<div class="notif-item-sub">${esc(n.sub)}</div>`:''}
+      <div class="notif-item-time">${n.time||''}</div>
+    </div>`).join('');
+}
+
+function toggleNotifPanel(){
+  const el=document.getElementById('notif-panel');
+  el.classList.toggle('open');
+  if(el.classList.contains('open')) renderNotifPanel();
+}
+
+function markAllRead(){
+  buildNotifications();
+  localStorage.setItem('exon_notif_read',JSON.stringify(notifications.map(n=>n.id)));
+  renderNotifPanel();
+  document.getElementById('notif-panel').classList.remove('open');
+}
