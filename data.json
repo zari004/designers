@@ -31,14 +31,14 @@
       "pricePerUnit": 15000,
       "date": "2026-06-11",
       "deadline": null,
-      "status": "wip",
+      "status": "done",
       "priority": "medium",
       "files": [],
       "tags": [],
       "paymentPaid": false,
       "paymentDate": null,
       "comments": [],
-      "doneDate": null,
+      "doneDate": "2026-06-11",
       "id": 2,
       "notionUrl": "https://app.notion.com/p/DSEDFS-37c13cf900798112b7b4cc98f8f2feaa",
       "notionPageId": "37c13cf9-0079-8112-b7b4-cc98f8f2feaa"
@@ -105,5 +105,5 @@
       "passHash": "43a487792d421de4dd3848f9e55c44da879a347169a4800edcd301e70014344a"
     }
   ],
-  "savedAt": "2026-06-11T14:21:36.590Z"
+  "savedAt": "2026-06-11T14:28:13.523Z"
 }
