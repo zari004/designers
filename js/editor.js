@@ -115,11 +115,6 @@ function openProjectPeek(id = null, preDesignerId = null){
       ${propRow('Dizayner','user',`<select class="prop-input" id="pk-did" onchange="peekDesignerChange()">${
         designers.map(d=>`<option value="${d.id}"${defDId==d.id?' selected':''}>${esc(d.name)} (${esc(d.category)})</option>`).join('')
       }</select>`)}
-      ${propRow('Holat','status',`<select class="prop-input" id="pk-status">
-        <option value="wip"${(p?.status||'wip')==='wip'?' selected':''}>Jarayonda</option>
-        <option value="review"${p?.status==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
-        <option value="done"${p?.status==='done'?' selected':''}>Bajarildi</option>
-      </select>`)}
       ${propRow('Muhimlik','flag',`<select class="prop-input" id="pk-priority">
         <option value="low"${p?.priority==='low'?' selected':''}>Past</option>
         <option value="medium"${(p?.priority||'medium')==='medium'?' selected':''}>O'rta</option>
@@ -219,7 +214,10 @@ function collectPeekProject(){
   const ed = byId('pk-rte');
   const plain = ed.innerText.replace(/\s+/g,' ').trim();
   const descHtml = sanitizeHtml(ed.innerHTML);
-  const status = byId('pk-status').value;
+  // Holat panel ichida ko'rsatilmaydi — kartadan o'zgartiriladi.
+  // Mavjud loyihaning holatini saqlaymiz, yangisi uchun "wip".
+  const status = byId('pk-status')?.value
+    || (peekProjId ? (projects.find(p=>p.id===peekProjId)?.status || 'wip') : 'wip');
   return {
     title,
     designerId: parseInt(byId('pk-did').value),
