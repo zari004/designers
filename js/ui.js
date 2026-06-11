@@ -387,6 +387,9 @@ function changeProjStatus(id,status){
 
 function deleteProject(id){
   if(!confirm("Loyiha o'chirilsinmi?")) return;
+  const ex = projects.find(p=>p.id===id);
+  // Notionda ham bo'lsa — arxivlash (chiqitga)
+  if(ex?.notionPageId && typeof archiveNotionPage==='function') archiveNotionPage(ex.notionPageId);
   projects=projects.filter(p=>p.id!==id);
   persist(); rerenderActive(); toast("Loyiha o'chirildi");
 }

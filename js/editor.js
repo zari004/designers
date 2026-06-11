@@ -153,12 +153,25 @@ function openProjectPeek(id = null, preDesignerId = null){
   calcPeekTotal();
   ensureBubble();
   ensureSlash();
+  updateNotionBtnLabel(p);
 
   applyPeekWidth();
   byId('peek-overlay').classList.add('open');
   byId('peek').classList.add('open');
   document.body.style.overflow = 'hidden';
   if(!p) setTimeout(()=>byId('pk-title')?.focus(), 280);
+}
+
+// Notion tugmasi yozuvini holatga qarab yangilash
+function updateNotionBtnLabel(p){
+  const btn = byId('peek-notion-btn');
+  if(!btn) return;
+  const ic = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>';
+  const published = !!(p && p.notionPageId);
+  btn.disabled = false;
+  btn.onclick = sendProjectToNotion;
+  btn.innerHTML = ic + (published ? ' Notionda yangilash' : ' Notionga yuborish');
+  btn.title = published ? 'Notiondagi sahifani yangilash' : 'Loyihani Notionga chop etish';
 }
 
 function openProjectModal(id = null, preDesignerId = null){ openProjectPeek(id, preDesignerId); }
@@ -254,6 +267,9 @@ function savePeekProject(){
 function deleteProjectFromPeek(){
   if(!peekProjId) return;
   if(!confirm("Loyiha o'chirilsinmi?")) return;
+  const ex = projects.find(p=>p.id===peekProjId);
+  // Notionda ham bo'lsa — arxivlash (chiqitga)
+  if(ex?.notionPageId && typeof archiveNotionPage==='function') archiveNotionPage(ex.notionPageId);
   projects = projects.filter(p=>p.id!==peekProjId);
   closePeek();
   persist();

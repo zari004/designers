@@ -227,33 +227,54 @@ async function sendProjectToNotion(){
   if(!data.title){ toast('Loyiha nomini kiriting'); byId('pk-title')?.focus(); return; }
   savePeekProjectSilently(data);
 
+  // Avval shu loyiha Notionga yuborilganmi — sahifa ID sini topish
+  const existing = peekProjId ? projects.find(p=>p.id===peekProjId) : null;
+  const existingPageId = existing?.notionPageId || null;
+
   const btn = byId('peek-notion-btn');
   const old = btn ? btn.innerHTML : '';
-  if(btn){ btn.disabled=true; btn.innerHTML='Yuborilmoqda...'; }
+  if(btn){ btn.disabled=true; btn.innerHTML = existingPageId ? 'Yangilanmoqda...' : 'Yuborilmoqda...'; }
   try{
     const d = designers.find(x=>x.id===data.designerId);
     const blocks = buildProjectBlocks(data, d);
-    const first = blocks.slice(0,100);
-    // Ota-element database'mi yoki sahifami — aniqlab, mos sarlavha xususiyatini tuzamiz
-    const pinfo = await resolveNotionParent(c);
-    const properties = pinfo.kind==='database'
-      ? { [pinfo.titleProp]: { title:[{type:'text',text:{content:data.title}}] } }
-      : { title: { title:[{type:'text',text:{content:data.title}}] } };
-    const page = await notionFetch('/pages','POST',{
-      parent: pinfo.parent,
-      properties,
-      children:first,
-    });
-    // 100 dan ortiq blok bo'lsa — qo'shimcha yuborish
-    for(let i=100;i<blocks.length;i+=100){
-      await notionFetch(`/blocks/${page.id}/children`,'PATCH',{children:blocks.slice(i,i+100)});
+    let page, url, updated=false;
+
+    if(existingPageId){
+      // ── MAVJUD SAHIFANI YANGILASH ──
+      try{
+        page = await updateNotionPage(existingPageId, data, d, blocks);
+        url = page.url || existing.notionUrl || ('https://notion.so/'+existingPageId.replace(/-/g,''));
+        updated = true;
+      }catch(e){
+        // Sahifa Notionda o'chirilgan bo'lsa — yangisini yaratamiz
+        if(/Could not find|not found|404|archived/i.test(e.message)){ page=null; }
+        else throw e;
+      }
     }
-    const url = page.url || ('https://notion.so/'+page.id.replace(/-/g,''));
+
+    if(!page){
+      // ── YANGI SAHIFA YARATISH ──
+      const first = blocks.slice(0,100);
+      const pinfo = await resolveNotionParent(c);
+      const properties = pinfo.kind==='database'
+        ? { [pinfo.titleProp]: { title:[{type:'text',text:{content:data.title}}] } }
+        : { title: { title:[{type:'text',text:{content:data.title}}] } };
+      page = await notionFetch('/pages','POST',{
+        parent: pinfo.parent,
+        properties,
+        children:first,
+      });
+      for(let i=100;i<blocks.length;i+=100){
+        await notionFetch(`/blocks/${page.id}/children`,'PATCH',{children:blocks.slice(i,i+100)});
+      }
+      url = page.url || ('https://notion.so/'+page.id.replace(/-/g,''));
+    }
+
     if(peekProjId){
       projects = projects.map(p=>p.id===peekProjId?{...p,notionUrl:url,notionPageId:page.id}:p);
       persist();
     }
-    toast('Notionga chop etildi ✓');
+    toast(updated ? 'Notionda yangilandi ✓' : 'Notionga chop etildi ✓');
     if(btn){ btn.innerHTML='Notionda ochish ↗'; btn.disabled=false; btn.onclick=()=>window.open(url,'_blank'); }
     window.open(url,'_blank');
   }catch(e){
@@ -261,6 +282,42 @@ async function sendProjectToNotion(){
     const corsLike = /Failed to fetch|NetworkError|load failed/i.test(e.message);
     toast(corsLike ? 'Notion to\'g\'ridan-to\'g\'ri ulanishni rad etdi — proxy kerak (Sozlamalar)' : ('Notion xatosi: '+e.message));
   }
+}
+
+// Mavjud Notion sahifasini yangilash: sarlavha + butun tarkib qayta yoziladi
+async function updateNotionPage(pageId, data, d, blocks){
+  // 1. Sarlavha xususiyatini topib yangilash
+  const pg = await notionFetch('/pages/'+pageId,'GET');
+  if(pg.archived || pg.in_trash) throw new Error('archived');
+  let titleKey = 'title';
+  if(pg.properties){
+    for(const [k,v] of Object.entries(pg.properties)){ if(v.type==='title'){ titleKey=k; break; } }
+  }
+  await notionFetch('/pages/'+pageId,'PATCH',{
+    properties:{ [titleKey]:{ title:[{type:'text',text:{content:data.title}}] } }
+  });
+  // 2. Eski tarkib bloklarini o'chirish
+  let cursor = undefined;
+  do{
+    const q = cursor ? `?start_cursor=${cursor}&page_size=100` : '?page_size=100';
+    const kids = await notionFetch('/blocks/'+pageId+'/children'+q,'GET');
+    for(const b of (kids.results||[])){
+      try{ await notionFetch('/blocks/'+b.id,'DELETE'); }catch(e){}
+    }
+    cursor = kids.has_more ? kids.next_cursor : undefined;
+  } while(cursor);
+  // 3. Yangi tarkibni qo'shish
+  for(let i=0;i<blocks.length;i+=100){
+    await notionFetch('/blocks/'+pageId+'/children','PATCH',{children:blocks.slice(i,i+100)});
+  }
+  return pg;
+}
+
+// Loyiha o'chirilganda Notion sahifasini ham arxivlash (chiqitga tashlash)
+async function archiveNotionPage(pageId){
+  const c = notionCfg();
+  if(!c.token || !pageId) return;
+  try{ await notionFetch('/pages/'+pageId,'PATCH',{archived:true}); }catch(e){}
 }
 
 // Notion sarlavha + xususiyatlarni kontekst sifatida qo'shadi
