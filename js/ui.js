@@ -327,6 +327,10 @@ function renderProjects(){
   if(!el) return;
   if(!list.length){el.innerHTML='<div class="empty">Hech narsa topilmadi</div>';return;}
   el.innerHTML=list.map(p=>projCardHtml(p,true)).join('');
+  // Chiqitdon tugmasi sonini yangilash
+  const tb=document.getElementById('trash-toggle-btn');
+  if(tb) tb.textContent=`🗑 Chiqitdon (${trashedProjects.length})`;
+  if(document.getElementById('trash-box')?.classList.contains('open')) renderTrash();
 }
 
 function projCardHtml(p,showDesigner){
@@ -386,12 +390,55 @@ function changeProjStatus(id,status){
 }
 
 function deleteProject(id){
-  if(!confirm("Loyiha o'chirilsinmi?")) return;
-  const ex = projects.find(p=>p.id===id);
-  // Notionda ham bo'lsa — arxivlash (chiqitga)
-  if(ex?.notionPageId && typeof archiveNotionPage==='function') archiveNotionPage(ex.notionPageId);
-  projects=projects.filter(p=>p.id!==id);
-  persist(); rerenderActive(); toast("Loyiha o'chirildi");
+  if(!confirm("Loyiha chiqitdonga tashlansinmi? Chiqitdondan tiklash mumkin.")) return;
+  trashProject(id);
+  persist(); rerenderActive(); toast("Loyiha chiqitdonga tashlandi");
+}
+
+function renderTrash(){
+  const el = byId('trash-list');
+  if(!el) return;
+  const btn = byId('trash-toggle-btn');
+  if(!trashedProjects.length){
+    el.innerHTML = '<div style="padding:18px;color:var(--muted);font-size:13px;text-align:center">Chiqitdon bo\'sh</div>';
+    if(btn) btn.textContent = '🗑 Chiqitdon (0)';
+    return;
+  }
+  if(btn) btn.textContent = `🗑 Chiqitdon (${trashedProjects.length})`;
+  el.innerHTML = trashedProjects.slice().reverse().map(p=>{
+    const d = designers.find(x=>x.id===p.designerId);
+    const date = p.trashedAt ? new Date(p.trashedAt).toLocaleDateString('uz-UZ') : '';
+    return `<div class="trash-row">
+      <div class="trash-info">
+        <span class="trash-title">${esc(p.title)}</span>
+        <span class="trash-meta">${esc(d?.name||'—')} · ${date}</span>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button class="btn btn-ghost btn-xs" onclick="doRestoreProject(${p.id})">↩ Tiklash</button>
+        <button class="btn btn-danger btn-xs" onclick="doPurgeProject(${p.id})">Butunlay o'chirish</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function doRestoreProject(id){
+  restoreProject(id);
+  persist(); rerenderActive(); renderTrash();
+  toast("Loyiha tiklandi");
+}
+function doPurgeProject(id){
+  if(!confirm("Loyiha butunlay o'chirilsinmi? Bu amalni qaytarib bo'lmaydi.")) return;
+  const p = trashedProjects.find(x=>x.id===id);
+  if(p?.notionPageId && typeof archiveNotionPage==='function') archiveNotionPage(p.notionPageId);
+  purgeProject(id);
+  persist(); renderTrash();
+  toast("Butunlay o'chirildi");
+}
+function toggleTrash(){
+  const box = byId('trash-box');
+  if(!box) return;
+  const open = box.classList.toggle('open');
+  if(open) renderTrash();
 }
 
 // ── IZOHLAR (qo'shish / tahrirlash / o'chirish) ──

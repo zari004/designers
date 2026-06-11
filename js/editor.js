@@ -264,15 +264,12 @@ function savePeekProject(){
 
 function deleteProjectFromPeek(){
   if(!peekProjId) return;
-  if(!confirm("Loyiha o'chirilsinmi?")) return;
-  const ex = projects.find(p=>p.id===peekProjId);
-  // Notionda ham bo'lsa — arxivlash (chiqitga)
-  if(ex?.notionPageId && typeof archiveNotionPage==='function') archiveNotionPage(ex.notionPageId);
-  projects = projects.filter(p=>p.id!==peekProjId);
+  if(!confirm("Loyiha chiqitdonga tashlansinmi? Chiqitdondan tiklash mumkin.")) return;
+  trashProject(peekProjId);
   closePeek();
   persist();
   rerenderActive();
-  toast("Loyiha o'chirildi");
+  toast("Loyiha chiqitdonga tashlandi");
 }
 
 // ═══════════════ PANELNI KENGAYTIRISH ═══════════════
@@ -293,7 +290,11 @@ function startPeekResize(e){
   document.body.style.cursor = 'ew-resize';
   document.body.style.userSelect = 'none';
   peek.style.transition = 'none';
-  peek.classList.add('resizing');  // ikonalar qotib qolishini oldini olish
+  // Shaffof to'siq qo'shamiz — sichqoncha form elementlari ustida borib ketsa ham glitch bo'lmaydi
+  const cover = document.createElement('div');
+  cover.id = 'peek-resize-cover';
+  cover.style.cssText = 'position:fixed;inset:0;z-index:9999;cursor:ew-resize';
+  document.body.appendChild(cover);
   const move = ev=>{
     const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
     const w = clampPeekWidth(window.innerWidth - x);
@@ -307,7 +308,7 @@ function startPeekResize(e){
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
     peek.style.transition = '';
-    peek.classList.remove('resizing');
+    document.getElementById('peek-resize-cover')?.remove();
     localStorage.setItem('exon_peek_w', parseInt(peek.style.width)||820);
   };
   document.addEventListener('mousemove', move);

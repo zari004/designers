@@ -69,6 +69,7 @@ function deleteCategory(key){
 
 let designers = [];
 let projects  = [];
+let trashedProjects = [];   // o'chirilgan, tiklanishi mumkin
 let nextDId = 1, nextPId = 1;
 let dataSavedAt = null;   // oxirgi saqlangan vaqt (ISO)
 let isDirty = false;      // GitHub'ga yozilmagan o'zgarishlar bormi
@@ -84,7 +85,7 @@ function snapshot(){
   const categories = {};
   catKeys().forEach(k=>{ const c=CAT_INFO[k]; categories[k]={label:c.label,desc:c.desc,priceRange:c.priceRange,color:c.color}; });
   return {
-    designers, projects,
+    designers, projects, trashedProjects,
     categories,
     catPrices:{A:CAT_INFO.A?.priceRange, B:CAT_INFO.B?.priceRange, C:CAT_INFO.C?.priceRange},
     users:getUsers(),
@@ -92,9 +93,28 @@ function snapshot(){
   };
 }
 
+function trashProject(id){
+  const p = projects.find(x=>x.id===id);
+  if(!p) return;
+  trashedProjects.push({...p, trashedAt: new Date().toISOString()});
+  projects = projects.filter(x=>x.id!==id);
+}
+function restoreProject(id){
+  const p = trashedProjects.find(x=>x.id===id);
+  if(!p) return;
+  const {trashedAt, ...rest} = p;
+  projects.push(rest);
+  trashedProjects = trashedProjects.filter(x=>x.id!==id);
+}
+function purgeProject(id){
+  // Butunlay o'chirish — Notion arxivini caller tomonidan boshqariladi
+  trashedProjects = trashedProjects.filter(x=>x.id!==id);
+}
+
 function applyData(d){
   if(Array.isArray(d.designers)) designers = d.designers;
   if(Array.isArray(d.projects))  projects  = d.projects;
+  if(Array.isArray(d.trashedProjects)) trashedProjects = d.trashedProjects;
   // Yangi format: to'liq kategoriyalar
   if(d.categories && typeof d.categories==='object' && Object.keys(d.categories).length){
     catKeys().forEach(k=>delete CAT_INFO[k]);
