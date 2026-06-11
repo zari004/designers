@@ -196,6 +196,24 @@ async function notionFetch(path, method, body){
   return j;
 }
 
+// Ota-element database'mi yoki oddiy sahifami — aniqlash
+async function resolveNotionParent(c){
+  try{
+    const db = await notionFetch('/databases/'+c.parent,'GET');
+    // title turidagi xususiyat nomini topish (database'da majburiy)
+    let titleProp = 'Name';
+    if(db.properties){
+      for(const [name,prop] of Object.entries(db.properties)){
+        if(prop.type==='title'){ titleProp = name; break; }
+      }
+    }
+    return {kind:'database', parent:{type:'database_id',database_id:c.parent}, titleProp};
+  }catch(e){
+    // database topilmadi — oddiy sahifa deb hisoblaymiz
+    return {kind:'page', parent:{type:'page_id',page_id:c.parent}, titleProp:'title'};
+  }
+}
+
 async function sendProjectToNotion(){
   const c = notionCfg();
   if(!c.token || !c.parent){
@@ -216,9 +234,14 @@ async function sendProjectToNotion(){
     const d = designers.find(x=>x.id===data.designerId);
     const blocks = buildProjectBlocks(data, d);
     const first = blocks.slice(0,100);
+    // Ota-element database'mi yoki sahifami — aniqlab, mos sarlavha xususiyatini tuzamiz
+    const pinfo = await resolveNotionParent(c);
+    const properties = pinfo.kind==='database'
+      ? { [pinfo.titleProp]: { title:[{type:'text',text:{content:data.title}}] } }
+      : { title: { title:[{type:'text',text:{content:data.title}}] } };
     const page = await notionFetch('/pages','POST',{
-      parent:{type:'page_id', page_id:c.parent},
-      properties:{ title:{ title:[{type:'text',text:{content:data.title}}] } },
+      parent: pinfo.parent,
+      properties,
       children:first,
     });
     // 100 dan ortiq blok bo'lsa — qo'shimcha yuborish
