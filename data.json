@@ -20,8 +20,7 @@
       "joinedAt": "2026-06-11"
     }
   ],
-  "projects": [],
-  "trashedProjects": [
+  "projects": [
     {
       "title": "DSEDFS",
       "designerId": 1,
@@ -42,10 +41,10 @@
       "doneDate": null,
       "id": 2,
       "notionUrl": null,
-      "notionPageId": null,
-      "trashedAt": "2026-06-11T14:02:49.498Z"
+      "notionPageId": null
     }
   ],
+  "trashedProjects": [],
   "categories": {
     "A": {
       "label": "A toifa",
@@ -106,5 +105,5 @@
       "passHash": "43a487792d421de4dd3848f9e55c44da879a347169a4800edcd301e70014344a"
     }
   ],
-  "savedAt": "2026-06-11T14:02:53.508Z"
+  "savedAt": "2026-06-11T14:06:12.699Z"
 }
