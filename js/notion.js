@@ -148,6 +148,12 @@ function blockFromEl(el, blocks){
       break;
     }
     case 'P': case 'DIV': {
+      // Varaq bloki (.rte-page-ref) → Notionda child_page
+      if(el.classList.contains('rte-page-ref')){
+        const title = el.innerText.replace('📄','').trim() || 'Yangi sahifa';
+        blocks.push({object:'block',type:'child_page',child_page:{title}});
+        break;
+      }
       // ichida blok elementlari bo'lsa — ularni alohida ishlash
       const hasBlock = [...el.children].some(c=>/^(H1|H2|H3|UL|OL|TABLE|BLOCKQUOTE|HR|DETAILS|PRE|DIV)$/.test(c.tagName));
       if(hasBlock){ el.childNodes.forEach(c=>blockFromEl(c,blocks)); }

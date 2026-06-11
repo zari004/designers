@@ -85,6 +85,14 @@ function propRow(label, icon, valueHtml){
   </div>`;
 }
 
+// Ikkita xususiyatni yonma-yon ko'rsatish (qator qisqaradi)
+function propRow2(l1, ic1, inp1, l2, ic2, inp2){
+  return `<div class="prop-row2">
+    <div class="prop-half"><div class="prop-label2">${PROP_ICONS[ic1]||''}${l1}</div>${inp1}</div>
+    <div class="prop-half"><div class="prop-label2">${PROP_ICONS[ic2]||''}${l2}</div>${inp2}</div>
+  </div>`;
+}
+
 // ── PANELNI OCHISH ──
 function openProjectPeek(id = null, preDesignerId = null){
   if(!designers.length){ toast("Avval dizayner qo'shing"); return; }
@@ -120,10 +128,14 @@ function openProjectPeek(id = null, preDesignerId = null){
       ${propRow('Kategoriya','cat',`<select class="prop-input" id="pk-cat" onchange="peekCatChange()">${
         catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(c)}${CAT_INFO[c].desc?' — '+esc(CAT_INFO[c].desc):''}</option>`).join('')
       }</select>`)}
-      ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
-      ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
-      ${propRow('Birlik soni','hash',`<input type="number" min="1" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()"/>`)}
-      ${propRow("Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`)}
+      ${propRow2(
+        'Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`,
+        'Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`
+      )}
+      ${propRow2(
+        'Birlik soni','hash',`<input type="number" min="1" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()"/>`,
+        "Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`
+      )}
       ${propRow("Jami to'lov",'sum',`<span class="prop-total" id="pk-total">—</span>`)}
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
       ${propRow('Fayllar','clip',`<input class="prop-input" id="pk-files" value="${esc(p?.files?.join(', ')||'')}" placeholder="design.fig, export.zip"/>`)}
@@ -265,7 +277,9 @@ function startPeekResize(e){
   const peek = byId('peek');
   peek.dataset.max = '0';
   document.body.style.cursor = 'ew-resize';
+  document.body.style.userSelect = 'none';
   peek.style.transition = 'none';
+  peek.classList.add('resizing');  // ikonalar qotib qolishini oldini olish
   const move = ev=>{
     const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
     const w = clampPeekWidth(window.innerWidth - x);
@@ -277,7 +291,9 @@ function startPeekResize(e){
     document.removeEventListener('touchmove', move);
     document.removeEventListener('touchend', up);
     document.body.style.cursor = '';
+    document.body.style.userSelect = '';
     peek.style.transition = '';
+    peek.classList.remove('resizing');
     localStorage.setItem('exon_peek_w', parseInt(peek.style.width)||820);
   };
   document.addEventListener('mousemove', move);
@@ -411,6 +427,7 @@ const SLASH_ITEMS = [
   {k:'table', label:'Jadval', desc:'3×3 jadval', ic:'▦', run:()=>rte('insertHTML','<table><tbody>'+('<tr>'+'<td><br></td>'.repeat(3)+'</tr>').repeat(3)+'</tbody></table><p><br></p>')},
   {k:'toggle', label:'Ochiladigan blok', desc:'Yashirinadigan matn', ic:'▸', run:()=>rte('insertHTML','<details open><summary>Sarlavha</summary><div>Matn...</div></details><p><br></p>')},
   {k:'divider', label:'Ajratuvchi chiziq', desc:'Bo\'limlarni ajratish', ic:'—', run:()=>rte('insertHorizontalRule')},
+  {k:'page', label:'Varaq', desc:'Notionda yangi child sahifa', ic:'📄', run:()=>rte('insertHTML','<p class="rte-page-ref">📄&nbsp;Yangi sahifa</p><p><br></p>')},
 ];
 
 let slashStart = null;   // {node, offset}
