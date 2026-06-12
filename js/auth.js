@@ -28,16 +28,28 @@ function setupAuthListener(onLogin, onLogout){
   auth.onAuthStateChanged(async fbUser => {
     if(fbUser){
       let profile = await getFbUserProfile(fbUser.uid);
+      // Tizimda admin bormi?
+      const db = getDb();
+      const adminSnap = db ? await db.collection('users').where('role','==','admin').limit(1).get() : null;
+      const hasAdmin = !!(adminSnap && adminSnap.size > 0);
       if(!profile){
-        // Firestore profilini qayta yaratish (yangi qurilma / yo'qolgan)
+        // Firestore profili yo'q — birinchi foydalanuvchimikan?
+        const role = hasAdmin ? 'viewer' : 'admin';
+        const perms = role === 'admin'
+          ? { designers:true, projects:true, payments:true, reports:true, users:true, settings:true }
+          : { designers:true, projects:true, payments:false, reports:true, users:false, settings:false };
         profile = {
           uid: fbUser.uid, email: fbUser.email,
           displayName: fbUser.displayName || fbUser.email.split('@')[0],
-          role: 'viewer',
-          permissions:{ designers:true, projects:true, payments:false, reports:true, users:false, settings:false },
+          role, permissions: perms,
           createdAt: new Date().toISOString(),
         };
         await saveFbUserProfile(fbUser.uid, profile);
+      } else if(!hasAdmin && profile.role !== 'admin'){
+        // Tizimda admin yo'q — bu foydalanuvchini admin qil
+        profile.role = 'admin';
+        profile.permissions = { designers:true, projects:true, payments:true, reports:true, users:true, settings:true };
+        await saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions });
       }
       _currentUser = profile;
       // Foydalanuvchilar ro'yxatini yangilash
