@@ -143,14 +143,17 @@ async function fbSignIn(email, pass){
   return (await _auth.signInWithEmailAndPassword(email, pass)).user;
 }
 
-async function fbRegisterUser(email, pass, displayName, role){
+async function fbRegisterUser(email, pass, displayName){
   if(!isFbReady()) throw new Error('Firebase tayyor emas');
+  // Avval Auth hisob yaratish (shundan keyin foydalanuvchi authenticated bo'ladi)
   const cred = await _auth.createUserWithEmailAndPassword(email, pass);
   const u = cred.user;
   await u.updateProfile({ displayName });
+  // Endi authenticated — Firestore'dan birinchi foydalanuvchimi tekshirish
+  const snap = await _db.collection('users').limit(1).get();
+  const role = snap.empty ? 'admin' : 'viewer';
   await _db.collection('users').doc(u.uid).set({
-    uid: u.uid, email, displayName,
-    role: role || 'viewer',
+    uid: u.uid, email, displayName, role,
     permissions:{ designers:true, projects:true, payments:false, reports:true, users:false, settings:false },
     createdAt: new Date().toISOString(),
   });

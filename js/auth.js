@@ -87,8 +87,7 @@ async function doRegister(){
   const btn = document.getElementById('reg-btn');
   if(btn){ btn.disabled=true; btn.textContent="Ro'yxatdan o'tilmoqda..."; }
   try{
-    const first = await isFirstFbUser();
-    await fbRegisterUser(email, pass, name, first ? 'admin' : 'viewer');
+    await fbRegisterUser(email, pass, name); // rol fbRegisterUser ichida aniqlanadi
     if(errEl) errEl.style.display='none';
     // onAuthStateChanged → initApp chaqiriladi
   }catch(e){
