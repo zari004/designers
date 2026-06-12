@@ -850,101 +850,16 @@ function renderReports(){
   }
 }
 
-// ═══════════════ FOYDALANUVCHILAR ═══════════════
+// ═══════════════ FOYDALANUVCHILAR (Firebase) ═══════════════
 function renderUsers(){
-  const users=getUsers();
-  const el=document.getElementById('users-list');
-  if(!el) return;
-  el.innerHTML=`<div class="card">
-    ${users.map(u=>`
-      <div class="table-row" style="grid-template-columns:1fr auto auto auto">
-        <div>
-          <div style="font-size:13px;font-weight:700">${esc(u.displayName||u.username)}</div>
-          <div style="font-size:11.5px;color:var(--muted)">@${esc(u.username)} · ${u.role==='admin'?'<span style="color:var(--accent-text);font-weight:600">Admin</span>':'Foydalanuvchi'}</div>
-        </div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end">
-          ${u.role==='admin'?'<span class="skill-tag">Barcha huquqlar</span>':Object.entries(u.permissions||{}).filter(([k,v])=>v).map(([k])=>`<span class="skill-tag">${PERM_LABELS[k]||k}</span>`).join('')}
-        </div>
-        ${u.role!=='admin'?`<button class="btn btn-ghost btn-xs" onclick="openUserModal('${u.id}')">Tahrir</button>`:'<span></span>'}
-        ${u.role!=='admin'?`<button class="btn btn-danger btn-xs" onclick="deleteUser('${u.id}')">O'chirish</button>`:'<span style="font-size:10.5px;color:var(--muted2)">himoyalangan</span>'}
-      </div>`).join('')}
-  </div>
-  <div class="settings-note" style="margin-top:14px">
-    Diqqat: foydalanuvchi loginlari boshqa qurilmalarda ishlashi uchun o'zgarishdan keyin
-    ma'lumotlar GitHub'ga saqlangan bo'lishi kerak (pastdagi holat panelini tekshiring).
-  </div>`;
+  // Foydalanuvchilar endi panel-users ichidagi fb-users-list'da ko'rsatiladi
+  if(typeof renderFbUsersAdmin === 'function') renderFbUsersAdmin();
 }
-
-function openUserModal(id=null){
-  const users=getUsers();
-  const u=id?users.find(x=>x.id===id):null;
-  document.getElementById('modal-title-text').textContent=u?"Foydalanuvchini tahrirlash":"Yangi foydalanuvchi";
-  const perms=u?.permissions||{designers:true,projects:true,payments:false,reports:false,users:false,settings:false};
-  document.getElementById('modal-body').innerHTML=`
-    <div class="form-grid">
-      <div class="form-group"><label class="form-label">Login (username)</label><input class="form-input" id="fu-uname" value="${esc(u?.username||'')}" placeholder="username"/></div>
-      <div class="form-group"><label class="form-label">Ism</label><input class="form-input" id="fu-dname" value="${esc(u?.displayName||'')}" placeholder="Ism Familiya"/></div>
-    </div>
-    <div class="form-group"><label class="form-label">${u?"Yangi parol <small>(bo'sh qoldirsa o'zgarmaydi)</small>":"Parol"}</label><input class="form-input" id="fu-pass" type="password" placeholder="••••••••"/></div>
-    <div class="form-group">
-      <label class="form-label">Huquqlar — qaysi bo'limlarni ko'ra oladi</label>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:4px">
-        ${Object.entries(PERM_LABELS).map(([k,lbl])=>`
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px">
-            <input type="checkbox" id="fp-${k}" ${perms[k]?'checked':''} style="accent-color:var(--accent)"/>
-            ${lbl}
-          </label>`).join('')}
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Bekor qilish</button>
-      <button class="btn btn-primary" onclick="saveUser('${id||'null'}')">Saqlash</button>
-    </div>`;
-  document.getElementById('modal').style.display='flex';
-}
-
-function saveUser(id){
-  const users=getUsers();
-  const uname=document.getElementById('fu-uname')?.value?.trim();
-  const dname=document.getElementById('fu-dname')?.value?.trim();
-  const pass=document.getElementById('fu-pass')?.value;
-  if(!uname||!dname){alert("Login va ism kiritilmagan!");return;}
-  const permissions={};
-  Object.keys(PERM_LABELS).forEach(k=>{permissions[k]=!!document.getElementById('fp-'+k)?.checked;});
-  if(id!=='null'&&id){
-    const idx=users.findIndex(u=>u.id===id);
-    if(idx===-1) return;
-    if(users.find(u=>u.id!==id && u.username===uname)){alert("Bu login allaqachon band!");return;}
-    users[idx].username=uname;
-    users[idx].displayName=dname;
-    users[idx].permissions=permissions;
-    if(pass) users[idx].passHash=hashPass(pass);
-    toast("Foydalanuvchi yangilandi");
-  } else {
-    if(!pass){alert("Parol kiritilmagan!");return;}
-    if(users.find(u=>u.username===uname)){alert("Bu login allaqachon mavjud!");return;}
-    users.push({id:'u'+Date.now(),username:uname,passHash:hashPass(pass),role:'user',displayName:dname,permissions});
-    toast("Foydalanuvchi qo'shildi");
-  }
-  saveUsers(users);
-  closeModal();
-  renderUsers();
-  updateCounts();
-}
-
-function deleteUser(id){
-  if(!confirm("Foydalanuvchini o'chirishni tasdiqlaysizmi?")) return;
-  saveUsers(getUsers().filter(u=>u.id!==id));
-  renderUsers();
-  updateCounts();
-  toast("Foydalanuvchi o'chirildi");
-}
+function openUserModal(){} // Firebase'da kerak emas (foydalanuvchilar o'zlari ro'yxatdan o'tadi)
+function saveUser(){}
 
 // ═══════════════ SOZLAMALAR ═══════════════
 function renderSettingsPage(){
-  const s2=document.getElementById('s-token2');
-  if(s2) s2.value=localStorage.getItem('gh_token')||'';
-
   const gsId=document.getElementById('gs-sheet-id');
   const gsTok=document.getElementById('gs-token');
   if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';
@@ -961,18 +876,21 @@ function renderSettingsPage(){
   if(ntX) ntX.value=localStorage.getItem('notion_proxy')||'';
   if(typeof updateNotionStatus==='function') updateNotionStatus();
 
+  // Firebase holat badge
+  const badge=document.getElementById('fb-status-badge');
+  if(badge){
+    const ready = typeof isFbReady === 'function' && isFbReady();
+    badge.textContent = ready ? 'Ulangan' : 'Ulanmagan';
+    badge.style.background = ready
+      ? 'color-mix(in srgb,#16a34a 15%,transparent)'
+      : 'color-mix(in srgb,#ef4444 15%,transparent)';
+    badge.style.color = ready ? '#16a34a' : '#ef4444';
+  }
+
+  // Admin tomonidan: foydalanuvchilar kartasini ko'rsatish
   const cur=getCurrentUser();
   const adminCard=document.getElementById('admin-creds-card');
-  if(adminCard){
-    if(cur?.role==='admin'){
-      adminCard.style.display='';
-      const adminUser=getUsers().find(u=>u.id==='admin');
-      const unameEl=document.getElementById('admin-uname');
-      if(unameEl) unameEl.value=adminUser?.username||'admin';
-    } else {
-      adminCard.style.display='none';
-    }
-  }
+  if(adminCard) adminCard.style.display='none'; // Firebase'da eski karta yo'q
 
   renderCatManager();
 }

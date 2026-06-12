@@ -25,27 +25,92 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css"/>
 <link rel="stylesheet" href="css/style.css"/>
+<!-- Firebase SDK (compat v10) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
+<!-- FIREBASE SOZLASH EKRANI (birinchi kirish) -->
+<div id="fb-setup-screen" style="display:none">
+  <div class="login-box" style="max-width:480px">
+    <div class="login-logo">
+      <div class="login-logo-mark"><i class="fi fi-br-cloud-share"></i></div>
+      <div class="login-title">EX<span>ON</span></div>
+      <div class="login-sub">Firebase ulanishini sozlang</div>
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.6">
+      Ma'lumotlarni real-vaqtda barcha qurilmalar orasida sinxronlash uchun Firebase kerak.<br/>
+      <strong style="color:var(--text)">Bir martalik sozlash:</strong>
+      <ol style="margin:10px 0 0 18px;padding:0;display:flex;flex-direction:column;gap:6px">
+        <li><a href="https://console.firebase.google.com" target="_blank" style="color:var(--accent-text)">console.firebase.google.com</a> → Yangi loyiha yarating</li>
+        <li>Authentication → Email/Parol → Yoqing</li>
+        <li>Firestore Database → Yarating (test rejimida)</li>
+        <li>Loyiha sozlamalari → Web ilova → Config'ni nusxalang</li>
+      </ol>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Firebase Config (JSON yoki JS object)</label>
+      <textarea class="form-input" id="fb-config-json" rows="7" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "project.firebaseapp.com",
+  "projectId": "project-id",
+  "storageBucket": "project.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abc"
+}' style="font-family:var(--mono);font-size:12px;resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-primary" style="width:100%" onclick="saveFbConfigFromSettings()">Ulash va boshlash</button>
+  </div>
+</div>
+
 <!-- LOGIN -->
-<div id="login-screen">
+<div id="login-screen" style="display:none">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-mark"><i class="fi fi-br-pencil-paintbrush"></i></div>
       <div class="login-title">EX<span>ON</span></div>
       <div class="login-sub">Dizaynerlar boshqaruv tizimi</div>
     </div>
-    <div class="login-error" id="login-error">Login yoki parol noto'g'ri</div>
-    <div class="form-group">
-      <label class="form-label">Login</label>
-      <input class="form-input" id="login-user" placeholder="username" autocomplete="username" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-pass').focus()}"/>
+    <!-- Tablar: Kirish / Ro'yxatdan o'tish -->
+    <div style="display:flex;gap:4px;margin-bottom:18px;background:var(--hover);border-radius:var(--radius);padding:4px">
+      <button class="login-tab-btn active" data-tab="login" onclick="showLoginTab('login')" style="flex:1;border:none;background:transparent;padding:7px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text);transition:all .15s">Kirish</button>
+      <button class="login-tab-btn" data-tab="reg" onclick="showLoginTab('reg')" style="flex:1;border:none;background:transparent;padding:7px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s">Ro'yxatdan o'tish</button>
     </div>
-    <div class="form-group">
-      <label class="form-label">Parol</label>
-      <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+
+    <!-- Kirish formasi -->
+    <div id="login-form">
+      <div class="login-error" id="login-error" style="display:none"></div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="login-email" type="email" placeholder="email@example.com" autocomplete="email" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('login-pass').focus()}"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Parol</label>
+        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button id="login-btn" class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doLogin()">Kirish</button>
     </div>
-    <button class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doLogin()">Kirish</button>
+
+    <!-- Ro'yxatdan o'tish formasi -->
+    <div id="reg-form" style="display:none">
+      <div class="login-error" id="reg-error" style="display:none"></div>
+      <div class="form-group">
+        <label class="form-label">Ism (ko'rinadigan nom)</label>
+        <input class="form-input" id="reg-name" placeholder="Orifova Zarnigor" autocomplete="name" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('reg-email').focus()}"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="reg-email" type="email" placeholder="email@example.com" autocomplete="email" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('reg-pass').focus()}"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Parol (kamida 6 belgi)</label>
+        <input class="form-input" id="reg-pass" type="password" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key==='Enter')doRegister()"/>
+      </div>
+      <button id="reg-btn" class="btn btn-primary" style="width:100%;margin-top:6px" onclick="doRegister()">Ro'yxatdan o'tish</button>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px;text-align:center">Birinchi ro'yxatdan o'tgan foydalanuvchi Admin bo'ladi</div>
+    </div>
   </div>
 </div>
 
@@ -153,11 +218,10 @@
 <div class="sync-bar" id="sync-bar">
   <div class="sync-status">
     <span class="sync-dot" id="sync-dot"></span>
-    <span id="sync-msg">Yuklanmoqda...</span>
+    <span id="sync-msg">Firebase...</span>
   </div>
   <div class="sync-actions">
-    <button class="btn btn-ghost btn-xs" onclick="syncLoad()" id="btn-load">↓ Yuklash</button>
-    <button class="btn btn-primary btn-xs" onclick="syncSave()" id="btn-save">↑ Saqlash</button>
+    <button class="btn btn-ghost btn-xs" onclick="fbLoad()" id="btn-reload" title="Firestore'dan qayta yuklash">↻</button>
   </div>
 </div>
 
@@ -333,15 +397,18 @@
   <!-- FOYDALANUVCHILAR -->
   <div class="panel" id="panel-users">
     <div class="page-header">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-        <div>
-          <div class="page-title">Foydalanuvchilar</div>
-          <div class="page-sub">Login va huquqlar boshqaruvi</div>
-        </div>
-        <button class="btn btn-primary" onclick="openUserModal()">+ Foydalanuvchi qo'shish</button>
+      <div>
+        <div class="page-title">Foydalanuvchilar</div>
+        <div class="page-sub">Firebase Auth orqali boshqariladi</div>
       </div>
     </div>
-    <div id="users-list"></div>
+    <div style="max-width:560px">
+      <div class="settings-note" style="margin-bottom:14px">
+        Yangi foydalanuvchi qo'shish uchun: ular <strong>exon-designers.uz</strong> saytiga kirib,
+        "Ro'yxatdan o'tish" orqali hisob yaratadilar. Siz bu yerdan rollarni o'zgartirishingiz mumkin.
+      </div>
+      <div id="fb-users-list"></div>
+    </div>
   </div>
 
   <!-- SOZLAMALAR -->
@@ -352,23 +419,22 @@
     </div>
     <div style="max-width:560px">
       <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><span class="card-title">GitHub Sinxronizatsiya</span></div>
+        <div class="card-header">
+          <span class="card-title">Firebase ulanishi</span>
+          <span id="fb-status-badge" class="badge" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent-text)">Ulangan</span>
+        </div>
         <div style="padding:18px">
           <div class="settings-note">
-            Ma'lumotlar <strong>github.com/zari004/designers</strong> repodagi
-            <strong>data.json</strong> fayliga saqlanadi. Token kiritilsa o'zgarishlar
-            avtomatik saqlanadi.
+            Ma'lumotlar <strong>Firebase Firestore</strong>'da saqlanadi va barcha qurilmalarda
+            real-vaqtda sinxronlanadi. Konfiguratsiyani o'zgartirish sahifani qayta yuklaydi.
           </div>
-          <div class="form-group">
-            <label class="form-label">GitHub Personal Access Token
-              <small><a href="https://github.com/settings/tokens/new?scopes=repo&description=exon-panel" target="_blank">↗ Yaratish</a></small>
-            </label>
-            <input class="form-input" id="s-token2" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
-            <div class="form-hint">Scope: <strong>repo</strong> → Contents read/write</div>
+          <div class="form-group" style="margin-top:12px">
+            <label class="form-label">Firebase Config (yangilash uchun)</label>
+            <textarea class="form-input" id="fb-config-json" rows="5" placeholder='{ "apiKey": "...", "projectId": "..." }' style="font-family:var(--mono);font-size:12px;resize:vertical"></textarea>
           </div>
           <div style="display:flex;gap:8px;margin-top:4px">
-            <button class="btn btn-ghost btn-sm" onclick="clearToken()">Tokenni o'chirish</button>
-            <button class="btn btn-primary btn-sm" onclick="saveTokenFromSettings()">Saqlash</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearFbConfigFromSettings()">Uzish</button>
+            <button class="btn btn-primary btn-sm" onclick="saveFbConfigFromSettings()">Yangilash</button>
           </div>
         </div>
       </div>
@@ -498,8 +564,9 @@
   </div>
 </div>
 
-<script src="js/auth.js"></script>
+<script src="js/firebase.js"></script>
 <script src="js/data.js"></script>
+<script src="js/auth.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/editor.js"></script>
 <script src="js/notion.js"></script>

@@ -118,27 +118,51 @@ function applyNavPermissions(user){
 
 // ── INIT ──
 function initApp(user){
+  document.getElementById('login-screen').style.display = 'none';
+  const fbSetup = document.getElementById('fb-setup-screen');
+  if(fbSetup) fbSetup.style.display = 'none';
   document.getElementById('sidebar').style.visibility='';
   document.querySelector('.main').style.visibility='';
   document.querySelector('.topbar').style.visibility='';
   document.getElementById('sync-bar').style.visibility='';
 
   const sbu=document.getElementById('sidebar-username');
-  if(sbu) sbu.textContent=user.displayName||user.username;
+  if(sbu) sbu.textContent=user.displayName||user.username||user.email||'—';
   const sba=document.getElementById('sidebar-avatar');
-  if(sba) sba.textContent=(user.displayName||user.username).slice(0,2).toUpperCase();
+  const name=user.displayName||user.username||user.email||'?';
+  if(sba) sba.textContent=name.slice(0,2).toUpperCase();
 
   applyNavPermissions(user);
   updateCounts();
   renderDashboard();
   renderNotifPanel();
 
-  // Avval lokal ma'lumotlar, keyin GitHub'dan eng so'nggisi
-  // (ochiq repo — token shart emas)
-  syncLoad(true);
+  // Firebase real-vaqt sinxronizatsiya
+  if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync();
+  if(typeof fbLoad === 'function') fbLoad();
 
   // PWA shortcut uchun signal
   window.dispatchEvent(new Event('exon-ready'));
+}
+
+function showAppLogin(){
+  document.getElementById('sidebar').style.visibility='hidden';
+  document.querySelector('.main').style.visibility='hidden';
+  document.querySelector('.topbar').style.visibility='hidden';
+  document.getElementById('sync-bar').style.visibility='hidden';
+  document.getElementById('login-screen').style.display='';
+  const fbSetup = document.getElementById('fb-setup-screen');
+  if(fbSetup) fbSetup.style.display = 'none';
+}
+
+function showFbSetup(){
+  document.getElementById('sidebar').style.visibility='hidden';
+  document.querySelector('.main').style.visibility='hidden';
+  document.querySelector('.topbar').style.visibility='hidden';
+  document.getElementById('sync-bar').style.visibility='hidden';
+  document.getElementById('login-screen').style.display='none';
+  const fbSetup = document.getElementById('fb-setup-screen');
+  if(fbSetup) fbSetup.style.display='';
 }
 
 // ── SAHIFA YUKLANGANDA ──
@@ -146,15 +170,24 @@ loadLocal();
 applyCategoryStyles();
 updateThemeBtn();
 document.fonts.ready.then(drawFavicon);
-setTimeout(drawFavicon, 2500); // shrift kech yuklansa qayta urinish
+setTimeout(drawFavicon, 2500);
 
-const _sessionUser = getCurrentUser();
-if(_sessionUser){
-  document.getElementById('login-screen').style.display='none';
-  initApp(_sessionUser);
-} else {
-  document.getElementById('sidebar').style.visibility='hidden';
-  document.querySelector('.main').style.visibility='hidden';
-  document.querySelector('.topbar').style.visibility='hidden';
-  document.getElementById('sync-bar').style.visibility='hidden';
-}
+(async function boot(){
+  // Firebase konfiguratsiyasi bor bo'lsa — Firebase bilan ishlash
+  if(typeof hasFbConfig === 'function' && hasFbConfig()){
+    const ok = await initFirebase();
+    if(!ok){
+      // Konfiguratsiya noto'g'ri — sozlash ekranini ko'rsat
+      showFbSetup();
+      return;
+    }
+    // Firebase Auth holati kuzatuvchi
+    setupAuthListener(
+      user => initApp(user),   // kirgan foydalanuvchi
+      ()   => showAppLogin()   // chiqish yoki kirilmagan
+    );
+  } else {
+    // Firebase sozlanmagan — sozlash ekranini ko'rsat
+    showFbSetup();
+  }
+})();
