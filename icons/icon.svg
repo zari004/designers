@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="#16a34a"/>
+  <!-- Subtle inner glow -->
+  <rect width="512" height="512" rx="112" fill="url(#g)" opacity="0.3"/>
+  <defs>
+    <radialGradient id="g" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Paintbrush (top-left → bottom-right, \) -->
+  <g transform="translate(256,256) rotate(45)">
+    <rect x="-22" y="-130" width="44" height="130" rx="22" fill="white"/>
+    <rect x="-26" y="-2" width="52" height="22" rx="4" fill="rgba(255,255,255,0.35)"/>
+    <ellipse cx="0" cy="40" rx="26" ry="48" fill="white"/>
+    <ellipse cx="0" cy="52" rx="14" ry="16" fill="rgba(0,0,0,0.12)"/>
+  </g>
+
+  <!-- Pencil (bottom-left → top-right, /) -->
+  <g transform="translate(256,256) rotate(-45)">
+    <rect x="-22" y="-130" width="44" height="16" rx="8" fill="rgba(255,255,255,0.6)"/>
+    <rect x="-22" y="-116" width="44" height="114" rx="8" fill="white"/>
+    <rect x="-22" y="-4" width="44" height="22" rx="4" fill="rgba(255,255,255,0.35)"/>
+    <polygon points="-22,18 22,18 0,68" fill="white"/>
+    <polygon points="-4,52 4,52 0,68" fill="rgba(22,163,74,0.5)"/>
+  </g>
+</svg>

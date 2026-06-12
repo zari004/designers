@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full bleed background (maskable — no rounded corners) -->
+  <rect width="512" height="512" fill="#16a34a"/>
+  <rect width="512" height="512" fill="url(#gm)" opacity="0.25"/>
+  <defs>
+    <radialGradient id="gm" cx="40%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Logo scaled to 70% (safe zone for maskable) -->
+  <g transform="translate(256,256) scale(0.7)">
+    <!-- Paintbrush -->
+    <g transform="rotate(45)">
+      <rect x="-22" y="-130" width="44" height="130" rx="22" fill="white"/>
+      <rect x="-26" y="-2" width="52" height="22" rx="4" fill="rgba(255,255,255,0.35)"/>
+      <ellipse cx="0" cy="40" rx="26" ry="48" fill="white"/>
+    </g>
+    <!-- Pencil -->
+    <g transform="rotate(-45)">
+      <rect x="-22" y="-130" width="44" height="16" rx="8" fill="rgba(255,255,255,0.6)"/>
+      <rect x="-22" y="-116" width="44" height="114" rx="8" fill="white"/>
+      <rect x="-22" y="-4" width="44" height="22" rx="4" fill="rgba(255,255,255,0.35)"/>
+      <polygon points="-22,18 22,18 0,68" fill="white"/>
+    </g>
+  </g>
+</svg>

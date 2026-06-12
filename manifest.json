@@ -1,0 +1,36 @@
+{
+  "name": "EXON Dizaynerlar Paneli",
+  "short_name": "EXON",
+  "description": "Dizaynerlar va loyihalar boshqaruv tizimi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#16a34a",
+  "lang": "uz",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Loyiha qo'shish",
+      "short_name": "Loyiha",
+      "url": "/?action=new-project",
+      "icons": [{ "src": "/icons/icon.svg", "sizes": "any" }]
+    }
+  ]
+}

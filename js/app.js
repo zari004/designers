@@ -136,6 +136,9 @@ function initApp(user){
   // Avval lokal ma'lumotlar, keyin GitHub'dan eng so'nggisi
   // (ochiq repo — token shart emas)
   syncLoad(true);
+
+  // PWA shortcut uchun signal
+  window.dispatchEvent(new Event('exon-ready'));
 }
 
 // ── SAHIFA YUKLANGANDA ──
