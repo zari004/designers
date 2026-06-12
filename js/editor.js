@@ -451,7 +451,7 @@ const SLASH_ITEMS = [
   {k:'ul', label:"Belgili ro'yxat", desc:'• punktlar', ic:'•', run:()=>rte('insertUnorderedList')},
   {k:'ol', label:"Raqamli ro'yxat", desc:'1. 2. 3.', ic:'1.', run:()=>rte('insertOrderedList')},
   {k:'quote', label:'Iqtibos', desc:'Ajratilgan matn', ic:'❝', run:()=>rte('formatBlock','blockquote')},
-  {k:'table', label:'Jadval', desc:'3×3 jadval', ic:'▦', run:()=>rte('insertHTML','<table><tbody>'+('<tr>'+'<td><br></td>'.repeat(3)+'</tr>').repeat(3)+'</tbody></table><p><br></p>')},
+  {k:'table', label:'Jadval', desc:"O'lcham tanlang (maks 6×6)", ic:'▦', run:()=>showTableSizePicker()},
   {k:'toggle', label:'Ochiladigan blok', desc:'Yashirinadigan matn', ic:'▸', run:()=>rte('insertHTML','<details open><summary>Sarlavha</summary><div>Matn...</div></details><p><br></p>')},
   {k:'divider', label:'Ajratuvchi chiziq', desc:'Bo\'limlarni ajratish', ic:'—', run:()=>rte('insertHorizontalRule')},
   {k:'page', label:'Varaq', desc:'Notionda yangi child sahifa', ic:'📄', run:()=>rte('insertHTML','<p class="rte-page-ref">📄&nbsp;Yangi sahifa</p><p><br></p>')},
@@ -558,4 +558,75 @@ function hideSlash(){
   const m = byId('rte-slash');
   if(m){ m.classList.remove('open'); m.dataset.q=''; }
   slashStart = null;
+}
+
+function showTableSizePicker(){
+  document.getElementById('tbl-picker')?.remove();
+  const ROWS = 6, COLS = 6;
+  const pop = document.createElement('div');
+  pop.id = 'tbl-picker';
+  pop.style.cssText = 'position:fixed;z-index:9990;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.2)';
+
+  const lbl = document.createElement('div');
+  lbl.style.cssText = 'font-size:11.5px;color:var(--muted);margin-bottom:8px;text-align:center;font-family:var(--font)';
+  lbl.textContent = "Jadval o'lchamini tanlang";
+  pop.appendChild(lbl);
+
+  const grid = document.createElement('div');
+  grid.style.cssText = `display:grid;grid-template-columns:repeat(${COLS},20px);gap:3px`;
+  const cells = [];
+  for(let r=1;r<=ROWS;r++){
+    for(let c=1;c<=COLS;c++){
+      const cell = document.createElement('div');
+      cell.style.cssText = 'width:20px;height:20px;border:1.5px solid var(--border);border-radius:3px;cursor:pointer;box-sizing:border-box;transition:background .06s,border-color .06s';
+      cell.dataset.r = r; cell.dataset.c = c;
+      cells.push(cell);
+      grid.appendChild(cell);
+    }
+  }
+  pop.appendChild(grid);
+  document.body.appendChild(pop);
+
+  function hi(hr, hc){
+    lbl.textContent = hr && hc ? hr + ' × ' + hc + ' jadval' : "Jadval o'lchamini tanlang";
+    cells.forEach(cl=>{
+      const on = +cl.dataset.r<=hr && +cl.dataset.c<=hc;
+      cl.style.background = on ? 'color-mix(in srgb,var(--accent) 22%,transparent)' : '';
+      cl.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
+    });
+  }
+  grid.addEventListener('mouseover', e=>{
+    const cl = e.target.closest('[data-r]'); if(cl) hi(+cl.dataset.r, +cl.dataset.c);
+  });
+  grid.addEventListener('mouseleave', ()=>hi(0,0));
+  grid.addEventListener('mousedown', e=>{
+    e.preventDefault();
+    const cl = e.target.closest('[data-r]'); if(!cl) return;
+    const r=+cl.dataset.r, c=+cl.dataset.c;
+    close();
+    const html = '<table><tbody>' +
+      Array(r).fill('<tr>'+Array(c).fill('<td><br></td>').join('')+'</tr>').join('') +
+      '</tbody></table><p><br></p>';
+    rte('insertHTML', html);
+  });
+
+  // Kursorga yaqin joylashtirish
+  const POPW = COLS*23+24, POPH = ROWS*23+44;
+  let top = 200, left = 100;
+  const s = getSelection();
+  if(s.rangeCount){
+    const cr = s.getRangeAt(0).getBoundingClientRect();
+    if(cr.bottom > 0){ top = cr.bottom + 6; left = cr.left; }
+  } else {
+    const ed = byId('pk-rte');
+    if(ed){ const rect = ed.getBoundingClientRect(); top = rect.bottom + 6; left = rect.left; }
+  }
+  if(top + POPH > window.innerHeight - 10) top = Math.max(10, top - POPH - 40);
+  if(left + POPW > window.innerWidth - 10) left = window.innerWidth - POPW - 10;
+  pop.style.top = Math.max(10,top) + 'px';
+  pop.style.left = Math.max(10,left) + 'px';
+
+  function close(){ pop.remove(); document.removeEventListener('mousedown', outside); }
+  function outside(e){ if(!pop.contains(e.target)) close(); }
+  setTimeout(()=>document.addEventListener('mousedown', outside), 50);
 }

@@ -236,7 +236,10 @@ async function sendProjectToNotion(){
   if(btn){ btn.disabled=true; btn.innerHTML = existingPageId ? 'Yangilanmoqda...' : 'Yuborilmoqda...'; }
   try{
     const d = designers.find(x=>x.id===data.designerId);
-    const blocks = buildProjectBlocks(data, d);
+    const allBlocks = buildProjectBlocks(data, d);
+    // Varaq (child_page) bloklarini ajratish — ular alohida POST /pages orqali yaratiladi
+    const childPages = allBlocks.filter(b => b.type === 'child_page');
+    const blocks = allBlocks.filter(b => b.type !== 'child_page');
     let page, url, updated=false;
 
     if(existingPageId){
@@ -268,6 +271,17 @@ async function sendProjectToNotion(){
         await notionFetch(`/blocks/${page.id}/children`,'PATCH',{children:blocks.slice(i,i+100)});
       }
       url = page.url || ('https://notion.so/'+page.id.replace(/-/g,''));
+    }
+
+    // Varaq bloklarini loyiha sahifasi ICHIDA yaratish
+    for(const cp of childPages){
+      try{
+        await notionFetch('/pages','POST',{
+          parent:{type:'page_id', page_id: page.id},
+          properties:{title:{title:[{type:'text',text:{content:cp.child_page.title}}]}},
+          children:[],
+        });
+      }catch(e){ console.warn('Varaq yaratishda xato:', e.message); }
     }
 
     if(peekProjId){
