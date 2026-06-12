@@ -156,6 +156,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   ensureBubble();
   ensureSlash();
   updateNotionBtnLabel(p);
+  setTimeout(setupRteHandlers, 0);
 
   applyPeekWidth();
   byId('peek-overlay').classList.add('open');
@@ -451,10 +452,14 @@ const SLASH_ITEMS = [
   {k:'ul', label:"Belgili ro'yxat", desc:'• punktlar', ic:'•', run:()=>rte('insertUnorderedList')},
   {k:'ol', label:"Raqamli ro'yxat", desc:'1. 2. 3.', ic:'1.', run:()=>rte('insertOrderedList')},
   {k:'quote', label:'Iqtibos', desc:'Ajratilgan matn', ic:'❝', run:()=>rte('formatBlock','blockquote')},
-  {k:'table', label:'Jadval', desc:"O'lcham tanlang (maks 6×6)", ic:'▦', run:()=>showTableSizePicker()},
+  {k:'table', label:'Jadval', desc:'3×3 jadval (o\'ng klik → tahrirlash)', ic:'▦', run:()=>rte('insertHTML','<table><tbody>'+('<tr>'+'<td><br></td>'.repeat(3)+'</tr>').repeat(3)+'</tbody></table><p><br></p>')},
   {k:'toggle', label:'Ochiladigan blok', desc:'Yashirinadigan matn', ic:'▸', run:()=>rte('insertHTML','<details open><summary>Sarlavha</summary><div>Matn...</div></details><p><br></p>')},
   {k:'divider', label:'Ajratuvchi chiziq', desc:'Bo\'limlarni ajratish', ic:'—', run:()=>rte('insertHorizontalRule')},
-  {k:'page', label:'Varaq', desc:'Notionda yangi child sahifa', ic:'📄', run:()=>rte('insertHTML','<p class="rte-page-ref">📄&nbsp;Yangi sahifa</p><p><br></p>')},
+  {k:'page', label:'Varaq', desc:'Sahifa (bosib ichiga kirish mumkin)', ic:'📄', run:()=>{
+    const vid='v'+Date.now();
+    rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
+    if(peekProjId){ const pi=projects.findIndex(x=>x.id===peekProjId); if(pi>=0){ if(!projects[pi].varaqs) projects[pi].varaqs={}; projects[pi].varaqs[vid]={title:'Yangi sahifa',descHtml:''}; } }
+  }},
 ];
 
 let slashStart = null;   // {node, offset}
@@ -560,73 +565,190 @@ function hideSlash(){
   slashStart = null;
 }
 
-function showTableSizePicker(){
-  document.getElementById('tbl-picker')?.remove();
-  const ROWS = 6, COLS = 6;
-  const pop = document.createElement('div');
-  pop.id = 'tbl-picker';
-  pop.style.cssText = 'position:fixed;z-index:9990;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.2)';
+// ══════════════════════════════════════════
+// JADVAL AMALLARI
+// ══════════════════════════════════════════
+function tblCtx(el){
+  const td=el.closest('td,th'); if(!td) return null;
+  const tr=td.parentElement, tbody=tr.parentElement, table=tbody.closest('table');
+  const rows=Array.from(tbody.rows);
+  return {td,tr,tbody,table,rowIdx:rows.indexOf(tr),colIdx:Array.from(tr.cells).indexOf(td),rowCount:rows.length,colCount:Math.max(...rows.map(r=>r.cells.length))};
+}
+function tblAddRow(el,after){
+  const ctx=tblCtx(el); if(!ctx) return;
+  const nr=document.createElement('tr');
+  for(let i=0;i<ctx.colCount;i++){ const td=document.createElement('td'); td.innerHTML='<br>'; nr.appendChild(td); }
+  after?ctx.tr.after(nr):ctx.tr.before(nr); rteInput();
+}
+function tblDelRow(el){
+  const ctx=tblCtx(el); if(!ctx) return;
+  if(ctx.rowCount<=1){ tblDelete(el); return; }
+  ctx.tr.remove(); rteInput();
+}
+function tblAddCol(el,after){
+  const ctx=tblCtx(el); if(!ctx) return;
+  Array.from(ctx.tbody.rows).forEach(row=>{
+    const ref=row.cells[ctx.colIdx]; const ntd=document.createElement('td'); ntd.innerHTML='<br>';
+    ref?(after?ref.after(ntd):ref.before(ntd)):row.appendChild(ntd);
+  }); rteInput();
+}
+function tblDelCol(el){
+  const ctx=tblCtx(el); if(!ctx) return;
+  if(ctx.colCount<=1){ tblDelete(el); return; }
+  Array.from(ctx.tbody.rows).forEach(row=>{ const c=row.cells[ctx.colIdx]; if(c) c.remove(); }); rteInput();
+}
+function tblCellBg(el,color){
+  const td=el.closest('td,th'); if(td){ td.style.background=color; rteInput(); }
+}
+function tblDelete(el){
+  const t=el.closest('table'); if(!t) return;
+  const p=document.createElement('p'); p.innerHTML='<br>'; t.replaceWith(p); rteInput();
+}
 
-  const lbl = document.createElement('div');
-  lbl.style.cssText = 'font-size:11.5px;color:var(--muted);margin-bottom:8px;text-align:center;font-family:var(--font)';
-  lbl.textContent = "Jadval o'lchamini tanlang";
-  pop.appendChild(lbl);
+// ── Kontekst menyusi ──
+let _tblCell=null;
+const TBL_BG_COLORS=[
+  {n:'Tozalash',c:'',v:''},
+  {n:'Kulrang',c:'rgba(148,163,184,.18)',v:'#94a3b8'},
+  {n:"Ko'k",c:'rgba(59,130,246,.15)',v:'#3b82f6'},
+  {n:'Yashil',c:'rgba(34,197,94,.15)',v:'#22c55e'},
+  {n:'Sariq',c:'rgba(234,179,8,.18)',v:'#eab308'},
+  {n:'Qizil',c:'rgba(239,68,68,.15)',v:'#ef4444'},
+  {n:'Binafsha',c:'rgba(168,85,247,.15)',v:'#a855f7'},
+  {n:"To'q",c:'rgba(15,23,42,.3)',v:'#0f172a'},
+];
 
-  const grid = document.createElement('div');
-  grid.style.cssText = `display:grid;grid-template-columns:repeat(${COLS},20px);gap:3px`;
-  const cells = [];
-  for(let r=1;r<=ROWS;r++){
-    for(let c=1;c<=COLS;c++){
-      const cell = document.createElement('div');
-      cell.style.cssText = 'width:20px;height:20px;border:1.5px solid var(--border);border-radius:3px;cursor:pointer;box-sizing:border-box;transition:background .06s,border-color .06s';
-      cell.dataset.r = r; cell.dataset.c = c;
-      cells.push(cell);
-      grid.appendChild(cell);
-    }
+function showTblMenu(x,y,cell){
+  closeTblMenu(); _tblCell=cell;
+  const m=document.createElement('div');
+  m.id='tbl-ctx'; m.className='tbl-ctx';
+
+  function row(path,label,fn,danger){
+    const el=document.createElement('div');
+    el.className='tbl-ctx-item'+(danger?' danger':'');
+    el.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg><span>${label}</span>`;
+    el.onclick=()=>{ closeTblMenu(); fn(); };
+    m.appendChild(el);
   }
-  pop.appendChild(grid);
-  document.body.appendChild(pop);
+  function sep(){ const s=document.createElement('div'); s.className='tbl-ctx-sep'; m.appendChild(s); }
 
-  function hi(hr, hc){
-    lbl.textContent = hr && hc ? hr + ' × ' + hc + ' jadval' : "Jadval o'lchamini tanlang";
-    cells.forEach(cl=>{
-      const on = +cl.dataset.r<=hr && +cl.dataset.c<=hc;
-      cl.style.background = on ? 'color-mix(in srgb,var(--accent) 22%,transparent)' : '';
-      cl.style.borderColor = on ? 'var(--accent)' : 'var(--border)';
-    });
-  }
-  grid.addEventListener('mouseover', e=>{
-    const cl = e.target.closest('[data-r]'); if(cl) hi(+cl.dataset.r, +cl.dataset.c);
+  row('M8 2v12M3 8h10',"Yuqoriga qator qo'sh",()=>tblAddRow(_tblCell,false));
+  row('M8 2v12M3 8h10',"Pastga qator qo'sh",()=>tblAddRow(_tblCell,true));
+  sep();
+  row('M2 8h12M8 3v10',"Chapga ustun qo'sh",()=>tblAddCol(_tblCell,false));
+  row('M2 8h12M8 3v10',"O'ngga ustun qo'sh",()=>tblAddCol(_tblCell,true));
+  sep();
+  row('M2 6h12M2 10h12',"Qatorni o'chir",()=>tblDelRow(_tblCell));
+  row('M6 2v12M10 2v12',"Ustunni o'chir",()=>tblDelCol(_tblCell));
+  sep();
+
+  // Rang tanlash
+  const cr=document.createElement('div'); cr.className='tbl-ctx-colors';
+  const lb=document.createElement('span'); lb.className='tbl-ctx-clbl'; lb.textContent='Fon:'; cr.appendChild(lb);
+  TBL_BG_COLORS.forEach(({n,c,v})=>{
+    const dot=document.createElement('div');
+    dot.className='tbl-ctx-cdot'; dot.title=n;
+    if(v){ dot.style.background=v; }
+    else { dot.style.background='var(--card)'; dot.style.backgroundImage='repeating-linear-gradient(45deg,var(--border) 0,var(--border) 1px,transparent 0,transparent 50%)'; dot.style.backgroundSize='5px 5px'; }
+    dot.onclick=()=>{ closeTblMenu(); tblCellBg(_tblCell,c); };
+    cr.appendChild(dot);
   });
-  grid.addEventListener('mouseleave', ()=>hi(0,0));
-  grid.addEventListener('mousedown', e=>{
-    e.preventDefault();
-    const cl = e.target.closest('[data-r]'); if(!cl) return;
-    const r=+cl.dataset.r, c=+cl.dataset.c;
-    close();
-    const html = '<table><tbody>' +
-      Array(r).fill('<tr>'+Array(c).fill('<td><br></td>').join('')+'</tr>').join('') +
-      '</tbody></table><p><br></p>';
-    rte('insertHTML', html);
-  });
+  m.appendChild(cr);
+  sep();
+  row('M4 4l8 8M12 4l-8 8',"Jadvalni o'chir",()=>tblDelete(_tblCell),true);
 
-  // Kursorga yaqin joylashtirish
-  const POPW = COLS*23+24, POPH = ROWS*23+44;
-  let top = 200, left = 100;
-  const s = getSelection();
-  if(s.rangeCount){
-    const cr = s.getRangeAt(0).getBoundingClientRect();
-    if(cr.bottom > 0){ top = cr.bottom + 6; left = cr.left; }
-  } else {
-    const ed = byId('pk-rte');
-    if(ed){ const rect = ed.getBoundingClientRect(); top = rect.bottom + 6; left = rect.left; }
-  }
-  if(top + POPH > window.innerHeight - 10) top = Math.max(10, top - POPH - 40);
-  if(left + POPW > window.innerWidth - 10) left = window.innerWidth - POPW - 10;
-  pop.style.top = Math.max(10,top) + 'px';
-  pop.style.left = Math.max(10,left) + 'px';
+  document.body.appendChild(m);
+  const mh=m.offsetHeight||260;
+  let left=x, top=y;
+  if(left+224>window.innerWidth-8) left=window.innerWidth-232;
+  if(top+mh>window.innerHeight-8) top=Math.max(8,y-mh);
+  m.style.left=Math.max(8,left)+'px'; m.style.top=Math.max(8,top)+'px';
+  setTimeout(()=>document.addEventListener('mousedown',_closeTblOut),50);
+}
+function _closeTblOut(e){ const m=document.getElementById('tbl-ctx'); if(!m||!m.contains(e.target)) closeTblMenu(); }
+function closeTblMenu(){ document.getElementById('tbl-ctx')?.remove(); document.removeEventListener('mousedown',_closeTblOut); _tblCell=null; }
 
-  function close(){ pop.remove(); document.removeEventListener('mousedown', outside); }
-  function outside(e){ if(!pop.contains(e.target)) close(); }
-  setTimeout(()=>document.addEventListener('mousedown', outside), 50);
+// ══════════════════════════════════════════
+// RTE EVENT SETUP (jadval + varaq)
+// ══════════════════════════════════════════
+function setupRteHandlers(){
+  const ed=byId('pk-rte'); if(!ed) return;
+  ed.removeEventListener('contextmenu',_onTblCtx);
+  ed.removeEventListener('click',_onRteClick);
+  ed.addEventListener('contextmenu',_onTblCtx);
+  ed.addEventListener('click',_onRteClick);
+}
+function _onTblCtx(e){
+  const td=e.target.closest('td,th'); if(!td) return;
+  e.preventDefault(); showTblMenu(e.clientX,e.clientY,td);
+}
+function _onRteClick(e){
+  const ref=e.target.closest('.rte-page-ref');
+  if(ref){ openVaraqPanel(ref.dataset.vid, ref.dataset.title||ref.innerText.replace('📄','').trim()); return; }
+  closeTblMenu();
+}
+
+// ══════════════════════════════════════════
+// VARAQ PANEL (sub-page navigation)
+// ══════════════════════════════════════════
+function openVaraqPanel(vid, title){
+  document.getElementById('varaq-panel')?.remove();
+  const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
+  const vdata=p?.varaqs?.[vid]||{title:title||'Yangi sahifa',descHtml:''};
+
+  const panel=document.createElement('div');
+  panel.id='varaq-panel'; panel.className='varaq-panel';
+  panel.dataset.vid=vid;
+  panel.innerHTML=`
+    <div class="varaq-header">
+      <button class="varaq-back" onclick="closeVaraqPanel()">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
+        Orqaga
+      </button>
+      <div style="font-size:11px;color:var(--muted);padding:0 4px">/ Sahifa</div>
+      <input class="varaq-title-inp" id="varaq-title-inp" placeholder="Sahifa nomi..." value="${esc(vdata.title)}" oninput="varaqAutoSave()"/>
+    </div>
+    <div class="rte rich" id="varaq-rte" contenteditable="true"
+      data-placeholder="Bu sahifaga yozing..."
+      oninput="varaqAutoSave()" onkeydown="rteKeydown(event)" onkeyup="varaqSaveSel()" onmouseup="varaqSaveSel()"></div>`;
+
+  const peek=byId('peek'); if(peek) peek.appendChild(panel);
+  const vrte=document.getElementById('varaq-rte');
+  if(vrte){ vrte.innerHTML=vdata.descHtml||''; try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
+  setTimeout(()=>{
+    const ti=document.getElementById('varaq-title-inp');
+    if(ti){ ti.focus(); ti.select(); }
+  },150);
+}
+
+let _varaqSaveT=null;
+function varaqAutoSave(){
+  clearTimeout(_varaqSaveT);
+  _varaqSaveT=setTimeout(saveVaraqNow,600);
+}
+
+let _varaqSelRange=null;
+function varaqSaveSel(){
+  const s=getSelection();
+  if(s.rangeCount && document.getElementById('varaq-rte')?.contains(s.anchorNode))
+    _varaqSelRange=s.getRangeAt(0);
+}
+
+function saveVaraqNow(){
+  const panel=document.getElementById('varaq-panel'); if(!panel) return;
+  const vid=panel.dataset.vid; if(!vid||!peekProjId) return;
+  const title=document.getElementById('varaq-title-inp')?.value||'Yangi sahifa';
+  const descHtml=document.getElementById('varaq-rte')?.innerHTML||'';
+  const pi=projects.findIndex(x=>x.id===peekProjId); if(pi<0) return;
+  if(!projects[pi].varaqs) projects[pi].varaqs={};
+  projects[pi].varaqs[vid]={title,descHtml};
+  // Ota-sahifadagi havola matnini yangilash
+  const ref=document.querySelector(`.rte-page-ref[data-vid="${vid}"]`);
+  if(ref){ ref.dataset.title=title; ref.innerHTML='📄&nbsp;'+esc(title); }
+  persist();
+}
+
+function closeVaraqPanel(){
+  saveVaraqNow();
+  document.getElementById('varaq-panel')?.remove();
 }
