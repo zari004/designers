@@ -459,7 +459,7 @@ const SLASH_ITEMS = [
   {k:'page', label:'Varaq', desc:'Sahifa (bosib ichiga kirish mumkin)', ic:'📄', run:()=>{
     const vid='v'+Date.now();
     rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
-    if(peekProjId){ const pi=projects.findIndex(x=>x.id===peekProjId); if(pi>=0){ if(!projects[pi].varaqs) projects[pi].varaqs={}; projects[pi].varaqs[vid]={title:'Yangi sahifa',descHtml:''}; } }
+    if(peekProjId){ const pi=projects.findIndex(x=>x.id===peekProjId); if(pi>=0){ if(!projects[pi].varaqs) projects[pi].varaqs={}; projects[pi].varaqs[vid]={title:'Yangi sahifa',descHtml:''}; const ed=byId('pk-rte'); if(ed) projects[pi].descHtml=ed.innerHTML; persist(); } }
   }},
 ];
 
@@ -487,6 +487,11 @@ function rteKeydown(e){
 }
 
 function rteInput(){
+  // pk-rte o'zgarganda xotira modelini yangilash (varaqlar yo'qolmasligi uchun)
+  if(_activeRteId==='pk-rte' && peekProjId){
+    const pi=projects.findIndex(x=>x.id===peekProjId);
+    if(pi>=0){ const ed=byId('pk-rte'); if(ed) projects[pi].descHtml=ed.innerHTML; }
+  }
   // Joriy caret oldidagi matnda "/" borligini tekshirish
   const s = getSelection();
   if(!s.rangeCount){ hideSlash(); return; }
@@ -628,7 +633,7 @@ function showTblMenu(x,y,cell){
     const el=document.createElement('div');
     el.className='tbl-ctx-item'+(danger?' danger':'');
     el.innerHTML=`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg><span>${label}</span>`;
-    el.onclick=()=>{ closeTblMenu(); fn(); };
+    el.onclick=()=>{ fn(); closeTblMenu(); };
     m.appendChild(el);
   }
   function sep(){ const s=document.createElement('div'); s.className='tbl-ctx-sep'; m.appendChild(s); }
@@ -651,7 +656,7 @@ function showTblMenu(x,y,cell){
     dot.className='tbl-ctx-cdot'; dot.title=n;
     if(v){ dot.style.background=v; }
     else { dot.style.background='var(--card)'; dot.style.backgroundImage='repeating-linear-gradient(45deg,var(--border) 0,var(--border) 1px,transparent 0,transparent 50%)'; dot.style.backgroundSize='5px 5px'; }
-    dot.onclick=()=>{ closeTblMenu(); tblCellBg(_tblCell,c); };
+    dot.onclick=()=>{ tblCellBg(_tblCell,c); closeTblMenu(); };
     cr.appendChild(dot);
   });
   m.appendChild(cr);
@@ -672,12 +677,39 @@ function closeTblMenu(){ document.getElementById('tbl-ctx')?.remove(); document.
 // ══════════════════════════════════════════
 // RTE EVENT SETUP (jadval + varaq)
 // ══════════════════════════════════════════
+function setupColResize(ed){
+  if(!ed || ed._colResizeBound) return;
+  ed._colResizeBound = true;
+  let resizingTd=null, startX=0, startW=0;
+  function nearEdge(e){
+    const td=e.target.closest('td,th'); if(!td) return null;
+    const r=td.getBoundingClientRect();
+    return e.clientX >= r.right-6 ? td : null;
+  }
+  ed.addEventListener('pointermove',e=>{
+    if(resizingTd){
+      resizingTd.style.width=Math.max(30,startW+(e.clientX-startX))+'px';
+      return;
+    }
+    ed.style.cursor=nearEdge(e)?'col-resize':'';
+  });
+  ed.addEventListener('pointerdown',e=>{
+    const td=nearEdge(e); if(!td) return;
+    e.preventDefault();
+    resizingTd=td; startX=e.clientX; startW=td.offsetWidth;
+    ed.setPointerCapture(e.pointerId);
+  });
+  ed.addEventListener('pointerup',()=>{ if(!resizingTd) return; resizingTd=null; ed.style.cursor=''; rteInput(); });
+  ed.addEventListener('pointercancel',()=>{ resizingTd=null; ed.style.cursor=''; });
+}
+
 function setupRteHandlers(){
   const ed=byId('pk-rte'); if(!ed) return;
   ed.removeEventListener('contextmenu',_onTblCtx);
   ed.removeEventListener('click',_onRteClick);
   ed.addEventListener('contextmenu',_onTblCtx);
   ed.addEventListener('click',_onRteClick);
+  setupColResize(ed);
 }
 function _onTblCtx(e){
   const td=e.target.closest('td,th'); if(!td) return;
@@ -751,6 +783,7 @@ function _renderVaraqPanel(vid, vdata){
     vrteEl.removeEventListener('click',_onRteClick);
     vrteEl.addEventListener('contextmenu',_onTblCtx);
     vrteEl.addEventListener('click',_onRteClick);
+    vrteEl._colResizeBound=false; setupColResize(vrteEl);
     // Title inputga fokus
     const ti=document.getElementById('varaq-title-inp');
     if(ti && !vdata.descHtml){ ti.focus(); ti.select(); }
