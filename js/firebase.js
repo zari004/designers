@@ -5,6 +5,16 @@
 
 const FB_CFG_KEY = 'exon_fb_cfg';
 
+// Default config (exon-panel loyihasi)
+const FB_DEFAULT_CFG = {
+  apiKey: "AIzaSyAwP3MQWJzNs4Fy09BOfqIo1BgOG7ojrMY",
+  authDomain: "exon-panel.firebaseapp.com",
+  projectId: "exon-panel",
+  storageBucket: "exon-panel.firebasestorage.app",
+  messagingSenderId: "646003876514",
+  appId: "1:646003876514:web:111c48243ae19e0fa6edfb"
+};
+
 let _db   = null;
 let _auth = null;
 let _fbReady = false;
@@ -13,11 +23,13 @@ let _echoTs = null; // o'z yozuvimizning aksini o'tkazib yuborish uchun
 
 // ── KONFIGURATSIYA ──
 function getFbConfig(){
-  try{ return JSON.parse(localStorage.getItem(FB_CFG_KEY)||'null'); }catch{ return null; }
+  try{
+    const stored = JSON.parse(localStorage.getItem(FB_CFG_KEY)||'null');
+    return stored || FB_DEFAULT_CFG;
+  }catch{ return FB_DEFAULT_CFG; }
 }
 function hasFbConfig(){
-  const c = getFbConfig();
-  return !!(c?.apiKey && c?.projectId);
+  return true; // Default config har doim mavjud
 }
 function saveFbConfig(cfg){
   localStorage.setItem(FB_CFG_KEY, JSON.stringify(cfg));
