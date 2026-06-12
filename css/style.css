@@ -319,7 +319,7 @@ a{color:var(--accent-text)}
 /* ── LOYIHA YON PANELI (Notion uslubi) ── */
 .peek-overlay{position:fixed;inset:0;background:rgba(10,12,16,.35);z-index:90;opacity:0;pointer-events:none;transition:opacity .2s}
 .peek-overlay.open{opacity:1;pointer-events:auto}
-.peek{position:fixed;top:0;right:0;bottom:0;width:min(820px,100vw);background:var(--panel);border-left:1px solid var(--border);z-index:95;transform:translateX(102%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.18)}
+.peek{position:fixed;top:0;right:0;bottom:0;width:min(820px,100vw);background:var(--panel);border-left:1px solid var(--border);z-index:95;transform:translateX(102%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.18);overflow:hidden}
 .peek.open{transform:none}
 .peek-resize{position:absolute;left:0;top:0;bottom:0;width:7px;cursor:ew-resize;z-index:6;background:transparent}
 .peek-resize:hover,.peek-resize:active{background:linear-gradient(to right,var(--accent),transparent)}
@@ -352,9 +352,10 @@ select.prop-input{cursor:pointer}
 .varaq-panel{position:absolute;inset:0;background:var(--bg);z-index:50;display:flex;flex-direction:column;overflow:hidden;animation:vqIn .15s ease}
 @keyframes vqIn{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
 .varaq-header{display:flex;align-items:center;gap:8px;padding:13px 20px;border-bottom:1px solid var(--border);background:var(--card);flex-shrink:0}
-.varaq-back{display:flex;align-items:center;gap:5px;border:none;background:var(--hover);border-radius:7px;padding:6px 11px;cursor:pointer;color:var(--muted);font-size:12.5px;font-family:var(--font);flex-shrink:0;transition:all .12s}
+.varaq-back{display:flex;align-items:center;gap:5px;border:none;background:var(--hover);border-radius:7px;padding:6px 11px;cursor:pointer;color:var(--muted);font-size:12.5px;font-family:var(--font);flex-shrink:0;transition:all .12s;white-space:nowrap}
 .varaq-back:hover{background:var(--border2);color:var(--text)}
-.varaq-title-inp{flex:1;border:none;outline:none;background:transparent;font-size:17px;font-weight:700;color:var(--text);font-family:var(--font);padding:2px 0}
+.varaq-breadcrumb{font-size:11px;color:var(--muted2);flex-shrink:0;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.varaq-title-inp{flex:1;border:none;outline:none;background:transparent;font-size:17px;font-weight:700;color:var(--text);font-family:var(--font);padding:2px 0;min-width:0}
 .varaq-title-inp::placeholder{color:var(--muted2)}
 #varaq-rte{flex:1;overflow-y:auto;padding:24px 28px;border:none;border-radius:0;background:var(--bg);min-height:unset;outline:none}
 #varaq-rte:focus{border-color:transparent}

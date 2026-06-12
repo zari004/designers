@@ -340,10 +340,11 @@ window.addEventListener('resize', ()=>{ if(byId('peek')?.classList.contains('ope
 
 // ═══════════════ MATN MUHARRIRI ═══════════════
 let savedRange = null;
+let _activeRteId = 'pk-rte';
 
 function rteSaveSel(){
   const s = getSelection();
-  if(s.rangeCount && byId('pk-rte')?.contains(s.anchorNode)) savedRange = s.getRangeAt(0);
+  if(s.rangeCount && byId(_activeRteId)?.contains(s.anchorNode)) savedRange = s.getRangeAt(0);
   scheduleBubble();
 }
 
@@ -355,7 +356,7 @@ function rteRestoreSel(){
 }
 
 function rte(cmd, val = null){
-  const ed = byId('pk-rte');
+  const ed = byId(_activeRteId);
   if(!ed) return;
   ed.focus();
   rteRestoreSel();
@@ -689,49 +690,77 @@ function _onRteClick(e){
 }
 
 // ══════════════════════════════════════════
-// VARAQ PANEL (sub-page navigation)
+// VARAQ PANEL — stack-based navigation
 // ══════════════════════════════════════════
+let _varaqStack = [];  // [{vid, title}]
+let _varaqSaveT = null;
+
 function openVaraqPanel(vid, title){
-  document.getElementById('varaq-panel')?.remove();
+  if(_varaqStack.length > 0) saveVaraqNow(); // joriy sahifani saqlash
   const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
   const vdata=p?.varaqs?.[vid]||{title:title||'Yangi sahifa',descHtml:''};
+  _varaqStack.push({vid, title: vdata.title});
+  _renderVaraqPanel(vid, vdata);
+}
 
-  const panel=document.createElement('div');
-  panel.id='varaq-panel'; panel.className='varaq-panel';
+function _renderVaraqPanel(vid, vdata){
+  let panel=document.getElementById('varaq-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='varaq-panel'; panel.className='varaq-panel';
+    byId('peek')?.appendChild(panel);
+  }
   panel.dataset.vid=vid;
+
+  // Breadcrumb: oxirgi element joriy sahifa, oldingilari nav
+  const prevTitle = _varaqStack.length>1 ? (_varaqStack[_varaqStack.length-2].title||'Sahifa') : 'Loyiha';
+  const breadcrumb = _varaqStack.slice(0,-1).map(v=>esc(v.title||'Sahifa')).join(' / ') || 'Loyiha';
+
   panel.innerHTML=`
     <div class="varaq-header">
       <button class="varaq-back" onclick="closeVaraqPanel()">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 3L5 8l5 5"/></svg>
-        Orqaga
+        ${esc(prevTitle)}
       </button>
-      <div style="font-size:11px;color:var(--muted);padding:0 4px">/ Sahifa</div>
-      <input class="varaq-title-inp" id="varaq-title-inp" placeholder="Sahifa nomi..." value="${esc(vdata.title)}" oninput="varaqAutoSave()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('varaq-rte')?.focus()}"/>
+      <div class="varaq-breadcrumb">${breadcrumb} /</div>
+      <input class="varaq-title-inp" id="varaq-title-inp" placeholder="Sahifa nomi..."
+        value="${esc(vdata.title)}"
+        oninput="varaqAutoSave()"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('varaq-rte')?.focus()}"/>
     </div>
     <div class="rte rich" id="varaq-rte" contenteditable="true"
-      data-placeholder="Bu sahifaga yozing..."
-      oninput="varaqAutoSave()" onkeydown="rteKeydown(event)" onkeyup="varaqSaveSel()" onmouseup="varaqSaveSel()"></div>`;
+      data-placeholder="Bu sahifaga yozing. Formatlash uchun matnni belgilang, blok qo'shish uchun / bosing."
+      oninput="rteInput();varaqAutoSave()"
+      onkeydown="rteKeydown(event)"
+      onkeyup="rteSaveSel()"
+      onmouseup="rteSaveSel()"></div>`;
 
-  const peek=byId('peek'); if(peek) peek.appendChild(panel);
   const vrte=document.getElementById('varaq-rte');
   if(vrte){ vrte.innerHTML=vdata.descHtml||''; try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
+
+  _activeRteId='varaq-rte';
+  savedRange=null;
+  ensureSlash();
+  ensureBubble();
+
+  // Jadval va ichki varaq event handlerlarini ulash
   setTimeout(()=>{
+    const vrteEl=document.getElementById('varaq-rte');
+    if(!vrteEl) return;
+    vrteEl.removeEventListener('contextmenu',_onTblCtx);
+    vrteEl.removeEventListener('click',_onRteClick);
+    vrteEl.addEventListener('contextmenu',_onTblCtx);
+    vrteEl.addEventListener('click',_onRteClick);
+    // Title inputga fokus
     const ti=document.getElementById('varaq-title-inp');
-    if(ti){ ti.focus(); ti.select(); }
-  },150);
+    if(ti && !vdata.descHtml){ ti.focus(); ti.select(); }
+    else vrteEl.focus();
+  },80);
 }
 
-let _varaqSaveT=null;
 function varaqAutoSave(){
   clearTimeout(_varaqSaveT);
-  _varaqSaveT=setTimeout(saveVaraqNow,600);
-}
-
-let _varaqSelRange=null;
-function varaqSaveSel(){
-  const s=getSelection();
-  if(s.rangeCount && document.getElementById('varaq-rte')?.contains(s.anchorNode))
-    _varaqSelRange=s.getRangeAt(0);
+  _varaqSaveT=setTimeout(saveVaraqNow,700);
 }
 
 function saveVaraqNow(){
@@ -742,13 +771,29 @@ function saveVaraqNow(){
   const pi=projects.findIndex(x=>x.id===peekProjId); if(pi<0) return;
   if(!projects[pi].varaqs) projects[pi].varaqs={};
   projects[pi].varaqs[vid]={title,descHtml};
-  // Ota-sahifadagi havola matnini yangilash
-  const ref=document.querySelector(`.rte-page-ref[data-vid="${vid}"]`);
-  if(ref){ ref.dataset.title=title; ref.innerHTML='📄&nbsp;'+esc(title); }
+  // Stack entry nomini yangilash
+  const se=_varaqStack.find(v=>v.vid===vid); if(se) se.title=title;
+  // RTE'lardagi barcha havolalarni yangilash
+  document.querySelectorAll(`.rte-page-ref[data-vid="${vid}"]`).forEach(ref=>{
+    ref.dataset.title=title; ref.innerHTML='📄 '+esc(title);
+  });
   persist();
 }
 
 function closeVaraqPanel(){
   saveVaraqNow();
-  document.getElementById('varaq-panel')?.remove();
+  _varaqStack.pop();
+  if(_varaqStack.length>0){
+    // Oldingi sahifaga qaytish
+    const prev=_varaqStack[_varaqStack.length-1];
+    const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
+    const vdata=p?.varaqs?.[prev.vid]||{title:prev.title,descHtml:''};
+    _renderVaraqPanel(prev.vid, vdata);
+  } else {
+    // Loyihaga qaytish
+    document.getElementById('varaq-panel')?.remove();
+    _activeRteId='pk-rte';
+    savedRange=null;
+    setTimeout(setupRteHandlers,0);
+  }
 }
