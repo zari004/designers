@@ -7,7 +7,7 @@ const FB_CFG_KEY = 'exon_fb_cfg';
 
 // Default config (exon-panel loyihasi)
 const FB_DEFAULT_CFG = {
-  apiKey: "AIzaSyAwP3MQWJzNs4Fy09BOfqIo1BgOG7ojrMY",
+  apiKey: "AIzaSyAwP3MQWJzNs4FyO9BOfqIo1BgOG7ojrMY",
   authDomain: "exon-panel.firebaseapp.com",
   projectId: "exon-panel",
   storageBucket: "exon-panel.firebasestorage.app",
