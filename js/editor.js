@@ -706,7 +706,7 @@ function openVaraqPanel(vid, title){
         Orqaga
       </button>
       <div style="font-size:11px;color:var(--muted);padding:0 4px">/ Sahifa</div>
-      <input class="varaq-title-inp" id="varaq-title-inp" placeholder="Sahifa nomi..." value="${esc(vdata.title)}" oninput="varaqAutoSave()"/>
+      <input class="varaq-title-inp" id="varaq-title-inp" placeholder="Sahifa nomi..." value="${esc(vdata.title)}" oninput="varaqAutoSave()" onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('varaq-rte')?.focus()}"/>
     </div>
     <div class="rte rich" id="varaq-rte" contenteditable="true"
       data-placeholder="Bu sahifaga yozing..."
