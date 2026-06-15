@@ -418,6 +418,32 @@
       <div class="page-sub">Tizim va sinxronizatsiya</div>
     </div>
     <div style="max-width:560px">
+
+      <!-- AI YORDAMCHI -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <span class="card-title">AI Yordamchi</span>
+          <span id="ai-status-badge" class="badge badge-green" style="display:none">Faol</span>
+        </div>
+        <div style="padding:18px">
+          <div class="settings-note">
+            Loyiha yaratishda o'zbekcha ovozli yoki matnli buyruq berish imkonini beradi — Groq AI uni rasmiy hujjatga aylantiradi. <strong>Bepul, tez, O'zbekistonda ishlaydi.</strong><br/>
+            <strong>1.</strong> <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> saytiga o'ting<br/>
+            <strong>2.</strong> <em>Create API key</em> bosing → kalitni nusxalang (gsk_...)<br/>
+            <strong>3.</strong> Quyidagi maydonga joylashtiring va saqlang
+          </div>
+          <div class="form-group">
+            <label class="form-label">Groq API kaliti</label>
+            <input class="form-input" id="ai-key-inp" type="password" placeholder="gsk_..." oninput="aiKeyChange(this.value)"/>
+            <div class="form-hint" id="ai-key-hint">Kalit faqat sizning qurilmangizda (localStorage) saqlanadi</div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">Kalitni o'chirish</button>
+            <button class="btn btn-primary btn-sm" onclick="aiSaveKey()">Saqlash</button>
+          </div>
+        </div>
+      </div>
+
       <div class="card" style="margin-bottom:14px">
         <div class="card-header">
           <span class="card-title">Firebase ulanishi</span>
