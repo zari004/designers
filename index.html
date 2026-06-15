@@ -602,15 +602,28 @@
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
 if ('serviceWorker' in navigator) {
+  let _reloading = false;
+  // Yangi SW sahifani boshqarganda — bir marta avtomatik yangilash
+  // (shu tufayli eski CSS/JS keshda qolib ketmaydi)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_reloading) return;
+    if (!navigator.serviceWorker.controller) return; // birinchi o'rnatish — yangilash shart emas
+    _reloading = true;
+    location.reload();
+  });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')
       .then(reg => {
-        // Yangi versiya kelsa foydalanuvchiga bildirish
+        // Har safar yangilanish bor-yo'qligini tekshirish
+        reg.update();
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
+          if (!nw) return;
           nw.addEventListener('statechange', () => {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              toast("Yangi versiya tayyor — sahifani yangilang");
+              // Yangi versiya tayyor — SW o'zi skipWaiting qiladi,
+              // controllerchange ishga tushib sahifa avtomatik yangilanadi
+              if (typeof toast === 'function') toast('Yangilanmoqda...');
             }
           });
         });

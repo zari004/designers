@@ -1,6 +1,6 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v11';
+const CACHE_VER  = 'exon-v12';
 const SHELL_URLS = [
   '/',
   '/index.html',
@@ -79,7 +79,22 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // JS / CSS / rasmlar: kesh birinchi, yo'q bo'lsa tarmoqdan tortib keshlaymiz
+  // JS / CSS: tarmoq birinchi (har doim eng yangi kod), oflayn bo'lsa → keshdan
+  // Shu tufayli foydalanuvchi hech qachon eski versiyada qolib ketmaydi
+  if (/\.(js|css)(\?|$)/i.test(url.pathname) || url.pathname === '/manifest.json') {
+    e.respondWith(
+      fetch(req).then(res => {
+        if (res && res.status === 200 && res.type !== 'opaque') {
+          const clone = res.clone();
+          caches.open(CACHE_VER).then(c => c.put(req, clone));
+        }
+        return res;
+      }).catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Rasmlar va boshqalar: kesh birinchi, yo'q bo'lsa tarmoqdan tortib keshlaymiz
   e.respondWith(
     caches.match(req).then(cached => {
       const network = fetch(req).then(res => {
