@@ -5,13 +5,34 @@
 // ═══════════════════════════════════════════════
 
 const AI_KEY_STORE = 'exon_gemini_key';
-const AI_MODEL = 'gemini-1.5-flash';
+const AI_MODEL_STORE = 'exon_gemini_model';
+let _aiModelCache = localStorage.getItem(AI_MODEL_STORE) || '';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
 
-function _aiEndpoint(){
-  return `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(getAiKey())}`;
+function _aiEndpoint(model){
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(getAiKey())}`;
+}
+
+// Kalit uchun MAVJUD modelni avtomatik aniqlash (model nomlari hisoblar bo'yicha farq qiladi)
+async function _aiResolveModel(force){
+  if(_aiModelCache && !force) return _aiModelCache;
+  const url=`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(getAiKey())}`;
+  const r=await fetch(url);
+  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.error?.message||r.statusText); }
+  const data=await r.json();
+  const ok=(data.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent'));
+  if(!ok.length) throw new Error("Bu kalit uchun mavjud model topilmadi");
+  const names=ok.map(m=>m.name.replace(/^models\//,''));
+  const prefer=['gemini-2.5-flash','gemini-2.0-flash','gemini-flash-latest','gemini-2.5-pro','gemini-2.0-flash-001','gemini-2.0-pro'];
+  let chosen=prefer.find(p=>names.includes(p))
+    || names.find(n=>/flash/.test(n)&&!/(vision|embedding|aqa|image|tts|live)/.test(n))
+    || names.find(n=>!/(embedding|aqa|image|tts|live)/.test(n))
+    || names[0];
+  _aiModelCache=chosen;
+  localStorage.setItem(AI_MODEL_STORE, chosen);
+  return chosen;
 }
 
 // ── FIRESTORE BILAN SINXRONIZATSIYA ──
@@ -89,6 +110,7 @@ function aiSaveKey(){
   if(!val){ toast("API kalit bo'sh"); return; }
   if(!_aiKeyLooksValid(val)){ toast("Kalit juda qisqa yoki bo'sh joy bor — tekshiring"); return; }
   saveAiKey(val);
+  _aiModelCache=''; localStorage.removeItem(AI_MODEL_STORE); // yangi kalit uchun modelni qayta aniqlash
   _aiSaveKeyToFirestore(val); // barcha qurilmalarga tarqatish
   _aiUpdateSettingsBadge();
   toast("Gemini API kaliti saqlandi — barcha qurilmalarda ishlaydi ✓");
@@ -225,14 +247,28 @@ Qoidalar: title=konkret professional; descHtml=rasmiy o'zbek tilida maqsad+qamro
     generationConfig:{temperature:0.4, maxOutputTokens:800},
   };
 
-  try{
-    const resp=await fetch(_aiEndpoint(),{
+  async function _callModel(model){
+    const resp=await fetch(_aiEndpoint(model),{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(body),
     });
-    if(!resp.ok){ const e=await resp.json().catch(()=>({})); throw new Error(e.error?.message||resp.statusText); }
-    const data=await resp.json();
+    if(!resp.ok){ const e=await resp.json().catch(()=>({})); const msg=e.error?.message||resp.statusText; const err=new Error(msg); err.status=resp.status; throw err; }
+    return resp.json();
+  }
+
+  try{
+    let model=await _aiResolveModel();
+    let data;
+    try{
+      data=await _callModel(model);
+    }catch(e1){
+      // Model topilmasa — ro'yxatni qayta so'rab boshqa modelni tanlash
+      if(/not found|not supported|404/i.test(e1.message)||e1.status===404){
+        model=await _aiResolveModel(true);
+        data=await _callModel(model);
+      } else throw e1;
+    }
     const raw=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
     if(!raw) throw new Error("Gemini bo'sh javob qaytardi");
     let parsed;
