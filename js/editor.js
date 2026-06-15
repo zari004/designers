@@ -421,7 +421,7 @@ function scheduleBubble(){
 
 function positionBubble(){
   const b = byId('rte-bubble');
-  const ed = byId('pk-rte');
+  const ed = byId(_activeRteId);
   if(!b || !ed) return;
   const s = getSelection();
   if(!s.rangeCount || s.isCollapsed || !ed.contains(s.anchorNode)){ hideBubble(); return; }
