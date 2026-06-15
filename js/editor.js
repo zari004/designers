@@ -152,6 +152,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   `;
 
   byId('pk-rte').innerHTML = p ? (p.descHtml || (p.description ? '<p>'+esc(p.description)+'</p>' : '')) : '';
+  refreshVaraqRefs(byId('pk-rte'));
   try{ document.execCommand('styleWithCSS', false, true); }catch(e){}
   renderPeekTags(false);
   calcPeekTotal();
@@ -736,6 +737,15 @@ function _onRteClick(e){
 let _varaqStack = [];  // [{vid, title}]
 let _varaqSaveT = null;
 
+// Berilgan konteynerdagi varaq havolalari nomini peekVaraqs'dan (haqiqiy manba) yangilash
+function refreshVaraqRefs(container){
+  if(!container) return;
+  container.querySelectorAll('.rte-page-ref').forEach(ref=>{
+    const v=peekVaraqs[ref.dataset.vid];
+    if(v){ ref.dataset.title=v.title||'Yangi sahifa'; ref.innerHTML='📄 '+esc(v.title||'Yangi sahifa'); }
+  });
+}
+
 // Varaqlarni xotiradan loyiha obyektiga ko'chirish + saqlash
 function syncPeekVaraqs(){
   const ed=byId('pk-rte');
@@ -787,7 +797,7 @@ function _renderVaraqPanel(vid, vdata){
       onmouseup="rteSaveSel()"></div>`;
 
   const vrte=document.getElementById('varaq-rte');
-  if(vrte){ vrte.innerHTML=vdata.descHtml||''; try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
+  if(vrte){ vrte.innerHTML=vdata.descHtml||''; refreshVaraqRefs(vrte); try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
 
   _activeRteId='varaq-rte';
   savedRange=null;
