@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════
 
 const AI_KEY_STORE = 'exon_gemini_key';
-const AI_MODEL = 'gemini-2.5-flash';
+const AI_MODEL = 'gemini-1.5-flash';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
