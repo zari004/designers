@@ -1,6 +1,6 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v6';
+const CACHE_VER  = 'exon-v7';
 const SHELL_URLS = [
   '/',
   '/index.html',
@@ -10,6 +10,7 @@ const SHELL_URLS = [
   '/icons/icon-maskable.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable.png',
   '/css/style.css',
   '/js/firebase.js',
   '/js/data.js',
