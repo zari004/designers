@@ -10,6 +10,7 @@ const byId = id => document.getElementById(id);
 
 let peekProjId = null;   // hozir ochiq loyiha (null = yangi)
 let peekTags = [];
+let peekVaraqs = {};     // ochiq loyihaning varaqlari (xotirada — loyiha hali saqlanmagan bo'lsa ham)
 
 // ── TEGLAR ──
 const TAG_COLORS = ['#16a34a','#0284c7','#7c3aed','#db2777','#dc2626','#ea580c','#ca8a04','#64748b'];
@@ -107,6 +108,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   const p = id ? projects.find(x=>x.id===id) : null;
   peekProjId = p ? p.id : null;
   peekTags = [...(p?.tags||[])];
+  peekVaraqs = p && p.varaqs ? JSON.parse(JSON.stringify(p.varaqs)) : {};
   const defDId = preDesignerId || p?.designerId || designers[0].id;
   const defDesigner = designers.find(d=>d.id===parseInt(defDId));
   let defCat = p?.category || defDesigner?.category || firstCat();
@@ -181,11 +183,13 @@ function openProjectModal(id = null, preDesignerId = null){ openProjectPeek(id, 
 
 function closePeek(){
   hideBubble(); hideSlash();
+  document.getElementById('varaq-panel')?.remove();
+  _varaqStack = []; _activeRteId = 'pk-rte'; savedRange = null;
   byId('peek-overlay').classList.remove('open');
   byId('peek').classList.remove('open');
   document.body.style.overflow = '';
   peekProjId = null;
-  savedRange = null;
+  peekVaraqs = {};
   if(typeof editingCmt !== 'undefined') editingCmt = null;
 }
 
@@ -245,6 +249,7 @@ function collectPeekProject(){
     priority: byId('pk-priority').value,
     files: byId('pk-files').value.split(',').map(s=>s.trim()).filter(Boolean),
     tags: [...peekTags],
+    varaqs: JSON.parse(JSON.stringify(peekVaraqs)),
   };
 }
 
@@ -459,7 +464,8 @@ const SLASH_ITEMS = [
   {k:'page', label:'Varaq', desc:'Sahifa (bosib ichiga kirish mumkin)', ic:'📄', run:()=>{
     const vid='v'+Date.now();
     rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
-    if(peekProjId){ const pi=projects.findIndex(x=>x.id===peekProjId); if(pi>=0){ if(!projects[pi].varaqs) projects[pi].varaqs={}; projects[pi].varaqs[vid]={title:'Yangi sahifa',descHtml:''}; const ed=byId('pk-rte'); if(ed) projects[pi].descHtml=ed.innerHTML; persist(); } }
+    peekVaraqs[vid]={title:'Yangi sahifa',descHtml:''};
+    syncPeekVaraqs();
   }},
 ];
 
@@ -488,9 +494,12 @@ function rteKeydown(e){
 
 function rteInput(){
   // pk-rte o'zgarganda xotira modelini yangilash (varaqlar yo'qolmasligi uchun)
-  if(_activeRteId==='pk-rte' && peekProjId){
-    const pi=projects.findIndex(x=>x.id===peekProjId);
-    if(pi>=0){ const ed=byId('pk-rte'); if(ed) projects[pi].descHtml=ed.innerHTML; }
+  if(_activeRteId==='pk-rte'){
+    const ed=byId('pk-rte');
+    if(ed && peekProjId){
+      const pi=projects.findIndex(x=>x.id===peekProjId);
+      if(pi>=0) projects[pi].descHtml=ed.innerHTML;
+    }
   }
   // Joriy caret oldidagi matnda "/" borligini tekshirish
   const s = getSelection();
@@ -727,10 +736,20 @@ function _onRteClick(e){
 let _varaqStack = [];  // [{vid, title}]
 let _varaqSaveT = null;
 
+// Varaqlarni xotiradan loyiha obyektiga ko'chirish + saqlash
+function syncPeekVaraqs(){
+  const ed=byId('pk-rte');
+  if(!peekProjId) return; // yangi loyiha: loyiha saqlanganda biriktiriladi (collectPeekProject)
+  const pi=projects.findIndex(x=>x.id===peekProjId);
+  if(pi<0) return;
+  projects[pi].varaqs=JSON.parse(JSON.stringify(peekVaraqs));
+  if(ed) projects[pi].descHtml=ed.innerHTML;
+  persist();
+}
+
 function openVaraqPanel(vid, title){
   if(_varaqStack.length > 0) saveVaraqNow(); // joriy sahifani saqlash
-  const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
-  const vdata=p?.varaqs?.[vid]||{title:title||'Yangi sahifa',descHtml:''};
+  const vdata=peekVaraqs[vid]||{title:title||'Yangi sahifa',descHtml:''};
   _varaqStack.push({vid, title: vdata.title});
   _renderVaraqPanel(vid, vdata);
 }
@@ -798,19 +817,17 @@ function varaqAutoSave(){
 
 function saveVaraqNow(){
   const panel=document.getElementById('varaq-panel'); if(!panel) return;
-  const vid=panel.dataset.vid; if(!vid||!peekProjId) return;
+  const vid=panel.dataset.vid; if(!vid) return;
   const title=document.getElementById('varaq-title-inp')?.value||'Yangi sahifa';
   const descHtml=document.getElementById('varaq-rte')?.innerHTML||'';
-  const pi=projects.findIndex(x=>x.id===peekProjId); if(pi<0) return;
-  if(!projects[pi].varaqs) projects[pi].varaqs={};
-  projects[pi].varaqs[vid]={title,descHtml};
+  peekVaraqs[vid]={title,descHtml};
   // Stack entry nomini yangilash
   const se=_varaqStack.find(v=>v.vid===vid); if(se) se.title=title;
   // RTE'lardagi barcha havolalarni yangilash
   document.querySelectorAll(`.rte-page-ref[data-vid="${vid}"]`).forEach(ref=>{
     ref.dataset.title=title; ref.innerHTML='📄 '+esc(title);
   });
-  persist();
+  syncPeekVaraqs();
 }
 
 function closeVaraqPanel(){
@@ -819,8 +836,7 @@ function closeVaraqPanel(){
   if(_varaqStack.length>0){
     // Oldingi sahifaga qaytish
     const prev=_varaqStack[_varaqStack.length-1];
-    const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
-    const vdata=p?.varaqs?.[prev.vid]||{title:prev.title,descHtml:''};
+    const vdata=peekVaraqs[prev.vid]||{title:prev.title,descHtml:''};
     _renderVaraqPanel(prev.vid, vdata);
   } else {
     // Loyihaga qaytish
