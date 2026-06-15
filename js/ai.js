@@ -11,7 +11,7 @@ function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
 
 function _aiEndpoint(){
-  return `https://generativelanguage.googleapis.com/v1/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(getAiKey())}`;
+  return `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(getAiKey())}`;
 }
 
 // ── FIRESTORE BILAN SINXRONIZATSIYA ──
