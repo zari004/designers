@@ -530,6 +530,14 @@ select.prop-input{cursor:pointer}
   .share-title{font-size:24px}
 }
 
+/* ── AI YORDAMCHI ── */
+.ai-mic-btn{display:flex;align-items:center;gap:7px;transition:background .15s,box-shadow .15s}
+.ai-mic-btn.ai-mic-active{background:rgba(239,68,68,.12)!important;border-color:#ef4444!important;color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.18)}
+@keyframes ai-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-rec-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;animation:ai-pulse 1s infinite;margin-right:4px}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+.ai-loader{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:ai-spin .8s linear infinite;margin:0 auto}
+
 /* ── PRINT ── */
 @media print{
   .sidebar,.topbar,.sync-bar,.burger,.filter-bar,.btn,.notif-panel,.mini-select,.peek,.peek-overlay,.comment-input-row,.comment-actions{display:none!important}
