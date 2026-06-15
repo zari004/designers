@@ -492,6 +492,20 @@ select.prop-input{cursor:pointer}
   .peek-title{font-size:22px}
 }
 
+/* ── ULASHISH KO'RISH REJIMI (read-only viewer) ── */
+.share-viewer{position:fixed;inset:0;z-index:9999;background:var(--bg);overflow-y:auto;color:var(--text)}
+.share-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(10px)}
+.share-brand{font-weight:800;font-size:18px;letter-spacing:.5px;color:var(--accent)}
+.share-doc{max-width:760px;margin:0 auto;padding:34px 24px 90px}
+.share-title{font-size:30px;font-weight:800;line-height:1.2;margin:0 0 20px}
+.share-rich{font-size:15px;line-height:1.7}
+.share-rich .rte-page-ref{transition:background .12s}
+.share-rich .rte-page-ref:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+@media(max-width:880px){
+  .share-doc{padding:24px 16px 70px}
+  .share-title{font-size:24px}
+}
+
 /* ── PRINT ── */
 @media print{
   .sidebar,.topbar,.sync-bar,.burger,.filter-bar,.btn,.notif-panel,.mini-select,.peek,.peek-overlay,.comment-input-row,.comment-actions{display:none!important}

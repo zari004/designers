@@ -788,6 +788,9 @@ function _renderVaraqPanel(vid, vdata){
         value="${esc(vdata.title)}"
         oninput="varaqAutoSave()"
         onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('varaq-rte')?.focus()}"/>
+      <button class="icon-btn varaq-share" onclick="shareVaraq('${vid}')" title="Bu sahifani ulashish — havola orqali ko'rish">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+      </button>
     </div>
     <div class="rte rich" id="varaq-rte" contenteditable="true"
       data-placeholder="Bu sahifaga yozing. Formatlash uchun matnni belgilang, blok qo'shish uchun / bosing."
@@ -856,3 +859,125 @@ function closeVaraqPanel(){
     setTimeout(setupRteHandlers,0);
   }
 }
+
+// ══════════════════════════════════════════
+// ULASHISH — havola orqali faqat ko'rish (read-only)
+// ══════════════════════════════════════════
+async function shareProject(){
+  if(_varaqStack.length>0) saveVaraqNow();
+  const title = byId('pk-title')?.value?.trim() || 'Loyiha';
+  const descHtml = byId('pk-rte')?.innerHTML || '';
+  await _doShare({ type:'project', title, descHtml, varaqs: JSON.parse(JSON.stringify(peekVaraqs)) });
+}
+
+async function shareVaraq(vid){
+  saveVaraqNow();
+  const v = peekVaraqs[vid] || {title:'Sahifa', descHtml:''};
+  await _doShare({ type:'varaq', entry:vid, title:v.title||'Sahifa', descHtml:v.descHtml||'', varaqs: JSON.parse(JSON.stringify(peekVaraqs)) });
+}
+
+async function _doShare(payload){
+  if(typeof isFbReady!=='function' || !isFbReady()){
+    toast("Ulashish uchun Firebase'ga ulanish kerak"); return;
+  }
+  try{
+    toast('Havola tayyorlanmoqda...');
+    const id = await fbCreateShare(payload);
+    const url = location.origin + '/?share=' + id;
+    showShareLinkModal(url);
+  }catch(e){
+    toast("Ulashib bo'lmadi: " + (e.message||e));
+  }
+}
+
+function showShareLinkModal(url){
+  const tt = byId('modal-title-text'); if(tt) tt.textContent = 'Havola tayyor';
+  const mb = byId('modal-body');
+  if(mb){
+    mb.innerHTML = `
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Quyidagi havola orqali har kim (kirmasdan) bu sahifani ko'ra oladi:</p>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="share-link-inp" readonly value="${esc(url)}" style="flex:1" onclick="this.select()"/>
+        <button class="btn btn-primary" onclick="copyShareLink()">Nusxalash</button>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-ghost btn-sm" href="${esc(url)}" target="_blank" rel="noopener">Yangi oynada ochish</a>
+        <button class="btn btn-ghost btn-sm" onclick="shareViaWhatsApp('${esc(url)}')">WhatsApp orqali</button>
+        <button class="btn btn-ghost btn-sm" onclick="shareViaTelegram('${esc(url)}')">Telegram orqali</button>
+      </div>`;
+  }
+  byId('modal').style.display='flex';
+  setTimeout(()=>byId('share-link-inp')?.select(), 100);
+}
+function copyShareLink(){
+  const inp = byId('share-link-inp'); if(!inp) return;
+  const val = inp.value;
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(val).then(()=>toast('Havola nusxalandi')).catch(()=>{ inp.select(); document.execCommand('copy'); toast('Havola nusxalandi'); });
+  } else { inp.select(); document.execCommand('copy'); toast('Havola nusxalandi'); }
+}
+function shareViaWhatsApp(url){ window.open('https://wa.me/?text='+encodeURIComponent(url),'_blank'); }
+function shareViaTelegram(url){ window.open('https://t.me/share/url?url='+encodeURIComponent(url),'_blank'); }
+
+// ── KO'RISH REJIMI (read-only viewer) ──
+let _shareData = null;
+let _shareStack = [];  // [{vid}] — vid==='__root__' bo'lsa asosiy hujjat
+
+async function bootShareViewer(id){
+  // Ilova chromasini yashirish
+  document.getElementById('login-screen').style.display='none';
+  const fbSetup = document.getElementById('fb-setup-screen'); if(fbSetup) fbSetup.style.display='none';
+  document.getElementById('sidebar').style.visibility='hidden';
+  document.querySelector('.main').style.visibility='hidden';
+  document.querySelector('.topbar').style.visibility='hidden';
+  document.getElementById('sync-bar').style.visibility='hidden';
+
+  let root = document.getElementById('share-viewer');
+  if(!root){ root=document.createElement('div'); root.id='share-viewer'; root.className='share-viewer'; document.body.appendChild(root); }
+  root.innerHTML = `<div class="share-doc" style="text-align:center;padding-top:80px;color:var(--muted)">Yuklanmoqda...</div>`;
+
+  try{
+    if(typeof initFirebase==='function'){ await initFirebase(); }
+    const data = await fbLoadShare(id);
+    if(!data){ root.innerHTML = `<div class="share-doc" style="text-align:center;padding-top:80px"><h2>Havola topilmadi</h2><p style="color:var(--muted)">Bu havola eskirgan yoki o'chirilgan bo'lishi mumkin.</p><a class="btn btn-primary" href="/">EXON'ga o'tish</a></div>`; return; }
+    _shareData = data;
+    _shareStack = (data.type==='varaq' && data.entry) ? [{vid:data.entry}] : [{vid:'__root__'}];
+    renderShareView();
+  }catch(e){
+    root.innerHTML = `<div class="share-doc" style="text-align:center;padding-top:80px"><h2>Xatolik</h2><p style="color:var(--muted)">${esc(e.message||String(e))}</p><a class="btn btn-primary" href="/">EXON'ga o'tish</a></div>`;
+  }
+}
+
+function renderShareView(){
+  const root = document.getElementById('share-viewer'); if(!root||!_shareData) return;
+  const cur = _shareStack[_shareStack.length-1];
+  let title, html;
+  if(cur.vid==='__root__'){ title=_shareData.title||'Loyiha'; html=_shareData.descHtml||''; }
+  else { const v=_shareData.varaqs?.[cur.vid]||{}; title=v.title||'Sahifa'; html=v.descHtml||''; }
+  const canBack = _shareStack.length>1;
+  root.innerHTML = `
+    <div class="share-top">
+      <div class="share-brand">EXON</div>
+      ${canBack?`<button class="btn btn-ghost btn-sm" onclick="shareGoBack()">← Orqaga</button>`:''}
+      <a class="btn btn-ghost btn-sm" href="/" style="margin-left:auto">Ilovani ochish</a>
+    </div>
+    <div class="share-doc">
+      <h1 class="share-title">${esc(title)}</h1>
+      <div class="rich share-rich" id="share-rich"></div>
+    </div>`;
+  const rich = document.getElementById('share-rich');
+  rich.innerHTML = html || '<p style="color:var(--muted)">Bo\'sh sahifa</p>';
+  rich.querySelectorAll('.rte-page-ref').forEach(ref=>{
+    const v=_shareData.varaqs?.[ref.dataset.vid];
+    if(v){ ref.innerHTML='📄 '+esc(v.title||'Sahifa'); }
+    ref.style.cursor='pointer';
+    ref.addEventListener('click',()=>shareOpenVaraq(ref.dataset.vid));
+  });
+  window.scrollTo(0,0);
+}
+function shareOpenVaraq(vid){
+  if(!_shareData?.varaqs?.[vid]) return;
+  _shareStack.push({vid});
+  renderShareView();
+}
+function shareGoBack(){ if(_shareStack.length>1){ _shareStack.pop(); renderShareView(); } }

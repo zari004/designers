@@ -137,6 +137,26 @@ function fbSetupRealtimeSync(){
   });
 }
 
+// ── ULASHISH (SHARES) ──
+// Ommaviy o'qiladigan "shares" kolleksiyasi. Firestore qoidasiga qarang (README/sozlamalar).
+function genShareId(){
+  return 's' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+}
+async function fbCreateShare(payload){
+  if(!_db) throw new Error('Firebase tayyor emas');
+  const id = genShareId();
+  await _db.collection('shares').doc(id).set({
+    ...payload,
+    createdAt: new Date().toISOString(),
+  });
+  return id;
+}
+async function fbLoadShare(id){
+  if(!_db) throw new Error('Firebase tayyor emas');
+  const snap = await _db.collection('shares').doc(id).get();
+  return snap.exists ? snap.data() : null;
+}
+
 // ── FIREBASE AUTH HELPERS ──
 async function fbSignIn(email, pass){
   if(!isFbReady()) throw new Error('Firebase tayyor emas');

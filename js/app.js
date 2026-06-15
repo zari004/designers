@@ -173,6 +173,13 @@ document.fonts.ready.then(drawFavicon);
 setTimeout(drawFavicon, 2500);
 
 (async function boot(){
+  // Ulashilgan havola (?share=...) — kirmasdan faqat ko'rish rejimi
+  const shareId = new URLSearchParams(location.search).get('share');
+  if(shareId && typeof bootShareViewer === 'function'){
+    await bootShareViewer(shareId);
+    return;
+  }
+
   // Firebase konfiguratsiyasi bor bo'lsa — Firebase bilan ishlash
   if(typeof hasFbConfig === 'function' && hasFbConfig()){
     const ok = await initFirebase();
