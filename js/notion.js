@@ -15,30 +15,57 @@ function notionCfg(){
   };
 }
 
-function saveNotionSettings(){
-  const t = byId('nt-token')?.value.trim();
-  const p = byId('nt-parent')?.value.trim();
-  const px = byId('nt-proxy')?.value.trim();
-  if(t!==undefined) localStorage.setItem('notion_token', t||'');
-  if(p!==undefined) localStorage.setItem('notion_parent', p||'');
-  if(px!==undefined) localStorage.setItem('notion_proxy', px||'');
+let _ntSaveTimer=null;
+// Yozayotganda avtomatik saqlash: local darhol, Firestore biroz kechikib
+function notionAutoSave(){
+  const t = (byId('nt-token')?.value||'').trim();
+  const p = (byId('nt-parent')?.value||'').trim();
+  const px = (byId('nt-proxy')?.value||'').trim();
+  localStorage.setItem('notion_token', t);
+  localStorage.setItem('notion_parent', p);
+  localStorage.setItem('notion_proxy', px);
   updateNotionStatus();
-  toast('Notion sozlamalari saqlandi');
+  clearTimeout(_ntSaveTimer);
+  _ntSaveTimer=setTimeout(()=>{
+    if(typeof saveSettingToFirestore==='function'){
+      saveSettingToFirestore('notionToken', t);
+      saveSettingToFirestore('notionParent', p);
+      saveSettingToFirestore('notionProxy', px);
+    }
+  }, 700);
+}
+
+// Eski tugma uchun
+function saveNotionSettings(){
+  notionAutoSave();
+  if(typeof saveSettingToFirestore==='function'){
+    saveSettingToFirestore('notionToken', (byId('nt-token')?.value||'').trim());
+    saveSettingToFirestore('notionParent', (byId('nt-parent')?.value||'').trim());
+    saveSettingToFirestore('notionProxy', (byId('nt-proxy')?.value||'').trim());
+  }
+  toast('Notion sozlamalari saqlandi — barcha qurilmalarda ishlaydi ✓');
 }
 function clearNotionSettings(){
   ['notion_token','notion_parent','notion_proxy'].forEach(k=>localStorage.removeItem(k));
   ['nt-token','nt-parent','nt-proxy'].forEach(id=>{const e=byId(id);if(e)e.value='';});
   updateNotionStatus();
+  if(typeof saveSettingToFirestore==='function'){
+    saveSettingToFirestore('notionToken', '');
+    saveSettingToFirestore('notionParent', '');
+    saveSettingToFirestore('notionProxy', '');
+  }
   toast("Notion ulanishi o'chirildi");
 }
 function updateNotionStatus(){
+  const c = notionCfg();
+  const connected = !!(c.token && c.parent);
+  if(typeof setConnBadge==='function') setConnBadge('nt-status-badge', connected);
   const el = byId('nt-status');
   if(!el) return;
-  const c = notionCfg();
-  el.textContent = (c.token && c.parent)
-    ? 'Tayyor — loyihalarni Notionga yuborish mumkin' + (c.proxy?' (proxy orqali)':'')
+  el.textContent = connected
+    ? 'Ulangan — loyihalarni Notionga yuborish mumkin' + (c.proxy?' (proxy orqali)':'')
     : 'Token va ota-sahifa ID kiritilmagan';
-  el.style.color = (c.token && c.parent) ? 'var(--success)' : 'var(--muted)';
+  el.style.color = connected ? 'var(--success)' : 'var(--muted)';
 }
 
 // ── HTML → NOTION BLOKLARI ──

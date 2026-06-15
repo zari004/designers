@@ -423,23 +423,22 @@
       <div class="card" style="margin-bottom:14px">
         <div class="card-header">
           <span class="card-title">AI Yordamchi</span>
-          <span id="ai-status-badge" class="badge badge-green" style="display:none">Faol</span>
+          <span id="ai-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
         </div>
         <div style="padding:18px">
           <div class="settings-note">
             Loyiha yaratishda o'zbekcha ovozli yoki matnli buyruq berish imkonini beradi — Groq AI uni rasmiy hujjatga aylantiradi. <strong>Bepul, tez, O'zbekistonda ishlaydi.</strong><br/>
             <strong>1.</strong> <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> saytiga o'ting<br/>
             <strong>2.</strong> <em>Create API key</em> bosing → kalitni nusxalang (gsk_...)<br/>
-            <strong>3.</strong> Quyidagi maydonga joylashtiring va saqlang
+            <strong>3.</strong> Quyidagi maydonga joylashtiring — avtomatik saqlanadi
           </div>
           <div class="form-group">
             <label class="form-label">Groq API kaliti</label>
-            <input class="form-input" id="ai-key-inp" type="password" placeholder="gsk_..." oninput="aiKeyChange(this.value)"/>
-            <div class="form-hint" id="ai-key-hint">Kalit faqat sizning qurilmangizda (localStorage) saqlanadi</div>
+            <input class="form-input" id="ai-key-inp" type="password" placeholder="gsk_..." oninput="aiKeyAutoSave(this.value)"/>
+            <div class="form-hint" id="ai-key-hint">Kiritilgan kalit barcha qurilmalarda avtomatik ishlaydi</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">Kalitni o'chirish</button>
-            <button class="btn btn-primary btn-sm" onclick="aiSaveKey()">Saqlash</button>
           </div>
         </div>
       </div>
@@ -447,7 +446,7 @@
       <div class="card" style="margin-bottom:14px">
         <div class="card-header">
           <span class="card-title">Firebase ulanishi</span>
-          <span id="fb-status-badge" class="badge" style="background:color-mix(in srgb,var(--accent) 15%,transparent);color:var(--accent-text)">Ulangan</span>
+          <span id="fb-status-badge" class="badge conn-badge">Ulangan</span>
         </div>
         <div style="padding:18px">
           <div class="settings-note">
@@ -465,7 +464,10 @@
         </div>
       </div>
       <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><span class="card-title">Google Sheets ulanish</span></div>
+        <div class="card-header">
+          <span class="card-title">Google Sheets ulanish</span>
+          <span id="gs-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
+        </div>
         <div style="padding:18px">
           <div class="settings-note">
             To'lovlar hisoboti Google Sheets'ga yoziladi.<br/>
@@ -475,16 +477,15 @@
           </div>
           <div class="form-group">
             <label class="form-label">Google Sheet ID</label>
-            <input class="form-input" id="gs-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"/>
+            <input class="form-input" id="gs-sheet-id" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms" oninput="gsAutoSave()"/>
           </div>
           <div class="form-group">
             <label class="form-label">OAuth Access Token</label>
-            <input class="form-input" id="gs-token" type="password" placeholder="ya29.xxxxxxxxxxxx"/>
-            <div class="form-hint">Token taxminan 1 soat amal qiladi — eksportdan oldin yangilab turing.</div>
+            <input class="form-input" id="gs-token" type="password" placeholder="ya29.xxxxxxxxxxxx" oninput="gsAutoSave()"/>
+            <div class="form-hint">Token taxminan 1 soat amal qiladi — eksportdan oldin yangilab turing. Avtomatik saqlanadi.</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn btn-ghost btn-sm" onclick="clearGSToken()">O'chirish</button>
-            <button class="btn btn-primary btn-sm" onclick="saveGSSettings()">Saqlash</button>
           </div>
           <div id="gs-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
         </div>
@@ -514,7 +515,10 @@
         </div>
       </div>
       <div class="card" id="notion-card" style="margin-bottom:14px">
-        <div class="card-header"><span class="card-title">Notion ulanish</span></div>
+        <div class="card-header">
+          <span class="card-title">Notion ulanish</span>
+          <span id="nt-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
+        </div>
         <div style="padding:18px">
           <div class="settings-note">
             Loyihalarni Notionga bir tugma bilan chop etish.<br/>
@@ -524,20 +528,19 @@
           </div>
           <div class="form-group">
             <label class="form-label">Integration Secret (token)</label>
-            <input class="form-input" id="nt-token" type="password" placeholder="ntn_xxxxxxxx yoki secret_xxxxxxxx"/>
+            <input class="form-input" id="nt-token" type="password" placeholder="ntn_xxxxxxxx yoki secret_xxxxxxxx" oninput="notionAutoSave()"/>
           </div>
           <div class="form-group">
             <label class="form-label">Ota-sahifa ID</label>
-            <input class="form-input" id="nt-parent" placeholder="32 belgidan iborat sahifa ID"/>
+            <input class="form-input" id="nt-parent" placeholder="32 belgidan iborat sahifa ID" oninput="notionAutoSave()"/>
           </div>
           <div class="form-group">
             <label class="form-label">CORS proxy URL <small>(brauzerdan to'g'ridan-to'g'ri ulanish uchun)</small></label>
-            <input class="form-input" id="nt-proxy" placeholder="https://sizning-proxy.workers.dev"/>
-            <div class="form-hint">Notion brauzerdan to'g'ridan-to'g'ri so'rovni rad etadi. Cloudflare Worker yoki shunga o'xshash oddiy proxy URL kiriting (api.notion.com'ga yo'naltiruvchi).</div>
+            <input class="form-input" id="nt-proxy" placeholder="https://sizning-proxy.workers.dev" oninput="notionAutoSave()"/>
+            <div class="form-hint">Notion brauzerdan to'g'ridan-to'g'ri so'rovni rad etadi. Cloudflare Worker yoki shunga o'xshash oddiy proxy URL kiriting (api.notion.com'ga yo'naltiruvchi). Avtomatik saqlanadi.</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:4px">
             <button class="btn btn-ghost btn-sm" onclick="clearNotionSettings()">O'chirish</button>
-            <button class="btn btn-primary btn-sm" onclick="saveNotionSettings()">Saqlash</button>
           </div>
           <div id="nt-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
         </div>
@@ -597,6 +600,7 @@
 <script src="js/editor.js"></script>
 <script src="js/notion.js"></script>
 <script src="js/sheets.js"></script>
+<script src="js/ai.js"></script>
 <script src="js/app.js"></script>
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──

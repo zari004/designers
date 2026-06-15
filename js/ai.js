@@ -14,22 +14,11 @@ const GROQ_STT_MODEL  = 'whisper-large-v3';
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
 
-// ── FIRESTORE SINXRONIZATSIYA ──
+// Eski kod bilan muvofiqlik uchun — markaziy syncSettingsFromFirestore ishlatiladi
 async function aiSyncKeyFromFirestore(){
-  try{
-    if(typeof getDb!=='function'||!getDb()) return;
-    const snap=await getDb().collection('exon').doc('settings').get();
-    if(snap.exists){
-      const k=snap.data()?.groqKey||'';
-      if(k && !getAiKey()){ saveAiKey(k); _aiUpdateSettingsBadge(); const el=document.getElementById('ai-key-inp'); if(el) el.value=k; }
-    }
-  }catch(e){ console.warn('AI kalit yuklash:', e); }
-}
-async function _aiSaveKeyToFirestore(k){
-  try{
-    if(typeof getDb!=='function'||!getDb()) return;
-    await getDb().collection('exon').doc('settings').set({groqKey:k},{merge:true});
-  }catch(e){ console.warn('AI kalit saqlash:', e); }
+  if(typeof syncSettingsFromFirestore==='function') await syncSettingsFromFirestore();
+  const el=document.getElementById('ai-key-inp'); if(el) el.value=getAiKey();
+  _aiUpdateSettingsBadge();
 }
 
 // ── MODAL OCHISH ──
@@ -76,44 +65,49 @@ function _showAiModal(){
   byId('modal').style.display='flex';
 }
 
-// ── SOZLAMALAR: API KALIT ──
+// ── SOZLAMALAR: API KALIT (avtomatik saqlash) ──
 // Groq kalitlari "gsk_" bilan boshlanadi
 function _aiKeyLooksValid(v){ return !!v && v.length>=20 && !/\s/.test(v); }
-function aiKeyChange(val){
+
+let _aiSaveTimer=null;
+// Foydalanuvchi yozayotganda — darhol local, biroz kechikib Firestore'ga
+function aiKeyAutoSave(val){
+  const v=(val||'').trim();
   const hint=document.getElementById('ai-key-hint');
-  if(!hint) return;
-  if(_aiKeyLooksValid(val.trim())){
-    hint.textContent = val.trim().startsWith('gsk_') ? 'Kalit to\'g\'ri ko\'rinadi ✓' : 'Kalit kiritildi (gsk_ bilan boshlanishi kerak)';
-  } else {
-    hint.textContent = 'Kalit faqat sizning qurilmangizda (localStorage) saqlanadi';
+  saveAiKey(v);                       // localStorage — darhol
+  _aiUpdateSettingsBadge();
+  if(hint){
+    hint.textContent = v
+      ? (_aiKeyLooksValid(v) ? 'Saqlandi ✓ — barcha qurilmalarda ishlaydi' : 'Kalit juda qisqa ko\'rinadi')
+      : 'Kiritilgan kalit barcha qurilmalarda avtomatik ishlaydi';
   }
+  clearTimeout(_aiSaveTimer);
+  _aiSaveTimer=setTimeout(()=>{        // Firestore — yozish to'xtagach
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('groqKey', v);
+  }, 700);
 }
+// Eski tugma uchun (agar chaqirilsa)
 function aiSaveKey(){
   const val=(document.getElementById('ai-key-inp')?.value||'').trim();
   if(!val){ toast("API kalit bo'sh"); return; }
-  if(!_aiKeyLooksValid(val)){ toast("Kalit juda qisqa yoki bo'sh joy bor — tekshiring"); return; }
-  saveAiKey(val);
-  _aiSaveKeyToFirestore(val);
-  _aiUpdateSettingsBadge();
+  aiKeyAutoSave(val);
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('groqKey', val);
   toast("Groq API kaliti saqlandi — barcha qurilmalarda ishlaydi ✓");
 }
 function aiClearKey(){
   localStorage.removeItem(AI_KEY_STORE);
   const el=document.getElementById('ai-key-inp'); if(el) el.value='';
   _aiUpdateSettingsBadge();
-  try{ if(typeof getDb==='function'&&getDb()) getDb().collection('exon').doc('settings').set({groqKey:''},{merge:true}); }catch(e){}
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('groqKey', '');
+  const hint=document.getElementById('ai-key-hint');
+  if(hint) hint.textContent='Kiritilgan kalit barcha qurilmalarda avtomatik ishlaydi';
   toast("Kalit o'chirildi");
 }
 function _aiUpdateSettingsBadge(){
-  const badge=document.getElementById('ai-status-badge');
-  if(!badge) return;
-  badge.style.display=getAiKey()?'':'none';
+  if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
 }
-async function loadAiSettings(){
+function loadAiSettings(){
   const el=document.getElementById('ai-key-inp');
-  if(el) el.value=getAiKey();
-  _aiUpdateSettingsBadge();
-  await aiSyncKeyFromFirestore();
   if(el) el.value=getAiKey();
   _aiUpdateSettingsBadge();
 }

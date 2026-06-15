@@ -132,6 +132,59 @@ function applyNavPermissions(user){
   });
 }
 
+// ═══════════════════════════════════════════════
+// INTEGRATSIYA SOZLAMALARI — qurilmalar bo'ylab sinxron
+// Barcha API kalitlari Firestore'da bitta hujjatda saqlanadi.
+// Bir qurilmada kiritilsa — login qilgan har qanday qurilmada
+// avtomatik ishlaydi (qayta kiritish shart emas).
+// ═══════════════════════════════════════════════
+const SETTINGS_FIELDS = {
+  groqKey:      'exon_groq_key',
+  gsSheetId:    'gs_sheet_id',
+  gsToken:      'gs_token',
+  notionToken:  'notion_token',
+  notionParent: 'notion_parent',
+  notionProxy:  'notion_proxy',
+};
+
+// Bitta sozlamani Firestore'ga yozish (barcha qurilmalarga tarqatadi)
+async function saveSettingToFirestore(field, value){
+  try{
+    if(typeof getDb!=='function' || !getDb()) return;
+    await getDb().collection('exon').doc('settings').set({[field]: value||''}, {merge:true});
+  }catch(e){ console.warn('Sozlama saqlash xatosi:', field, e); }
+}
+
+// Firestore'dagi barcha sozlamalarni localStorage'ga yuklash
+async function syncSettingsFromFirestore(){
+  try{
+    if(typeof getDb!=='function' || !getDb()) return;
+    const snap=await getDb().collection('exon').doc('settings').get();
+    if(!snap.exists) return;
+    const data=snap.data()||{};
+    Object.entries(SETTINGS_FIELDS).forEach(([field, lsKey])=>{
+      const v=data[field];
+      if(typeof v==='string' && v!=='' && localStorage.getItem(lsKey)!==v){
+        localStorage.setItem(lsKey, v);
+      }
+    });
+    // Sozlamalar sahifasi ochiq bo'lsa — maydonlar va belgilarni yangilash
+    const sp=document.getElementById('panel-settings');
+    if(sp && sp.classList.contains('active') && typeof renderSettingsPage==='function'){
+      renderSettingsPage();
+    }
+  }catch(e){ console.warn('Sozlamalarni yuklash xatosi:', e); }
+}
+
+// Karta sarlavhasidagi "Ulangan / Ulanmagan" belgisini yangilash
+function setConnBadge(id, connected){
+  const b=document.getElementById(id);
+  if(!b) return;
+  b.style.display='';
+  b.textContent = connected ? 'Ulangan' : 'Ulanmagan';
+  b.classList.toggle('on', !!connected);
+}
+
 // ── INIT ──
 function initApp(user){
   document.getElementById('login-screen').style.display = 'none';
@@ -157,8 +210,9 @@ function initApp(user){
   // Firebase real-vaqt sinxronizatsiya
   if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync();
   if(typeof fbLoad === 'function') fbLoad();
-  // AI kalitini Firestore'dan yuklab olish (boshqa qurilmada kiritilgan bo'lsa)
-  if(typeof aiSyncKeyFromFirestore === 'function') aiSyncKeyFromFirestore();
+  // Barcha integratsiya sozlamalarini Firestore'dan yuklash
+  // (boshqa qurilmada kiritilgan bo'lsa — avtomatik ishlaydi)
+  if(typeof syncSettingsFromFirestore === 'function') syncSettingsFromFirestore();
 
   // PWA shortcut uchun signal
   window.dispatchEvent(new Event('exon-ready'));

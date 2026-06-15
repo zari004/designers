@@ -864,8 +864,7 @@ function renderSettingsPage(){
   const gsTok=document.getElementById('gs-token');
   if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';
   if(gsTok) gsTok.value=localStorage.getItem('gs_token')||'';
-  const gsSt=document.getElementById('gs-status');
-  if(gsSt) gsSt.textContent=localStorage.getItem('gs_sheet_id')?'Sheet ID saqlangan — tayyor':'Sheet ID kiritilmagan';
+  if(typeof updateGSStatus==='function') updateGSStatus();
 
   // Notion sozlamalari
   const ntT=document.getElementById('nt-token');
@@ -876,15 +875,10 @@ function renderSettingsPage(){
   if(ntX) ntX.value=localStorage.getItem('notion_proxy')||'';
   if(typeof updateNotionStatus==='function') updateNotionStatus();
 
-  // Firebase holat badge
-  const badge=document.getElementById('fb-status-badge');
-  if(badge){
+  // Firebase holat belgisi
+  if(typeof setConnBadge==='function'){
     const ready = typeof isFbReady === 'function' && isFbReady();
-    badge.textContent = ready ? 'Ulangan' : 'Ulanmagan';
-    badge.style.background = ready
-      ? 'color-mix(in srgb,#16a34a 15%,transparent)'
-      : 'color-mix(in srgb,#ef4444 15%,transparent)';
-    badge.style.color = ready ? '#16a34a' : '#ef4444';
+    setConnBadge('fb-status-badge', ready);
   }
 
   // Admin tomonidan: foydalanuvchilar kartasini ko'rsatish

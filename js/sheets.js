@@ -4,15 +4,42 @@
 // aniq sabab ko'rsatiladi. Eski ma'lumotlar tozalanadi.
 // ═══════════════════════════════════════════════
 
-function saveGSSettings(){
-  const id=document.getElementById('gs-sheet-id')?.value?.trim();
-  const tok=document.getElementById('gs-token')?.value?.trim();
-  if(!id){toast("Sheet ID kiritilmagan!");return;}
-  localStorage.setItem('gs_sheet_id',id);
-  if(tok) localStorage.setItem('gs_token',tok);
+function gsConnected(){
+  return !!(localStorage.getItem('gs_sheet_id') && localStorage.getItem('gs_token'));
+}
+function updateGSStatus(){
+  if(typeof setConnBadge==='function') setConnBadge('gs-status-badge', gsConnected());
   const gsSt=document.getElementById('gs-status');
-  if(gsSt) gsSt.textContent='Saqlandi — tayyor';
-  toast("Google Sheets sozlamalari saqlandi");
+  if(gsSt) gsSt.textContent = gsConnected()
+    ? 'Ulangan — to\'lovlarni eksport qilish mumkin'
+    : (localStorage.getItem('gs_sheet_id') ? 'Token kiritilmagan' : 'Sheet ID kiritilmagan');
+}
+
+let _gsSaveTimer=null;
+// Yozayotganda avtomatik saqlash: local darhol, Firestore biroz kechikib
+function gsAutoSave(){
+  const id=(document.getElementById('gs-sheet-id')?.value||'').trim();
+  const tok=(document.getElementById('gs-token')?.value||'').trim();
+  localStorage.setItem('gs_sheet_id', id);
+  localStorage.setItem('gs_token', tok);
+  updateGSStatus();
+  clearTimeout(_gsSaveTimer);
+  _gsSaveTimer=setTimeout(()=>{
+    if(typeof saveSettingToFirestore==='function'){
+      saveSettingToFirestore('gsSheetId', id);
+      saveSettingToFirestore('gsToken', tok);
+    }
+  }, 700);
+}
+
+// Eski tugma uchun
+function saveGSSettings(){
+  gsAutoSave();
+  if(typeof saveSettingToFirestore==='function'){
+    saveSettingToFirestore('gsSheetId', (document.getElementById('gs-sheet-id')?.value||'').trim());
+    saveSettingToFirestore('gsToken', (document.getElementById('gs-token')?.value||'').trim());
+  }
+  toast("Google Sheets sozlamalari saqlandi — barcha qurilmalarda ishlaydi ✓");
 }
 
 function clearGSToken(){
@@ -22,8 +49,11 @@ function clearGSToken(){
   const gsTok=document.getElementById('gs-token');
   if(gsId) gsId.value='';
   if(gsTok) gsTok.value='';
-  const gsSt=document.getElementById('gs-status');
-  if(gsSt) gsSt.textContent="O'chirildi";
+  updateGSStatus();
+  if(typeof saveSettingToFirestore==='function'){
+    saveSettingToFirestore('gsSheetId', '');
+    saveSettingToFirestore('gsToken', '');
+  }
   toast("Google Sheets sozlamalari o'chirildi");
 }
 
