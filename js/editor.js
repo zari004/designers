@@ -293,11 +293,13 @@ function deleteProjectFromPeek(){
 
 // ═══════════════ PANELNI KENGAYTIRISH ═══════════════
 function getPeekWidth(){ return parseInt(localStorage.getItem('exon_peek_w'))||820; }
-function clampPeekWidth(w){ return Math.max(440, Math.min(window.innerWidth-40, w)); }
+function clampPeekWidth(w){ return Math.max(Math.min(440, window.innerWidth), Math.min(window.innerWidth-40, w)); }
 
 function applyPeekWidth(){
   const peek = byId('peek');
   if(!peek) return;
+  // Mobil: panel doimo to'liq ekran kengligida (chapdan kesilmasin)
+  if(window.innerWidth <= 640){ peek.style.width = '100vw'; return; }
   if(peek.dataset.max==='1'){ peek.style.width = (window.innerWidth-32)+'px'; return; }
   peek.style.width = clampPeekWidth(getPeekWidth())+'px';
 }

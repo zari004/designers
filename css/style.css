@@ -334,7 +334,9 @@ a{color:var(--accent-text)}
   .topbar{padding-left:58px}
   .burger{display:flex}
   .bottom-nav{display:flex}
-  .main{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px) + 16px)}
+  /* sync-bar bottom-nav ustida turadi (qoplab qolmasin) */
+  .sync-bar{bottom:calc(62px + env(safe-area-inset-bottom,0px))}
+  .main{padding-bottom:calc(62px + 40px + env(safe-area-inset-bottom,0px) + 14px)}
 }
 @media(max-width:640px){
   .main{padding:calc(var(--topbar) + 16px) 14px 64px}
@@ -356,6 +358,19 @@ a{color:var(--accent-text)}
 .peek-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0;background:var(--panel)}
 .peek-title{width:100%;border:none;background:none;outline:none;font-size:27px;font-weight:800;letter-spacing:-.5px;color:var(--text);font-family:var(--font);padding:0;margin-bottom:8px}
 .peek-title::placeholder{color:var(--muted2)}
+
+/* Mobil: panel to'liq ekran, kichikroq padding, resize tutqich yashirin */
+@media(max-width:640px){
+  .peek{width:100vw !important;border-left:none}
+  .peek-resize{display:none}
+  .peek-head{padding:10px 12px}
+  .peek-body{padding:16px 14px 40px}
+  .peek-foot{padding:10px 12px;flex-wrap:wrap}
+  .peek-title{font-size:22px}
+  .prop-table{max-width:none}
+  .prop-row{grid-template-columns:108px minmax(0,1fr);gap:6px}
+  .prop-label{font-size:12px}
+}
 
 /* Xususiyat qatorlari (Notion property rows) */
 .prop-table{margin:6px 0 8px;border-bottom:1px solid var(--border);padding-bottom:12px;max-width:600px}
