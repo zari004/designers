@@ -33,7 +33,7 @@ function openAiAssistant(){
   _showAiModal();
 }
 
-let _aiRecorder=null, _aiChunks=[], _aiRecording=false, _aiAudioWav=null;
+let _aiRecorder=null, _aiChunks=[], _aiRecording=false, _aiAudioWav=null, _aiLastResult=null;
 
 function _showAiModal(){
   _aiAudioWav=null;
@@ -264,6 +264,7 @@ Qoidalar: title=konkret professional; descHtml=rasmiy o'zbek tilida maqsad+qamro
 }
 
 function _showAiResult(p, transcript){
+  _aiLastResult = p;
   const res=byId('ai-result'); if(!res) return;
   const priLabel={low:"Past",medium:"O'rta",high:"Yuqori"}[p.priority]||p.priority||'—';
   const priColor={low:"var(--muted)",medium:"var(--warning)",high:"var(--error)"}[p.priority]||'var(--muted)';
@@ -284,7 +285,7 @@ function _showAiResult(p, transcript){
         ${transcriptHtml}
       </div>
       <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
-        <button class="btn btn-primary" style="flex:1" onclick='aiApply(${JSON.stringify(JSON.stringify(p))})'>
+        <button class="btn btn-primary" style="flex:1" onclick="aiApply()">
           ✓ Tasdiqlash — loyihaga qo'shish
         </button>
         <button class="btn btn-ghost" onclick="aiProcess()">Qayta tahlil</button>
@@ -293,9 +294,9 @@ function _showAiResult(p, transcript){
 }
 
 // ── TASDIQLASH: FORMANI TO'LDIRISH ──
-function aiApply(jsonStr){
-  let p;
-  try{ p=JSON.parse(jsonStr); }catch{ toast("Xatolik"); return; }
+function aiApply(){
+  const p = _aiLastResult;
+  if(!p){ toast("Xatolik — qayta tahlil qiling"); return; }
 
   if(byId('pk-title')&&byId('pk-rte')){
     if(p.title){ const el=byId('pk-title'); if(el) el.value=p.title; }
@@ -309,6 +310,6 @@ function aiApply(jsonStr){
     toast("Loyiha to'ldirildi ✓");
   } else {
     typeof openProjectPeek==='function'&&openProjectPeek();
-    setTimeout(()=>aiApply(jsonStr), 400);
+    setTimeout(()=>aiApply(), 400);
   }
 }
