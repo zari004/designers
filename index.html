@@ -571,10 +571,16 @@
   </div>
   <div class="peek-body" id="peek-body"></div>
   <div class="peek-foot">
-    <button class="btn btn-ghost btn-sm" id="peek-notion-btn" onclick="sendProjectToNotion()" title="Loyihani Notionga chop etish">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>
-      Notionga yuborish
-    </button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="openAiAssistant()" title="AI yordamchi — ovoz yoki matn orqali loyiha to'ldirish" style="border-color:var(--accent);color:var(--accent-text)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1z"/></svg>
+        AI Yordamchi
+      </button>
+      <button class="btn btn-ghost btn-sm" id="peek-notion-btn" onclick="sendProjectToNotion()" title="Loyihani Notionga chop etish">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>
+        Notionga yuborish
+      </button>
+    </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-ghost" onclick="closePeek()">Bekor qilish</button>
       <button class="btn btn-primary" onclick="savePeekProject()">Saqlash</button>
