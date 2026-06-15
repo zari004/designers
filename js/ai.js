@@ -117,18 +117,51 @@ function aiInstrAutoSave(val){
   const v=val||'';
   localStorage.setItem(AI_INSTR_STORE, v);
   const hint=document.getElementById('ai-instr-hint');
-  if(hint) hint.textContent = v.trim() ? 'Saqlandi ✓ — AI har doim shu ko\'rsatmalarga amal qiladi' : 'AI ga doimiy ko\'rsatma bering — har bir tahlilda hisobga oladi';
+  if(hint) hint.textContent = v.trim() ? 'Saqlandi ✓ — AI faqat shu qoidalarga amal qiladi' : 'Bo\'sh bo\'lsa — standart shablon ishlatiladi';
   clearTimeout(_aiInstrSaveTimer);
   _aiInstrSaveTimer=setTimeout(()=>{
     if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('aiInstructions', v);
   }, 800);
 }
+function aiResetInstructions(){
+  if(!confirm("Qoidalarni standart shablonga qaytarasizmi?")) return;
+  localStorage.removeItem(AI_INSTR_STORE);
+  const instr=document.getElementById('ai-instr-inp');
+  if(instr){ instr.value=AI_DEFAULT_INSTRUCTIONS; }
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('aiInstructions','');
+  const hint=document.getElementById('ai-instr-hint');
+  if(hint) hint.textContent='Standartga qaytarildi — endi shablonni o\'zicha o\'zgartiring';
+}
+
+const AI_DEFAULT_INSTRUCTIONS =
+`Har bir loyiha tavsifi quyidagi bo'limlardan iborat bo'lsin:
+
+<h2>Maqsad</h2>
+Loyihaning asosiy maqsadini 2-3 gapda yoz. Muhim so'zlarni qalin qil.
+
+<h2>Bajariladigan ishlar</h2>
+Kamida 5 ta aniq vazifani ro'yxatda yoz — har biri o'lchanadigan natijaga ega bo'lsin.
+
+<h2>Texnik talablar</h2>
+Format, o'lcham, rang, dasturiy talab va cheklovlarni ro'yxatda yoz.
+
+<h2>Kutilayotgan natija</h2>
+Yakuniy mahsulot qanday ko'rinishi va qanday topshirilishi kerakligini yoz.
+
+Qo'shimcha qoidalar:
+- Rasmiy va professional tilda yoz (o'zbek tilida)
+- Mijoz ismi yoki loyiha nomi aniq bo'lsa — uni sarlavhaga kirgizt
+- Muddat aytilmasa — 2 hafta qilib qo'y
+- Har bo'limda kamida 2-3 ta aniq ma'lumot bo'lsin`;
 
 function loadAiSettings(){
   const el=document.getElementById('ai-key-inp');
   if(el) el.value=getAiKey();
   const instr=document.getElementById('ai-instr-inp');
-  if(instr) instr.value=getAiInstructions();
+  if(instr){
+    // Bo'sh bo'lsa — default shablonni ko'rsat (localStorage'ga saqlanmaydi, faqat ko'rsatish uchun)
+    instr.value=getAiInstructions()||AI_DEFAULT_INSTRUCTIONS;
+  }
   _aiUpdateSettingsBadge();
 }
 
@@ -240,37 +273,47 @@ async function aiProcess(){
     // 2-qadam: LLaMA bilan rasmiy hujjat yaratish
     const today=new Date().toISOString().slice(0,10);
     const catList=typeof catKeys==='function'?catKeys().join(', '):'A, B, C';
-    const customInstr=getAiInstructions();
+    const customInstr=(getAiInstructions()||'').trim();
 
-    const systemPrompt=`Sen dizaynerlar boshqaruv tizimi (EXON) uchun professional loyiha tahlilchisissan. Foydalanuvchi o'zbek tilida qisqa, erkin ma'lumot beradi (ko'pincha ovoz orqali). Sening vazifang — uni TO'LIQ, BATAFSIL va RASMIY loyiha hujjatiga aylantirish. Ovozdagi kichik xatolarni kontekstdan to'g'irla.
-
-Mavjud kategoriyalar: ${catList}. Bugungi sana: ${today}.
-
-═══ descHtml UCHUN MAJBURIY TUZILMA ═══
-Hujjat boy va tuzilgan bo'lishi SHART. Quyidagi bo'limlarni shu tartibda yoz (har biri <h2> sarlavha bilan):
+    // Foydalanuvchi o'z qoidalarini yozgan bo'lsa — FAQAT o'sha qoidalar ishlaydi.
+    // Aks holda — bazaviy shablon.
+    const rulesBlock = customInstr ||
+`Har bir loyiha tavsifi quyidagi bo'limlardan iborat bo'lsin:
 
 <h2>Maqsad</h2>
-<p>Loyihaning asosiy maqsadi 2-3 gapda. Muhim so'zlarni <strong>qalin</strong> qil.</p>
+Loyihaning asosiy maqsadini 2-3 gapda yoz. Muhim so'zlarni <strong>qalin</strong> qil.
 
-<h2>Vazifalar va qamrov</h2>
-<ul><li>Aniq bajariladigan ishlar — kamida 4-6 ta band</li><li>Har bir band konkret va o'lchanadigan bo'lsin</li></ul>
+<h2>Bajariladigan ishlar</h2>
+Kamida 5 ta aniq vazifani <ul><li> ro'yxatida yoz — har biri o'lchanadigan natijaga ega bo'lsin.
 
-<h2>Talablar</h2>
-<ul><li>Texnik va dizayn talablari (ranglar, format, o'lcham, uslub va h.k.)</li></ul>
+<h2>Texnik talablar</h2>
+Format, o'lcham, rang, dasturiy talab va cheklovlarni <ul><li> ro'yxatida yoz.
 
 <h2>Kutilayotgan natija</h2>
-<p>Yakuniy mahsulot qanday bo'lishi kerakligi batafsil.</p>
+Yakuniy mahsulot qanday ko'rinishi va qanday topshirilishi kerakligini yoz.
 
-Agar mavzu talab qilsa <h3> kichik sarlavhalar, <blockquote> izohlar ham qo'sh. Matnni QISQARTIRMA — har bo'lim mazmunli bo'lsin. Sarlavha (<h2>/<h3>), oddiy matn (<p>) va ro'yxat (<ul>) ni ALOHIDA ishlat — hammasini bir xil qilma.
+Qo'shimcha qoidalar:
+- Rasmiy va professional tilda yoz (o'zbek tilida)
+- Mijoz ismi yoki loyiha nomi aniq bo'lsa — uni title'ga kirgizt
+- Muddat aytilmasa — 2 hafta qilib qo'y
+- Har bo'limda kamida 2-3 ta aniq ma'lumot bo'lsin`;
 
-═══ JAVOB FORMATI ═══
-FAQAT shu JSON'ni qaytar, boshqa hech narsa yozma:
-{"title":"aniq professional loyiha nomi 3-8 so'z","descHtml":"yuqoridagi tuzilmadagi to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriya yoki null"}
+    const systemPrompt =
+`Sen EXON (dizaynerlar boshqaruv tizimi) uchun loyiha tahlilchisissan.
+Foydalanuvchi o'zbek tilida qisqa, erkin ma'lumot beradi (ba'zan ovoz orqali — kichik xatolarni kontekstdan to'g'irla).
+Sening YAGONA vazifang: foydalanuvchi ma'lumotini quyidagi EGA QOIDALARI asosida loyiha hujjatiga aylantirish.
 
-Qoidalar: title=konkret va professional; priority=high(shoshilinch/muhim), medium(oddiy), low(vaqti bor); deadline=muddat aytilsa bugungi sanadan hisobla, aks holda null; category=faqat ro'yxatdagi kategoriyalardan biri yoki null.${customInstr?`
+BUGUN: ${today}
+KATEGORIYALAR: ${catList}
 
-═══ EGASINING MAXSUS KO'RSATMALARI (eng yuqori ustuvorlik — har doim amal qil) ═══
-${customInstr}`:''}`;
+═══════════════════════════════════
+EGA QOIDALARI — bu qoidalarga QATTIQ amal qil, o'zingdan hech narsa qo'shma:
+═══════════════════════════════════
+${rulesBlock}
+═══════════════════════════════════
+
+MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
+{"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
     const chatResp=await fetch(GROQ_CHAT_URL,{
       method:'POST',
@@ -281,8 +324,8 @@ ${customInstr}`:''}`;
           {role:'system', content:systemPrompt},
           {role:'user', content:userContent}
         ],
-        temperature:0.6,
-        max_tokens:2600,
+        temperature:0.5,
+        max_tokens:3000,
         response_format:{type:'json_object'}
       })
     });

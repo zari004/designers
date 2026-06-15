@@ -442,14 +442,15 @@
           </div>
 
           <div style="border-top:1px solid var(--border);margin:16px 0 0;padding-top:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+              <label class="form-label" style="margin:0">AI qoidalari <small style="color:var(--muted);font-weight:400">(o'qitish dasturi)</small></label>
+              <button class="btn btn-ghost btn-xs" onclick="aiResetInstructions()" title="Standart shablonga qaytarish">Standartga qaytarish</button>
+            </div>
             <div class="settings-note" style="margin-bottom:10px">
-              <strong>O'qitish dasturi.</strong> AI har bir loyiha tahlilida quyidagi ko'rsatmalarga doimo amal qiladi. Bu yerga o'z talablaringizni, uslubingizni, kompaniya qoidalaringizni yozing — masalan: <em>"Har doim aniq muddatlar va byudjet bandini qo'sh"</em>, <em>"Rasmiy, lekin sodda tilda yoz"</em>, <em>"Har bo'limda kamida 5 ta vazifa ko'rsat"</em>.
+              AI <strong>faqat shu qoidalarga</strong> amal qiladi — o'zidan hech narsa qo'shmaydi. Quyidagi shablonni o'zingizga moslang: bo'limlar nomini o'zgartiring, yangi qoidalar qo'shing, keraksizlarini o'chiring.
             </div>
-            <div class="form-group">
-              <label class="form-label">AI uchun doimiy ko'rsatmalar</label>
-              <textarea class="form-input" id="ai-instr-inp" rows="5" placeholder="Masalan:&#10;- Har doim maqsad, vazifalar, talablar va natija bo'limlarini yoz&#10;- Texnik atamalarni o'zbekcha tushuntir&#10;- Har loyihaga taxminiy bosqichlar (rejalashtirish, dizayn, tekshiruv) qo'sh&#10;- Rasmiy, professional ohangda yoz" oninput="aiInstrAutoSave(this.value)" style="resize:vertical;line-height:1.5"></textarea>
-              <div class="form-hint" id="ai-instr-hint">AI ga doimiy ko'rsatma bering — har bir tahlilda hisobga oladi</div>
-            </div>
+            <textarea class="form-input" id="ai-instr-inp" rows="12" oninput="aiInstrAutoSave(this.value)" style="resize:vertical;line-height:1.6;font-size:13px;font-family:var(--mono)"></textarea>
+            <div class="form-hint" id="ai-instr-hint">AI faqat shu qoidalarga amal qiladi — har bir tahlilda hisobga oladi</div>
           </div>
         </div>
       </div>
