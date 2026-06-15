@@ -157,6 +157,8 @@ function initApp(user){
   // Firebase real-vaqt sinxronizatsiya
   if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync();
   if(typeof fbLoad === 'function') fbLoad();
+  // AI kalitini Firestore'dan yuklab olish (boshqa qurilmada kiritilgan bo'lsa)
+  if(typeof aiSyncKeyFromFirestore === 'function') aiSyncKeyFromFirestore();
 
   // PWA shortcut uchun signal
   window.dispatchEvent(new Event('exon-ready'));

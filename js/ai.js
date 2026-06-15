@@ -11,7 +11,26 @@ function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
 
 function _aiEndpoint(){
-  return `https://generativelanguage.googleapis.com/v1beta/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(getAiKey())}`;
+  return `https://generativelanguage.googleapis.com/v1/models/${AI_MODEL}:generateContent?key=${encodeURIComponent(getAiKey())}`;
+}
+
+// ── FIRESTORE BILAN SINXRONIZATSIYA ──
+// Kalit bir qurilmada saqlansa — barcha qurilmalarda ishlaydi
+async function aiSyncKeyFromFirestore(){
+  try{
+    if(typeof getDb!=='function'||!getDb()) return;
+    const snap=await getDb().collection('exon').doc('settings').get();
+    if(snap.exists){
+      const k=snap.data()?.geminiKey||'';
+      if(k && !getAiKey()){ saveAiKey(k); _aiUpdateSettingsBadge(); const el=document.getElementById('ai-key-inp'); if(el) el.value=k; }
+    }
+  }catch(e){ console.warn('AI kalit yuklash:', e); }
+}
+async function _aiSaveKeyToFirestore(k){
+  try{
+    if(typeof getDb!=='function'||!getDb()) return;
+    await getDb().collection('exon').doc('settings').set({geminiKey:k},{merge:true});
+  }catch(e){ console.warn('AI kalit saqlash:', e); }
 }
 
 // ── MODAL OCHISH ──
@@ -70,13 +89,16 @@ function aiSaveKey(){
   if(!val){ toast("API kalit bo'sh"); return; }
   if(!_aiKeyLooksValid(val)){ toast("Kalit juda qisqa yoki bo'sh joy bor — tekshiring"); return; }
   saveAiKey(val);
+  _aiSaveKeyToFirestore(val); // barcha qurilmalarga tarqatish
   _aiUpdateSettingsBadge();
-  toast("Google Gemini API kaliti saqlandi ✓");
+  toast("Gemini API kaliti saqlandi — barcha qurilmalarda ishlaydi ✓");
 }
 function aiClearKey(){
   localStorage.removeItem(AI_KEY_STORE);
   const el=document.getElementById('ai-key-inp'); if(el) el.value='';
   _aiUpdateSettingsBadge();
+  // Firestore'dan ham o'chirish
+  try{ if(typeof getDb==='function'&&getDb()) getDb().collection('exon').doc('settings').set({geminiKey:''},{merge:true}); }catch(e){}
   toast("Kalit o'chirildi");
 }
 function _aiUpdateSettingsBadge(){
@@ -84,8 +106,13 @@ function _aiUpdateSettingsBadge(){
   if(!badge) return;
   badge.style.display=getAiKey()?'':'none';
 }
-function loadAiSettings(){
+async function loadAiSettings(){
+  // Avval localdan yukla (tez ko'rinsin)
   const el=document.getElementById('ai-key-inp');
+  if(el) el.value=getAiKey();
+  _aiUpdateSettingsBadge();
+  // Keyin Firestore'dan yangilash (boshqa qurilmada saqlangan bo'lsa)
+  await aiSyncKeyFromFirestore();
   if(el) el.value=getAiKey();
   _aiUpdateSettingsBadge();
 }
