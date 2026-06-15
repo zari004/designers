@@ -440,6 +440,17 @@
           <div style="display:flex;gap:8px;margin-top:8px">
             <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">Kalitni o'chirish</button>
           </div>
+
+          <div style="border-top:1px solid var(--border);margin:16px 0 0;padding-top:16px">
+            <div class="settings-note" style="margin-bottom:10px">
+              <strong>O'qitish dasturi.</strong> AI har bir loyiha tahlilida quyidagi ko'rsatmalarga doimo amal qiladi. Bu yerga o'z talablaringizni, uslubingizni, kompaniya qoidalaringizni yozing — masalan: <em>"Har doim aniq muddatlar va byudjet bandini qo'sh"</em>, <em>"Rasmiy, lekin sodda tilda yoz"</em>, <em>"Har bo'limda kamida 5 ta vazifa ko'rsat"</em>.
+            </div>
+            <div class="form-group">
+              <label class="form-label">AI uchun doimiy ko'rsatmalar</label>
+              <textarea class="form-input" id="ai-instr-inp" rows="5" placeholder="Masalan:&#10;- Har doim maqsad, vazifalar, talablar va natija bo'limlarini yoz&#10;- Texnik atamalarni o'zbekcha tushuntir&#10;- Har loyihaga taxminiy bosqichlar (rejalashtirish, dizayn, tekshiruv) qo'sh&#10;- Rasmiy, professional ohangda yoz" oninput="aiInstrAutoSave(this.value)" style="resize:vertical;line-height:1.5"></textarea>
+              <div class="form-hint" id="ai-instr-hint">AI ga doimiy ko'rsatma bering — har bir tahlilda hisobga oladi</div>
+            </div>
+          </div>
         </div>
       </div>
 

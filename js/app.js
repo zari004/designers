@@ -145,6 +145,7 @@ const SETTINGS_FIELDS = {
   notionToken:  'notion_token',
   notionParent: 'notion_parent',
   notionProxy:  'notion_proxy',
+  aiInstructions: 'exon_ai_instructions',
 };
 
 // Bitta sozlamani Firestore'ga yozish (barcha qurilmalarga tarqatadi)

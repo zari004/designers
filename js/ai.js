@@ -6,6 +6,7 @@
 // ═══════════════════════════════════════════════
 
 const AI_KEY_STORE   = 'exon_groq_key';
+const AI_INSTR_STORE = 'exon_ai_instructions';
 const GROQ_STT_URL   = 'https://api.groq.com/openai/v1/audio/transcriptions';
 const GROQ_CHAT_URL  = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile';
@@ -13,6 +14,9 @@ const GROQ_STT_MODEL  = 'whisper-large-v3';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
+
+// O'qitish dasturi — egasi AI ga doimiy ko'rsatma beradi (har bir tahlilga qo'shiladi)
+function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
 
 // Eski kod bilan muvofiqlik uchun — markaziy syncSettingsFromFirestore ishlatiladi
 async function aiSyncKeyFromFirestore(){
@@ -106,9 +110,25 @@ function aiClearKey(){
 function _aiUpdateSettingsBadge(){
   if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
 }
+
+// ── O'QITISH DASTURI (maxsus ko'rsatmalar) ──
+let _aiInstrSaveTimer=null;
+function aiInstrAutoSave(val){
+  const v=val||'';
+  localStorage.setItem(AI_INSTR_STORE, v);
+  const hint=document.getElementById('ai-instr-hint');
+  if(hint) hint.textContent = v.trim() ? 'Saqlandi ✓ — AI har doim shu ko\'rsatmalarga amal qiladi' : 'AI ga doimiy ko\'rsatma bering — har bir tahlilda hisobga oladi';
+  clearTimeout(_aiInstrSaveTimer);
+  _aiInstrSaveTimer=setTimeout(()=>{
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('aiInstructions', v);
+  }, 800);
+}
+
 function loadAiSettings(){
   const el=document.getElementById('ai-key-inp');
   if(el) el.value=getAiKey();
+  const instr=document.getElementById('ai-instr-inp');
+  if(instr) instr.value=getAiInstructions();
   _aiUpdateSettingsBadge();
 }
 
@@ -220,15 +240,37 @@ async function aiProcess(){
     // 2-qadam: LLaMA bilan rasmiy hujjat yaratish
     const today=new Date().toISOString().slice(0,10);
     const catList=typeof catKeys==='function'?catKeys().join(', '):'A, B, C';
+    const customInstr=getAiInstructions();
 
-    const systemPrompt=`Sen dizaynerlar boshqaruv tizimi uchun loyiha tahlilchisissan. Foydalanuvchi o'zbek tilida qisqa ma'lumot beradi, sen uni rasmiy loyiha hujjatiga aylantirasan. Ovozda kichik xatolar bo'lsa kontekstdan to'g'irla.
+    const systemPrompt=`Sen dizaynerlar boshqaruv tizimi (EXON) uchun professional loyiha tahlilchisissan. Foydalanuvchi o'zbek tilida qisqa, erkin ma'lumot beradi (ko'pincha ovoz orqali). Sening vazifang — uni TO'LIQ, BATAFSIL va RASMIY loyiha hujjatiga aylantirish. Ovozdagi kichik xatolarni kontekstdan to'g'irla.
 
 Mavjud kategoriyalar: ${catList}. Bugungi sana: ${today}.
 
-FAQAT quyidagi JSON formatida javob ber, boshqa hech narsa yozma:
-{"title":"aniq loyiha nomi 3-8 so'z","descHtml":"<p>rasmiy tavsif HTML</p>","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriya yoki null"}
+═══ descHtml UCHUN MAJBURIY TUZILMA ═══
+Hujjat boy va tuzilgan bo'lishi SHART. Quyidagi bo'limlarni shu tartibda yoz (har biri <h2> sarlavha bilan):
 
-Qoidalar: title=konkret professional; descHtml=rasmiy o'zbek tilida maqsad+qamrov+natija (<strong>,<ul><li> ishlatsa bo'ladi); priority=high(shoshilinch),medium(oddiy),low(vaqti bor); deadline=aytilsa hisoblang aks holda null string yoz; category=faqat mavjud kategoriyalardan.`;
+<h2>Maqsad</h2>
+<p>Loyihaning asosiy maqsadi 2-3 gapda. Muhim so'zlarni <strong>qalin</strong> qil.</p>
+
+<h2>Vazifalar va qamrov</h2>
+<ul><li>Aniq bajariladigan ishlar — kamida 4-6 ta band</li><li>Har bir band konkret va o'lchanadigan bo'lsin</li></ul>
+
+<h2>Talablar</h2>
+<ul><li>Texnik va dizayn talablari (ranglar, format, o'lcham, uslub va h.k.)</li></ul>
+
+<h2>Kutilayotgan natija</h2>
+<p>Yakuniy mahsulot qanday bo'lishi kerakligi batafsil.</p>
+
+Agar mavzu talab qilsa <h3> kichik sarlavhalar, <blockquote> izohlar ham qo'sh. Matnni QISQARTIRMA — har bo'lim mazmunli bo'lsin. Sarlavha (<h2>/<h3>), oddiy matn (<p>) va ro'yxat (<ul>) ni ALOHIDA ishlat — hammasini bir xil qilma.
+
+═══ JAVOB FORMATI ═══
+FAQAT shu JSON'ni qaytar, boshqa hech narsa yozma:
+{"title":"aniq professional loyiha nomi 3-8 so'z","descHtml":"yuqoridagi tuzilmadagi to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriya yoki null"}
+
+Qoidalar: title=konkret va professional; priority=high(shoshilinch/muhim), medium(oddiy), low(vaqti bor); deadline=muddat aytilsa bugungi sanadan hisobla, aks holda null; category=faqat ro'yxatdagi kategoriyalardan biri yoki null.${customInstr?`
+
+═══ EGASINING MAXSUS KO'RSATMALARI (eng yuqori ustuvorlik — har doim amal qil) ═══
+${customInstr}`:''}`;
 
     const chatResp=await fetch(GROQ_CHAT_URL,{
       method:'POST',
@@ -239,8 +281,8 @@ Qoidalar: title=konkret professional; descHtml=rasmiy o'zbek tilida maqsad+qamro
           {role:'system', content:systemPrompt},
           {role:'user', content:userContent}
         ],
-        temperature:0.4,
-        max_tokens:800,
+        temperature:0.6,
+        max_tokens:2600,
         response_format:{type:'json_object'}
       })
     });
