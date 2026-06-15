@@ -451,14 +451,14 @@
         </div>
         <div style="padding:18px">
           <div class="settings-note">
-            Loyiha yaratishda ovozli yoki matnli buyruq berish imkonini beradi — AI uni rasmiy hujjatga aylantiradi.<br/>
-            <strong>1.</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a> saytiga o'ting<br/>
-            <strong>2.</strong> <em>Create new secret key</em> bosing → kalitni nusxalang (sk-proj-...)<br/>
+            Loyiha yaratishda o'zbekcha ovozli yoki matnli buyruq berish imkonini beradi — Google Gemini AI uni rasmiy hujjatga aylantiradi. <strong>Bepul kvota bor.</strong><br/>
+            <strong>1.</strong> <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> saytiga o'ting (Google hisobi bilan kiring)<br/>
+            <strong>2.</strong> <em>Create API key</em> bosing → kalitni nusxalang (AIza...)<br/>
             <strong>3.</strong> Quyidagi maydonga joylashtiring va saqlang
           </div>
           <div class="form-group">
-            <label class="form-label">OpenAI API kaliti</label>
-            <input class="form-input" id="ai-key-inp" type="password" placeholder="sk-proj-..." oninput="aiKeyChange(this.value)"/>
+            <label class="form-label">Google Gemini API kaliti</label>
+            <input class="form-input" id="ai-key-inp" type="password" placeholder="AIza..." oninput="aiKeyChange(this.value)"/>
             <div class="form-hint" id="ai-key-hint">Kalit faqat sizning qurilmangizda (localStorage) saqlanadi</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
