@@ -204,43 +204,25 @@ async function aiProcess(){
   const today=new Date().toISOString().slice(0,10);
   const catList=typeof catKeys==='function'?catKeys().join(', '):'A, B, C';
 
-  const systemPrompt=`Sen dizaynerlar boshqaruv tizimi uchun loyiha tahlilchisissan. Foydalanuvchi o'zbek tilida (ovoz yoki matn) qisqa ma'lumot beradi, sen uni rasmiy loyiha hujjatiga aylantirasan. Ovozda kichik xatolar bo'lsa, kontekstdan to'g'irla.
+  // System prompt + user content bitta parts array'da — v1 bilan muvofiqligi uchun
+  const instruction=`Sen dizaynerlar boshqaruv tizimi uchun loyiha tahlilchisissan. Foydalanuvchi o'zbek tilida qisqa ma'lumot beradi, sen uni rasmiy loyiha hujjatiga aylantirasan. Ovozda kichik xatolar bo'lsa kontekstdan to'g'irla.
 
-Mavjud kategoriyalar: ${catList}
-Bugungi sana: ${today}
+Mavjud kategoriyalar: ${catList}. Bugungi sana: ${today}.
 
-Qoidalar:
-- title: konkret, qisqa, professional (3-8 so'z)
-- descHtml: rasmiy o'zbek tilida batafsil tavsif, HTML (2-4 paragraf, <strong> va <ul><li> ishlatsa bo'ladi) — maqsad, qamrov va kutilayotgan natija
-- priority: high=shoshilinch, medium=oddiy, low=vaqti bor
-- deadline: muddat aytilsa hisobla (YYYY-MM-DD), aks holda null
-- category: faqat mavjud kategoriyalardan biri yoki null`;
+FAQAT quyidagi JSON formatida javob ber, boshqa hech narsa yozma:
+{"title":"aniq loyiha nomi 3-8 so'z","descHtml":"<p>rasmiy tavsif HTML</p>","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriya yoki null"}
 
-  const userParts=[];
-  if(text) userParts.push({text:'Foydalanuvchi matni: '+text});
+Qoidalar: title=konkret professional; descHtml=rasmiy o'zbek tilida maqsad+qamrov+natija (<strong>,<ul><li> ishlatsa bo'ladi); priority=high(shoshilinch),medium(oddiy),low(vaqti bor); deadline=aytilsa hisoblang aks holda null string yoz; category=faqat mavjud kategoriyalardan.`;
+
+  const parts=[];
+  parts.push({text: instruction + '\n\nFoydalanuvchi ma\'lumoti: ' + (text||'(ovoz orqali)')});
   if(_aiAudioWav){
-    userParts.push({text:'Foydalanuvchining ovozli xabari (o\'zbekcha):'});
-    userParts.push({inline_data:{mime_type:'audio/wav', data:_toBase64(_aiAudioWav)}});
+    parts.push({inline_data:{mime_type:'audio/wav', data:_toBase64(_aiAudioWav)}});
   }
 
   const body={
-    systemInstruction:{parts:[{text:systemPrompt}]},
-    contents:[{role:'user', parts:userParts}],
-    generationConfig:{
-      temperature:0.4,
-      responseMimeType:'application/json',
-      responseSchema:{
-        type:'OBJECT',
-        properties:{
-          title:{type:'STRING'},
-          descHtml:{type:'STRING'},
-          priority:{type:'STRING', enum:['low','medium','high']},
-          deadline:{type:'STRING'},
-          category:{type:'STRING'},
-        },
-        required:['title','descHtml','priority'],
-      },
-    },
+    contents:[{role:'user', parts}],
+    generationConfig:{temperature:0.4, maxOutputTokens:800},
   };
 
   try{
