@@ -59,14 +59,16 @@ function _showAiModal(){
 }
 
 // ── SOZLAMALAR: API KALIT ──
+// Google kalitlari turli formatda bo'lishi mumkin: "AIza..." yoki yangi "AQ...."
+function _aiKeyLooksValid(v){ return !!v && v.length>=20 && !/\s/.test(v); }
 function aiKeyChange(val){
   const hint=document.getElementById('ai-key-hint');
-  if(hint) hint.textContent = val.trim().startsWith('AIza') ? 'Kalit to\'g\'ri ko\'rinadi ✓' : 'Kalit faqat sizning qurilmangizda (localStorage) saqlanadi';
+  if(hint) hint.textContent = _aiKeyLooksValid(val.trim()) ? 'Kalit to\'g\'ri ko\'rinadi ✓' : 'Kalit faqat sizning qurilmangizda (localStorage) saqlanadi';
 }
 function aiSaveKey(){
   const val=(document.getElementById('ai-key-inp')?.value||'').trim();
   if(!val){ toast("API kalit bo'sh"); return; }
-  if(!val.startsWith('AIza')){ toast("Gemini kaliti AIza bilan boshlanishi kerak"); return; }
+  if(!_aiKeyLooksValid(val)){ toast("Kalit juda qisqa yoki bo'sh joy bor — tekshiring"); return; }
   saveAiKey(val);
   _aiUpdateSettingsBadge();
   toast("Google Gemini API kaliti saqlandi ✓");
