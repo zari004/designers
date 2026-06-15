@@ -10,6 +10,7 @@ const byId = id => document.getElementById(id);
 
 let peekProjId = null;   // hozir ochiq loyiha (null = yangi)
 let peekTags = [];
+let peekVaraqs = {};     // ochiq loyihaning varaqlari (xotirada — loyiha hali saqlanmagan bo'lsa ham)
 
 // ── TEGLAR ──
 const TAG_COLORS = ['#16a34a','#0284c7','#7c3aed','#db2777','#dc2626','#ea580c','#ca8a04','#64748b'];
@@ -107,6 +108,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   const p = id ? projects.find(x=>x.id===id) : null;
   peekProjId = p ? p.id : null;
   peekTags = [...(p?.tags||[])];
+  peekVaraqs = p && p.varaqs ? JSON.parse(JSON.stringify(p.varaqs)) : {};
   const defDId = preDesignerId || p?.designerId || designers[0].id;
   const defDesigner = designers.find(d=>d.id===parseInt(defDId));
   let defCat = p?.category || defDesigner?.category || firstCat();
@@ -150,6 +152,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   `;
 
   byId('pk-rte').innerHTML = p ? (p.descHtml || (p.description ? '<p>'+esc(p.description)+'</p>' : '')) : '';
+  refreshVaraqRefs(byId('pk-rte'));
   try{ document.execCommand('styleWithCSS', false, true); }catch(e){}
   renderPeekTags(false);
   calcPeekTotal();
@@ -181,11 +184,13 @@ function openProjectModal(id = null, preDesignerId = null){ openProjectPeek(id, 
 
 function closePeek(){
   hideBubble(); hideSlash();
+  document.getElementById('varaq-panel')?.remove();
+  _varaqStack = []; _activeRteId = 'pk-rte'; savedRange = null;
   byId('peek-overlay').classList.remove('open');
   byId('peek').classList.remove('open');
   document.body.style.overflow = '';
   peekProjId = null;
-  savedRange = null;
+  peekVaraqs = {};
   if(typeof editingCmt !== 'undefined') editingCmt = null;
 }
 
@@ -245,6 +250,7 @@ function collectPeekProject(){
     priority: byId('pk-priority').value,
     files: byId('pk-files').value.split(',').map(s=>s.trim()).filter(Boolean),
     tags: [...peekTags],
+    varaqs: JSON.parse(JSON.stringify(peekVaraqs)),
   };
 }
 
@@ -415,7 +421,7 @@ function scheduleBubble(){
 
 function positionBubble(){
   const b = byId('rte-bubble');
-  const ed = byId('pk-rte');
+  const ed = byId(_activeRteId);
   if(!b || !ed) return;
   const s = getSelection();
   if(!s.rangeCount || s.isCollapsed || !ed.contains(s.anchorNode)){ hideBubble(); return; }
@@ -459,7 +465,8 @@ const SLASH_ITEMS = [
   {k:'page', label:'Varaq', desc:'Sahifa (bosib ichiga kirish mumkin)', ic:'📄', run:()=>{
     const vid='v'+Date.now();
     rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
-    if(peekProjId){ const pi=projects.findIndex(x=>x.id===peekProjId); if(pi>=0){ if(!projects[pi].varaqs) projects[pi].varaqs={}; projects[pi].varaqs[vid]={title:'Yangi sahifa',descHtml:''}; const ed=byId('pk-rte'); if(ed) projects[pi].descHtml=ed.innerHTML; persist(); } }
+    peekVaraqs[vid]={title:'Yangi sahifa',descHtml:''};
+    syncPeekVaraqs();
   }},
 ];
 
@@ -488,9 +495,12 @@ function rteKeydown(e){
 
 function rteInput(){
   // pk-rte o'zgarganda xotira modelini yangilash (varaqlar yo'qolmasligi uchun)
-  if(_activeRteId==='pk-rte' && peekProjId){
-    const pi=projects.findIndex(x=>x.id===peekProjId);
-    if(pi>=0){ const ed=byId('pk-rte'); if(ed) projects[pi].descHtml=ed.innerHTML; }
+  if(_activeRteId==='pk-rte'){
+    const ed=byId('pk-rte');
+    if(ed && peekProjId){
+      const pi=projects.findIndex(x=>x.id===peekProjId);
+      if(pi>=0) projects[pi].descHtml=ed.innerHTML;
+    }
   }
   // Joriy caret oldidagi matnda "/" borligini tekshirish
   const s = getSelection();
@@ -727,10 +737,29 @@ function _onRteClick(e){
 let _varaqStack = [];  // [{vid, title}]
 let _varaqSaveT = null;
 
+// Berilgan konteynerdagi varaq havolalari nomini peekVaraqs'dan (haqiqiy manba) yangilash
+function refreshVaraqRefs(container){
+  if(!container) return;
+  container.querySelectorAll('.rte-page-ref').forEach(ref=>{
+    const v=peekVaraqs[ref.dataset.vid];
+    if(v){ ref.dataset.title=v.title||'Yangi sahifa'; ref.innerHTML='📄 '+esc(v.title||'Yangi sahifa'); }
+  });
+}
+
+// Varaqlarni xotiradan loyiha obyektiga ko'chirish + saqlash
+function syncPeekVaraqs(){
+  const ed=byId('pk-rte');
+  if(!peekProjId) return; // yangi loyiha: loyiha saqlanganda biriktiriladi (collectPeekProject)
+  const pi=projects.findIndex(x=>x.id===peekProjId);
+  if(pi<0) return;
+  projects[pi].varaqs=JSON.parse(JSON.stringify(peekVaraqs));
+  if(ed) projects[pi].descHtml=ed.innerHTML;
+  persist();
+}
+
 function openVaraqPanel(vid, title){
   if(_varaqStack.length > 0) saveVaraqNow(); // joriy sahifani saqlash
-  const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
-  const vdata=p?.varaqs?.[vid]||{title:title||'Yangi sahifa',descHtml:''};
+  const vdata=peekVaraqs[vid]||{title:title||'Yangi sahifa',descHtml:''};
   _varaqStack.push({vid, title: vdata.title});
   _renderVaraqPanel(vid, vdata);
 }
@@ -759,6 +788,9 @@ function _renderVaraqPanel(vid, vdata){
         value="${esc(vdata.title)}"
         oninput="varaqAutoSave()"
         onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('varaq-rte')?.focus()}"/>
+      <button class="icon-btn varaq-share" onclick="shareVaraq('${vid}')" title="Bu sahifani ulashish — havola orqali ko'rish">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+      </button>
     </div>
     <div class="rte rich" id="varaq-rte" contenteditable="true"
       data-placeholder="Bu sahifaga yozing. Formatlash uchun matnni belgilang, blok qo'shish uchun / bosing."
@@ -768,7 +800,7 @@ function _renderVaraqPanel(vid, vdata){
       onmouseup="rteSaveSel()"></div>`;
 
   const vrte=document.getElementById('varaq-rte');
-  if(vrte){ vrte.innerHTML=vdata.descHtml||''; try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
+  if(vrte){ vrte.innerHTML=vdata.descHtml||''; refreshVaraqRefs(vrte); try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
 
   _activeRteId='varaq-rte';
   savedRange=null;
@@ -798,19 +830,17 @@ function varaqAutoSave(){
 
 function saveVaraqNow(){
   const panel=document.getElementById('varaq-panel'); if(!panel) return;
-  const vid=panel.dataset.vid; if(!vid||!peekProjId) return;
+  const vid=panel.dataset.vid; if(!vid) return;
   const title=document.getElementById('varaq-title-inp')?.value||'Yangi sahifa';
   const descHtml=document.getElementById('varaq-rte')?.innerHTML||'';
-  const pi=projects.findIndex(x=>x.id===peekProjId); if(pi<0) return;
-  if(!projects[pi].varaqs) projects[pi].varaqs={};
-  projects[pi].varaqs[vid]={title,descHtml};
+  peekVaraqs[vid]={title,descHtml};
   // Stack entry nomini yangilash
   const se=_varaqStack.find(v=>v.vid===vid); if(se) se.title=title;
   // RTE'lardagi barcha havolalarni yangilash
   document.querySelectorAll(`.rte-page-ref[data-vid="${vid}"]`).forEach(ref=>{
     ref.dataset.title=title; ref.innerHTML='📄 '+esc(title);
   });
-  persist();
+  syncPeekVaraqs();
 }
 
 function closeVaraqPanel(){
@@ -819,8 +849,7 @@ function closeVaraqPanel(){
   if(_varaqStack.length>0){
     // Oldingi sahifaga qaytish
     const prev=_varaqStack[_varaqStack.length-1];
-    const p=peekProjId?projects.find(x=>x.id===peekProjId):null;
-    const vdata=p?.varaqs?.[prev.vid]||{title:prev.title,descHtml:''};
+    const vdata=peekVaraqs[prev.vid]||{title:prev.title,descHtml:''};
     _renderVaraqPanel(prev.vid, vdata);
   } else {
     // Loyihaga qaytish
@@ -830,3 +859,125 @@ function closeVaraqPanel(){
     setTimeout(setupRteHandlers,0);
   }
 }
+
+// ══════════════════════════════════════════
+// ULASHISH — havola orqali faqat ko'rish (read-only)
+// ══════════════════════════════════════════
+async function shareProject(){
+  if(_varaqStack.length>0) saveVaraqNow();
+  const title = byId('pk-title')?.value?.trim() || 'Loyiha';
+  const descHtml = byId('pk-rte')?.innerHTML || '';
+  await _doShare({ type:'project', title, descHtml, varaqs: JSON.parse(JSON.stringify(peekVaraqs)) });
+}
+
+async function shareVaraq(vid){
+  saveVaraqNow();
+  const v = peekVaraqs[vid] || {title:'Sahifa', descHtml:''};
+  await _doShare({ type:'varaq', entry:vid, title:v.title||'Sahifa', descHtml:v.descHtml||'', varaqs: JSON.parse(JSON.stringify(peekVaraqs)) });
+}
+
+async function _doShare(payload){
+  if(typeof isFbReady!=='function' || !isFbReady()){
+    toast("Ulashish uchun Firebase'ga ulanish kerak"); return;
+  }
+  try{
+    toast('Havola tayyorlanmoqda...');
+    const id = await fbCreateShare(payload);
+    const url = location.origin + '/?share=' + id;
+    showShareLinkModal(url);
+  }catch(e){
+    toast("Ulashib bo'lmadi: " + (e.message||e));
+  }
+}
+
+function showShareLinkModal(url){
+  const tt = byId('modal-title-text'); if(tt) tt.textContent = 'Havola tayyor';
+  const mb = byId('modal-body');
+  if(mb){
+    mb.innerHTML = `
+      <p style="color:var(--muted);font-size:13px;margin:0 0 12px">Quyidagi havola orqali har kim (kirmasdan) bu sahifani ko'ra oladi:</p>
+      <div style="display:flex;gap:8px">
+        <input class="form-input" id="share-link-inp" readonly value="${esc(url)}" style="flex:1" onclick="this.select()"/>
+        <button class="btn btn-primary" onclick="copyShareLink()">Nusxalash</button>
+      </div>
+      <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+        <a class="btn btn-ghost btn-sm" href="${esc(url)}" target="_blank" rel="noopener">Yangi oynada ochish</a>
+        <button class="btn btn-ghost btn-sm" onclick="shareViaWhatsApp('${esc(url)}')">WhatsApp orqali</button>
+        <button class="btn btn-ghost btn-sm" onclick="shareViaTelegram('${esc(url)}')">Telegram orqali</button>
+      </div>`;
+  }
+  byId('modal').style.display='flex';
+  setTimeout(()=>byId('share-link-inp')?.select(), 100);
+}
+function copyShareLink(){
+  const inp = byId('share-link-inp'); if(!inp) return;
+  const val = inp.value;
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(val).then(()=>toast('Havola nusxalandi')).catch(()=>{ inp.select(); document.execCommand('copy'); toast('Havola nusxalandi'); });
+  } else { inp.select(); document.execCommand('copy'); toast('Havola nusxalandi'); }
+}
+function shareViaWhatsApp(url){ window.open('https://wa.me/?text='+encodeURIComponent(url),'_blank'); }
+function shareViaTelegram(url){ window.open('https://t.me/share/url?url='+encodeURIComponent(url),'_blank'); }
+
+// ── KO'RISH REJIMI (read-only viewer) ──
+let _shareData = null;
+let _shareStack = [];  // [{vid}] — vid==='__root__' bo'lsa asosiy hujjat
+
+async function bootShareViewer(id){
+  // Ilova chromasini yashirish
+  document.getElementById('login-screen').style.display='none';
+  const fbSetup = document.getElementById('fb-setup-screen'); if(fbSetup) fbSetup.style.display='none';
+  document.getElementById('sidebar').style.visibility='hidden';
+  document.querySelector('.main').style.visibility='hidden';
+  document.querySelector('.topbar').style.visibility='hidden';
+  document.getElementById('sync-bar').style.visibility='hidden';
+
+  let root = document.getElementById('share-viewer');
+  if(!root){ root=document.createElement('div'); root.id='share-viewer'; root.className='share-viewer'; document.body.appendChild(root); }
+  root.innerHTML = `<div class="share-doc" style="text-align:center;padding-top:80px;color:var(--muted)">Yuklanmoqda...</div>`;
+
+  try{
+    if(typeof initFirebase==='function'){ await initFirebase(); }
+    const data = await fbLoadShare(id);
+    if(!data){ root.innerHTML = `<div class="share-doc" style="text-align:center;padding-top:80px"><h2>Havola topilmadi</h2><p style="color:var(--muted)">Bu havola eskirgan yoki o'chirilgan bo'lishi mumkin.</p><a class="btn btn-primary" href="/">EXON'ga o'tish</a></div>`; return; }
+    _shareData = data;
+    _shareStack = (data.type==='varaq' && data.entry) ? [{vid:data.entry}] : [{vid:'__root__'}];
+    renderShareView();
+  }catch(e){
+    root.innerHTML = `<div class="share-doc" style="text-align:center;padding-top:80px"><h2>Xatolik</h2><p style="color:var(--muted)">${esc(e.message||String(e))}</p><a class="btn btn-primary" href="/">EXON'ga o'tish</a></div>`;
+  }
+}
+
+function renderShareView(){
+  const root = document.getElementById('share-viewer'); if(!root||!_shareData) return;
+  const cur = _shareStack[_shareStack.length-1];
+  let title, html;
+  if(cur.vid==='__root__'){ title=_shareData.title||'Loyiha'; html=_shareData.descHtml||''; }
+  else { const v=_shareData.varaqs?.[cur.vid]||{}; title=v.title||'Sahifa'; html=v.descHtml||''; }
+  const canBack = _shareStack.length>1;
+  root.innerHTML = `
+    <div class="share-top">
+      <div class="share-brand">EXON</div>
+      ${canBack?`<button class="btn btn-ghost btn-sm" onclick="shareGoBack()">← Orqaga</button>`:''}
+      <a class="btn btn-ghost btn-sm" href="/" style="margin-left:auto">Ilovani ochish</a>
+    </div>
+    <div class="share-doc">
+      <h1 class="share-title">${esc(title)}</h1>
+      <div class="rich share-rich" id="share-rich"></div>
+    </div>`;
+  const rich = document.getElementById('share-rich');
+  rich.innerHTML = html || '<p style="color:var(--muted)">Bo\'sh sahifa</p>';
+  rich.querySelectorAll('.rte-page-ref').forEach(ref=>{
+    const v=_shareData.varaqs?.[ref.dataset.vid];
+    if(v){ ref.innerHTML='📄 '+esc(v.title||'Sahifa'); }
+    ref.style.cursor='pointer';
+    ref.addEventListener('click',()=>shareOpenVaraq(ref.dataset.vid));
+  });
+  window.scrollTo(0,0);
+}
+function shareOpenVaraq(vid){
+  if(!_shareData?.varaqs?.[vid]) return;
+  _shareStack.push({vid});
+  renderShareView();
+}
+function shareGoBack(){ if(_shareStack.length>1){ _shareStack.pop(); renderShareView(); } }

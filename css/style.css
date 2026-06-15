@@ -296,6 +296,28 @@ a{color:var(--accent-text)}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:55}
 .sidebar-overlay.show{display:block}
 
+/* ── BOTTOM NAV (mobile) ── */
+.bottom-nav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;
+  height:62px;
+  background:var(--panel);
+  border-top:1px solid var(--border);
+  z-index:60;
+  padding:0 4px;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.bnav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:6px 4px 2px;border:none;background:none;cursor:pointer;
+  color:var(--muted2);font-size:10px;font-weight:500;font-family:var(--font);
+  border-radius:10px;transition:color .15s;min-width:0;
+}
+.bnav-item svg{width:22px;height:22px;flex-shrink:0;stroke-width:1.8}
+.bnav-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:64px}
+.bnav-item:hover{color:var(--text)}
+.bnav-item.active{color:var(--accent)}
+
 /* ── RESPONSIVE ── */
 @media(max-width:1100px){
   .stat-grid,.detail-stats-row{grid-template-columns:repeat(2,1fr)}
@@ -307,6 +329,8 @@ a{color:var(--accent-text)}
   .topbar,.sync-bar,.main{left:0;margin-left:0}
   .topbar{padding-left:58px}
   .burger{display:flex}
+  .bottom-nav{display:flex}
+  .main{padding-bottom:calc(62px + env(safe-area-inset-bottom,0px) + 16px)}
 }
 @media(max-width:640px){
   .main{padding:calc(var(--topbar) + 16px) 14px 64px}
@@ -491,6 +515,28 @@ select.prop-input{cursor:pointer}
   .prop-row{grid-template-columns:118px 1fr}
   .peek-title{font-size:22px}
 }
+
+/* ── ULASHISH KO'RISH REJIMI (read-only viewer) ── */
+.share-viewer{position:fixed;inset:0;z-index:9999;background:var(--bg);overflow-y:auto;color:var(--text)}
+.share-top{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(10px)}
+.share-brand{font-weight:800;font-size:18px;letter-spacing:.5px;color:var(--accent)}
+.share-doc{max-width:760px;margin:0 auto;padding:34px 24px 90px}
+.share-title{font-size:30px;font-weight:800;line-height:1.2;margin:0 0 20px}
+.share-rich{font-size:15px;line-height:1.7}
+.share-rich .rte-page-ref{transition:background .12s}
+.share-rich .rte-page-ref:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+@media(max-width:880px){
+  .share-doc{padding:24px 16px 70px}
+  .share-title{font-size:24px}
+}
+
+/* ── AI YORDAMCHI ── */
+.ai-mic-btn{display:flex;align-items:center;gap:7px;transition:background .15s,box-shadow .15s}
+.ai-mic-btn.ai-mic-active{background:rgba(239,68,68,.12)!important;border-color:#ef4444!important;color:#ef4444!important;box-shadow:0 0 0 3px rgba(239,68,68,.18)}
+@keyframes ai-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-rec-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;animation:ai-pulse 1s infinite;margin-right:4px}
+@keyframes ai-spin{to{transform:rotate(360deg)}}
+.ai-loader{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:ai-spin .8s linear infinite;margin:0 auto}
 
 /* ── PRINT ── */
 @media print{

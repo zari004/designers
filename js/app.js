@@ -66,12 +66,15 @@ function drawFavicon(){
 function showPanel(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active'));
   const panel=document.getElementById('panel-'+name);
   if(panel) panel.classList.add('active');
   // detail sahifasi "Dizaynerlar" bo'limiga tegishli
   const navName = name==='detail' ? 'designers' : name;
   const nav=document.querySelector(`.nav-item[data-panel="${navName}"]`);
   if(nav) nav.classList.add('active');
+  const bnav=document.querySelector(`.bnav-item[data-panel="${navName}"]`);
+  if(bnav) bnav.classList.add('active');
   const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',trash:'Chiqitdon',detail:'Dizayner profili',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
   document.getElementById('topbar-title').textContent=titles[name]||'';
   updateTopbar(name);
@@ -114,6 +117,19 @@ function applyNavPermissions(user){
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
   });
+  // Bottom nav huquqlari
+  const bmap={
+    'bnav-designers':'designers',
+    'bnav-projects':'projects',
+    'bnav-payments':'payments',
+    'bnav-settings':'settings',
+  };
+  Object.entries(bmap).forEach(([elId,perm])=>{
+    const el=document.getElementById(elId);
+    if(!el) return;
+    const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
+    el.style.display=ok?'':'none';
+  });
 }
 
 // ── INIT ──
@@ -125,6 +141,7 @@ function initApp(user){
   document.querySelector('.main').style.visibility='';
   document.querySelector('.topbar').style.visibility='';
   document.getElementById('sync-bar').style.visibility='';
+  const bn=document.getElementById('bottom-nav'); if(bn) bn.style.visibility='';
 
   const sbu=document.getElementById('sidebar-username');
   if(sbu) sbu.textContent=user.displayName||user.username||user.email||'—';
@@ -140,6 +157,8 @@ function initApp(user){
   // Firebase real-vaqt sinxronizatsiya
   if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync();
   if(typeof fbLoad === 'function') fbLoad();
+  // AI kalitini Firestore'dan yuklab olish (boshqa qurilmada kiritilgan bo'lsa)
+  if(typeof aiSyncKeyFromFirestore === 'function') aiSyncKeyFromFirestore();
 
   // PWA shortcut uchun signal
   window.dispatchEvent(new Event('exon-ready'));
@@ -150,6 +169,7 @@ function showAppLogin(){
   document.querySelector('.main').style.visibility='hidden';
   document.querySelector('.topbar').style.visibility='hidden';
   document.getElementById('sync-bar').style.visibility='hidden';
+  const bn=document.getElementById('bottom-nav'); if(bn) bn.style.visibility='hidden';
   document.getElementById('login-screen').style.display='';
   const fbSetup = document.getElementById('fb-setup-screen');
   if(fbSetup) fbSetup.style.display = 'none';
@@ -160,6 +180,7 @@ function showFbSetup(){
   document.querySelector('.main').style.visibility='hidden';
   document.querySelector('.topbar').style.visibility='hidden';
   document.getElementById('sync-bar').style.visibility='hidden';
+  const bn=document.getElementById('bottom-nav'); if(bn) bn.style.visibility='hidden';
   document.getElementById('login-screen').style.display='none';
   const fbSetup = document.getElementById('fb-setup-screen');
   if(fbSetup) fbSetup.style.display='';
@@ -173,6 +194,13 @@ document.fonts.ready.then(drawFavicon);
 setTimeout(drawFavicon, 2500);
 
 (async function boot(){
+  // Ulashilgan havola (?share=...) — kirmasdan faqat ko'rish rejimi
+  const shareId = new URLSearchParams(location.search).get('share');
+  if(shareId && typeof bootShareViewer === 'function'){
+    await bootShareViewer(shareId);
+    return;
+  }
+
   // Firebase konfiguratsiyasi bor bo'lsa — Firebase bilan ishlash
   if(typeof hasFbConfig === 'function' && hasFbConfig()){
     const ok = await initFirebase();

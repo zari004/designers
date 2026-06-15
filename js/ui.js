@@ -893,6 +893,7 @@ function renderSettingsPage(){
   if(adminCard) adminCard.style.display='none'; // Firebase'da eski karta yo'q
 
   renderCatManager();
+  if(typeof loadAiSettings==='function') loadAiSettings();
 }
 
 // ── KATEGORIYA BOSHQARUVI ──
