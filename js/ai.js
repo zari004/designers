@@ -1,21 +1,23 @@
 // ═══════════════════════════════════════════════
 // AI YORDAMCHI — ovoz/matn → rasmiy loyiha tavsifi
-// Groq API — bepul, tez, O'zbekistonda ishlaydi
-//   · Ovoz  → Whisper-large-v3 (o'zbekcha)
-//   · Matn  → LLaMA-3.3-70b-versatile
+//   · Ovoz  → Web Speech API (bepul, Chrome/Edge)
+//             Groq Whisper (fallback, kalit kerak)
+//   · Matn  → OpenRouter (Gemini 2.0 Flash, bepul)
 // ═══════════════════════════════════════════════
 
-const AI_KEY_STORE        = 'exon_groq_key';
-const AI_INSTR_STORE      = 'exon_ai_instructions';
-const GOOGLE_STT_KEY_STORE= 'exon_google_stt_key';
-const GROQ_STT_URL        = 'https://api.groq.com/openai/v1/audio/transcriptions';
-const GROQ_CHAT_URL       = 'https://api.groq.com/openai/v1/chat/completions';
-const GOOGLE_STT_URL      = 'https://speech.googleapis.com/v1/speech:recognize';
-const GROQ_CHAT_MODEL     = 'llama-3.3-70b-versatile';
-const GROQ_STT_MODEL      = 'whisper-large-v3';
+const AI_KEY_STORE           = 'exon_groq_key';       // Groq — faqat STT fallback uchun
+const OPENROUTER_KEY_STORE   = 'exon_openrouter_key'; // OpenRouter — matn formatlash uchun
+const AI_INSTR_STORE         = 'exon_ai_instructions';
+const GOOGLE_STT_KEY_STORE   = 'exon_google_stt_key';
+const GROQ_STT_URL           = 'https://api.groq.com/openai/v1/audio/transcriptions';
+const OPENROUTER_CHAT_URL    = 'https://openrouter.ai/api/v1/chat/completions';
+const GOOGLE_STT_URL         = 'https://speech.googleapis.com/v1/speech:recognize';
+const OPENROUTER_MODEL       = 'google/gemini-2.0-flash-exp:free';
+const GROQ_STT_MODEL         = 'whisper-large-v3';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
+function getOpenRouterKey(){ return localStorage.getItem(OPENROUTER_KEY_STORE)||''; }
 function getGoogleSttKey(){ return localStorage.getItem(GOOGLE_STT_KEY_STORE)||''; }
 
 // O'qitish dasturi — egasi AI ga doimiy ko'rsatma beradi (har bir tahlilga qo'shiladi)
@@ -30,10 +32,10 @@ async function aiSyncKeyFromFirestore(){
 
 // ── MODAL OCHISH ──
 function openAiAssistant(){
-  if(!getAiKey()){
-    if(confirm("AI yordamchi uchun Groq API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
+  if(!getOpenRouterKey()){
+    if(confirm("AI yordamchi uchun OpenRouter API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
       showPanel('settings');
-      setTimeout(()=>{ const el=document.getElementById('ai-key-inp'); if(el){ el.focus(); el.scrollIntoView({behavior:'smooth',block:'center'}); } },300);
+      setTimeout(()=>{ const el=document.getElementById('ai-or-key-inp'); if(el){ el.focus(); el.scrollIntoView({behavior:'smooth',block:'center'}); } },300);
     }
     return;
   }
@@ -128,10 +130,35 @@ function aiClearKey(){
   toast("Kalit o'chirildi");
 }
 function _aiUpdateSettingsBadge(){
-  if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
+  if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getOpenRouterKey());
 }
 
-// ── GOOGLE CLOUD STT KALITI (ixtiyoriy — o'zbekchani aniqroq taniydi) ──
+// ── OPENROUTER KALITI (matn formatlash — asosiy) ──
+let _orSaveTimer=null;
+function openRouterKeyAutoSave(val){
+  const v=(val||'').trim();
+  localStorage.setItem(OPENROUTER_KEY_STORE, v);
+  _aiUpdateSettingsBadge();
+  const hint=document.getElementById('ai-or-key-hint');
+  if(hint) hint.textContent = v
+    ? 'Saqlandi ✓ — barcha qurilmalarda ishlaydi'
+    : 'Kalit kiritilmagan — AI matn formatlashi ishlamaydi';
+  clearTimeout(_orSaveTimer);
+  _orSaveTimer=setTimeout(()=>{
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openRouterKey', v);
+  }, 700);
+}
+function openRouterKeyClear(){
+  localStorage.removeItem(OPENROUTER_KEY_STORE);
+  const el=document.getElementById('ai-or-key-inp'); if(el) el.value='';
+  _aiUpdateSettingsBadge();
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openRouterKey','');
+  const hint=document.getElementById('ai-or-key-hint');
+  if(hint) hint.textContent='Kalit kiritilmagan';
+  toast("OpenRouter kaliti o'chirildi");
+}
+
+// ── GOOGLE CLOUD STT KALITI (ixtiyoriy — Firefox/Safari uchun) ──
 let _gSttSaveTimer=null;
 function googleSttKeyAutoSave(val){
   const v=(val||'').trim();
@@ -198,6 +225,8 @@ Qo'shimcha qoidalar:
 - Har bo'limda kamida 2-3 ta aniq ma'lumot bo'lsin`;
 
 function loadAiSettings(){
+  const orEl=document.getElementById('ai-or-key-inp');
+  if(orEl) orEl.value=getOpenRouterKey();
   const el=document.getElementById('ai-key-inp');
   if(el) el.value=getAiKey();
   const gEl=document.getElementById('ai-google-key-inp');
@@ -465,10 +494,7 @@ async function aiProcess(){
 
   const res=byId('ai-result'); if(!res) return;
   res.style.display='block';
-  res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Groq tahlil qilmoqda…</div></div>`;
-
-  const key=getAiKey();
-  if(!key){ res.innerHTML=`<div style="color:var(--error);padding:12px;background:rgba(239,68,68,.08);border-radius:8px;font-size:13px">API kalit topilmadi — sozlamalarga o'ting</div>`; return; }
+  res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Tahlil qilinmoqda…</div></div>`;
 
   try{
     // 1-qadam: ovoz bo'lsa — STT bilan tekstga aylantirish
@@ -551,11 +577,18 @@ ${rulesBlock}
 MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 {"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
-    const chatResp=await fetch(GROQ_CHAT_URL,{
+    const orKey=getOpenRouterKey();
+    if(!orKey) throw new Error("OpenRouter API kaliti yo'q — Sozlamalar → AI Yordamchi");
+    const chatResp=await fetch(OPENROUTER_CHAT_URL,{
       method:'POST',
-      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      headers:{
+        'Authorization':'Bearer '+orKey,
+        'Content-Type':'application/json',
+        'HTTP-Referer':'https://exon-designers.uz',
+        'X-Title':'EXON'
+      },
       body:JSON.stringify({
-        model:GROQ_CHAT_MODEL,
+        model:OPENROUTER_MODEL,
         messages:[
           {role:'system', content:systemPrompt},
           {role:'user', content:userContent}

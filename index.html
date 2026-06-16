@@ -450,19 +450,33 @@
           <span id="ai-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
         </div>
         <div style="padding:18px">
+          <!-- OpenRouter — asosiy (matn formatlash) -->
           <div class="settings-note">
-            Loyiha yaratishda o'zbekcha ovozli yoki matnli buyruq berish imkonini beradi — Groq AI uni rasmiy hujjatga aylantiradi. <strong>Bepul, tez, O'zbekistonda ishlaydi.</strong><br/>
-            <strong>1.</strong> <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> saytiga o'ting<br/>
-            <strong>2.</strong> <em>Create API key</em> bosing → kalitni nusxalang (gsk_...)<br/>
-            <strong>3.</strong> Quyidagi maydonga joylashtiring — avtomatik saqlanadi
+            Ovozni o'zbekcha gapiring yoki matn yozing — AI rasmiy loyiha hujjatiga aylantiradi.<br/>
+            <strong>OpenRouter</strong> bepul, O'zbekistonda ishlaydi, Gemini 2.0 Flash ishlatiladi.<br/>
+            <strong>1.</strong> <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a> → ro'yxatdan o'ting<br/>
+            <strong>2.</strong> <em>Create Key</em> → kalitni nusxalang (sk-or-...)<br/>
+            <strong>3.</strong> Quyida kiriting — avtomatik saqlanadi
           </div>
           <div class="form-group">
-            <label class="form-label">Groq API kaliti</label>
-            <input class="form-input" id="ai-key-inp" type="password" placeholder="gsk_..." oninput="aiKeyAutoSave(this.value)"/>
-            <div class="form-hint" id="ai-key-hint">Kiritilgan kalit barcha qurilmalarda avtomatik ishlaydi</div>
+            <label class="form-label">OpenRouter API kaliti <small style="color:var(--error);font-weight:400">(majburiy)</small></label>
+            <input class="form-input" id="ai-or-key-inp" type="password" placeholder="sk-or-..." oninput="openRouterKeyAutoSave(this.value)"/>
+            <div class="form-hint" id="ai-or-key-hint">Kiritilgan kalit barcha qurilmalarda avtomatik ishlaydi</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">
-            <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">Kalitni o'chirish</button>
+            <button class="btn btn-ghost btn-sm" onclick="openRouterKeyClear()">Kalitni o'chirish</button>
+          </div>
+
+          <!-- Groq (ixtiyoriy — faqat ovoz STT fallback uchun) -->
+          <div style="border-top:1px solid var(--border);margin:14px 0 0;padding-top:14px">
+            <div class="form-group">
+              <label class="form-label">Groq API kaliti <small style="color:var(--muted);font-weight:400">(ixtiyoriy — ovoz STT uchun)</small></label>
+              <input class="form-input" id="ai-key-inp" type="password" placeholder="gsk_..." oninput="aiKeyAutoSave(this.value)"/>
+              <div class="form-hint" id="ai-key-hint">Chrome/Edge da kerak emas — brauzer o'zi taniydi</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">O'chirish</button>
+            </div>
           </div>
 
           <!-- Google Cloud STT (ixtiyoriy — Chrome bo'lmagan brauzerlar uchun) -->
