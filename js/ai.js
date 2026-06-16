@@ -311,8 +311,10 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
       })
     });
     if(!chatResp.ok){
-      const err=await chatResp.json().catch(()=>({}));
-      throw new Error(err.error?.message||chatResp.statusText);
+      const errText=await chatResp.text().catch(()=>'');
+      let errMsg='';
+      try{ errMsg=JSON.parse(errText)?.error?.message||''; }catch(e){}
+      throw new Error(errMsg||errText||`HTTP ${chatResp.status}`);
     }
     const chatData=await chatResp.json();
     const raw=chatData.choices?.[0]?.message?.content||'';
