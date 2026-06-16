@@ -138,7 +138,7 @@ function openProjectPeek(id = null, preDesignerId = null){
       })())}
       ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
       ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
-      ${propRow('Birlik soni','hash',`<input type="number" min="1" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()"/>`)}
+      ${propRow('Birlik soni','hash',`<input type="text" inputmode="decimal" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()" onkeydown="if(event.key==='Enter'){evalMathInput(this);event.preventDefault()}" onblur="evalMathInput(this)"/>`)}
       ${propRow("Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`)}
       ${propRow("Jami to'lov",'sum',`<span class="prop-total" id="pk-total">—</span>`)}
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
@@ -246,9 +246,19 @@ function peekCatChange(){
   if(sel) sel.style.cssText = catPillStyle(ci.color);
 }
 
+function evalMathInput(el){
+  const raw=(el.value||'').trim(); if(!raw) return;
+  const expr=raw.replace(/[xX×]/g,'*').replace(/÷/g,'/');
+  if(!/^[\d\s\+\-\*\/\.\(\)]+$/.test(expr)) return;
+  try{
+    const res=Function('"use strict";return ('+expr+')')();
+    if(isFinite(res)&&res>=0){ el.value=Math.round(res*100)/100; calcPeekTotal(); }
+  }catch(e){}
+}
+
 function calcPeekTotal(){
-  const u = parseInt(byId('pk-units')?.value)||0;
-  const pr = parseInt(byId('pk-price')?.value)||0;
+  const u=parseFloat(byId('pk-units')?.value)||0;
+  const pr=parseInt(byId('pk-price')?.value)||0;
   if(byId('pk-total')) byId('pk-total').textContent = fmtPrice(u*pr)+" so'm";
 }
 
@@ -267,7 +277,7 @@ function collectPeekProject(){
     descHtml: plain ? descHtml : '',
     description: plain.slice(0,3000),
     category: byId('pk-cat').value,
-    units: parseInt(byId('pk-units').value)||1,
+    units: parseFloat(byId('pk-units').value)||1,
     pricePerUnit: parseInt(byId('pk-price').value)||0,
     date: byId('pk-date').value || new Date().toISOString().slice(0,10),
     deadline: byId('pk-deadline').value || null,
