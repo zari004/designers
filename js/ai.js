@@ -296,7 +296,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
     const apiUrl=`https://generativelanguage.googleapis.com/v1beta/models/${AI_CHAT_MODEL}:generateContent`;
     const chatResp=await fetch(apiUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-goog-api-key':key},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
       body:JSON.stringify({
         system_instruction:{parts:[{text:systemPrompt}]},
         contents:[{role:'user',parts:[{text:textInp}]}],
