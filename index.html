@@ -450,17 +450,17 @@
           <span id="ai-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
         </div>
         <div style="padding:18px">
-          <!-- OpenAI — asosiy (matn formatlash) -->
+          <!-- Google Gemini — asosiy (matn formatlash) -->
           <div class="settings-note">
             Ovozni o'zbekcha gapiring yoki matn yozing — AI rasmiy loyiha hujjatiga aylantiradi.<br/>
-            <strong>GPT-4o mini</strong> ishlatiladi — sifatli, O'zbekistonda ishlaydi. <strong>$5 ≈ 7000 ta loyiha.</strong><br/>
-            <strong>1.</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com/api-keys</a> → kirish<br/>
-            <strong>2.</strong> <em>Create new secret key</em> → kalitni nusxalang (sk-...)<br/>
+            <strong>Gemini 2.0 Flash</strong> — <strong>kuniga 1500 ta so'rov bepul!</strong> Ro'yxatdan o'tish shart emas.<br/>
+            <strong>1.</strong> <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> → kirish<br/>
+            <strong>2.</strong> <em>Create API Key</em> → kalitni nusxalang (AIza...)<br/>
             <strong>3.</strong> Quyida kiriting — avtomatik saqlanadi
           </div>
           <div class="form-group">
-            <label class="form-label">OpenAI API kaliti <small style="color:var(--error);font-weight:400">(majburiy)</small></label>
-            <input class="form-input" id="ai-key-inp" type="password" placeholder="sk-..." oninput="aiKeyAutoSave(this.value)"/>
+            <label class="form-label">Google Gemini API kaliti <small style="color:var(--error);font-weight:400">(majburiy)</small></label>
+            <input class="form-input" id="ai-key-inp" type="password" placeholder="AIza..." oninput="aiKeyAutoSave(this.value)"/>
             <div class="form-hint" id="ai-key-hint">Kiritilgan kalit barcha qurilmalarda avtomatik ishlaydi</div>
           </div>
           <div style="display:flex;gap:8px;margin-top:8px">

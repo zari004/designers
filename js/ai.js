@@ -1,13 +1,13 @@
 // ═══════════════════════════════════════════════
 // AI YORDAMCHI — ovoz/matn → rasmiy loyiha tavsifi
 //   · Ovoz  → Web Speech API (bepul, Chrome/Edge)
-//   · Matn  → OpenAI GPT-4o mini (sifatli, arzon)
+//   · Matn  → Google Gemini 2.0 Flash (bepul, 1500/kun)
 // ═══════════════════════════════════════════════
 
-const AI_KEY_STORE   = 'exon_openai_key';
+const AI_KEY_STORE   = 'exon_gemini_key';
 const AI_INSTR_STORE = 'exon_ai_instructions';
-const AI_CHAT_URL    = 'https://api.openai.com/v1/chat/completions';
-const AI_CHAT_MODEL  = 'gpt-4o-mini';
+const AI_CHAT_URL    = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
+const AI_CHAT_MODEL  = 'gemini-2.0-flash';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
@@ -72,7 +72,7 @@ function _showAiModal(){
   byId('modal').style.display='flex';
 }
 
-// ── OPENAI KALITI ──
+// ── GEMINI KALITI ──
 let _aiKeySaveTimer=null;
 function aiKeyAutoSave(val){
   const v=(val||'').trim();
@@ -84,17 +84,17 @@ function aiKeyAutoSave(val){
     : 'Kalit kiritilmagan';
   clearTimeout(_aiKeySaveTimer);
   _aiKeySaveTimer=setTimeout(()=>{
-    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openAiKey', v);
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('geminiKey', v);
   }, 700);
 }
 function aiKeyClear(){
   localStorage.removeItem(AI_KEY_STORE);
   const el=document.getElementById('ai-key-inp'); if(el) el.value='';
   _aiUpdateSettingsBadge();
-  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openAiKey','');
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('geminiKey','');
   const hint=document.getElementById('ai-key-hint');
   if(hint) hint.textContent='Kalit kiritilmagan';
-  toast("OpenAI kaliti o'chirildi");
+  toast("Gemini kaliti o'chirildi");
 }
 function _aiUpdateSettingsBadge(){
   if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
@@ -293,7 +293,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 {"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
     const key=getAiKey();
-    if(!key) throw new Error("OpenAI API kaliti yo'q — Sozlamalar → AI Yordamchi");
+    if(!key) throw new Error("Gemini API kaliti yo'q — Sozlamalar → AI Yordamchi");
     const chatResp=await fetch(AI_CHAT_URL,{
       method:'POST',
       headers:{
@@ -307,8 +307,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
           {role:'user', content:textInp}
         ],
         temperature:0.5,
-        max_tokens:3000,
-        response_format:{type:'json_object'}
+        max_tokens:3000
       })
     });
     if(!chatResp.ok){

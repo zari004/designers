@@ -139,7 +139,7 @@ function applyNavPermissions(user){
 // avtomatik ishlaydi (qayta kiritish shart emas).
 // ═══════════════════════════════════════════════
 const SETTINGS_FIELDS = {
-  openAiKey:      'exon_openai_key',
+  geminiKey:      'exon_gemini_key',
   gsSheetId:      'gs_sheet_id',
   gsToken:        'gs_token',
   notionToken:    'notion_token',
