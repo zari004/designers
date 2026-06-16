@@ -282,7 +282,12 @@ async function resolveNotionParent(c){
 }
 
 async function sendProjectToNotion(){
-  const c = notionCfg();
+  let c = notionCfg();
+  if(!c.token || !c.parent){
+    // Sozlamalar topilmadi — Firestore'dan qayta yuklashga urinib ko'ramiz
+    if(typeof syncSettingsFromFirestore==='function') await syncSettingsFromFirestore();
+    c = notionCfg();
+  }
   if(!c.token || !c.parent){
     toast('Avval Notion sozlamalarini kiriting');
     const _src=document.querySelector('.panel.active')?.id?.replace('panel-','')||'projects';

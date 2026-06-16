@@ -80,8 +80,13 @@ async function gsFetch(url, opts, errCtx){
 }
 
 async function exportToGoogleSheets(){
-  const sheetId=localStorage.getItem('gs_sheet_id');
-  const token=localStorage.getItem('gs_token');
+  let sheetId=localStorage.getItem('gs_sheet_id');
+  let token=localStorage.getItem('gs_token');
+  if(!sheetId||!token){
+    if(typeof syncSettingsFromFirestore==='function') await syncSettingsFromFirestore();
+    sheetId=localStorage.getItem('gs_sheet_id');
+    token=localStorage.getItem('gs_token');
+  }
   if(!sheetId||!token){
     toast("Avval Sozlamalar bo'limida Google Sheets ulanishini to'ldiring");
     goToSettingsFrom('payments');

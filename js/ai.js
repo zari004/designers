@@ -17,9 +17,13 @@ function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
 const RU_FLAG='<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;vertical-align:middle;margin-right:4px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg>';
 
 // ── MODAL OCHISH ──
-function openAiAssistant(){
+async function openAiAssistant(){
   if(!getAiKey()){
-    if(confirm("AI yordamchi uchun OpenAI API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
+    // Avval Firestore'dan yuklashga urinib ko'ramiz
+    if(typeof syncSettingsFromFirestore==='function') await syncSettingsFromFirestore();
+  }
+  if(!getAiKey()){
+    if(confirm("AI yordamchi uchun Groq API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
       const _src=document.querySelector('.panel.active')?.id?.replace('panel-','')||'projects';
       if(typeof closePeek==='function') closePeek();
       goToSettingsFrom(_src);

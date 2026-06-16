@@ -169,19 +169,29 @@ async function saveSettingToFirestore(field, value){
   }catch(e){ console.warn('Sozlama saqlash xatosi:', field, e); }
 }
 
-// Firestore'dagi barcha sozlamalarni localStorage'ga yuklash
+// Ikki tomonlama sinxronizatsiya:
+// · Firestore'da bor, local'da yo'q → local'ga yozish
+// · Local'da bor, Firestore'da yo'q  → Firestore'ga yuklash
 async function syncSettingsFromFirestore(){
   try{
     if(typeof getDb!=='function' || !getDb()) return;
     const snap=await getDb().collection('exon').doc('settings').get();
-    if(!snap.exists) return;
-    const data=snap.data()||{};
+    const remote=(snap.exists ? snap.data() : null)||{};
+    const toUpload={};
     Object.entries(SETTINGS_FIELDS).forEach(([field, lsKey])=>{
-      const v=data[field];
-      if(typeof v==='string' && v!=='' && localStorage.getItem(lsKey)!==v){
-        localStorage.setItem(lsKey, v);
+      const local=localStorage.getItem(lsKey)||'';
+      const cloud=typeof remote[field]==='string' ? remote[field] : '';
+      if(cloud && cloud!==local){
+        // Firestore'dagi qiymat bor, local boshqa (yoki bo'sh) → tortib olish
+        localStorage.setItem(lsKey, cloud);
+      } else if(local && !cloud){
+        // Local'da bor lekin Firestore'da yo'q → yuklash
+        toUpload[field]=local;
       }
     });
+    if(Object.keys(toUpload).length){
+      await getDb().collection('exon').doc('settings').set(toUpload,{merge:true});
+    }
     // Sozlamalar sahifasi ochiq bo'lsa — maydonlar va belgilarni yangilash
     const sp=document.getElementById('panel-settings');
     if(sp && sp.classList.contains('active') && typeof renderSettingsPage==='function'){
