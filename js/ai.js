@@ -1,12 +1,11 @@
 // ═══════════════════════════════════════════════
 // AI YORDAMCHI — ovoz/matn → rasmiy loyiha tavsifi
 //   · Ovoz  → Web Speech API (bepul, Chrome/Edge)
-//   · Matn  → Google Gemini 2.0 Flash (bepul, 1500/kun)
+//   · Matn  → Google Gemini 1.5 Flash (bepul, 1500/kun)
 // ═══════════════════════════════════════════════
 
 const AI_KEY_STORE   = 'exon_gemini_key';
 const AI_INSTR_STORE = 'exon_ai_instructions';
-const AI_CHAT_URL    = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
 const AI_CHAT_MODEL  = 'gemini-1.5-flash';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
@@ -294,20 +293,14 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 
     const key=getAiKey();
     if(!key) throw new Error("Gemini API kaliti yo'q — Sozlamalar → AI Yordamchi");
-    const chatResp=await fetch(AI_CHAT_URL,{
+    const apiUrl=`https://generativelanguage.googleapis.com/v1beta/models/${AI_CHAT_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+    const chatResp=await fetch(apiUrl,{
       method:'POST',
-      headers:{
-        'Authorization':'Bearer '+key,
-        'Content-Type':'application/json'
-      },
+      headers:{'Content-Type':'application/json'},
       body:JSON.stringify({
-        model:AI_CHAT_MODEL,
-        messages:[
-          {role:'system', content:systemPrompt},
-          {role:'user', content:textInp}
-        ],
-        temperature:0.5,
-        max_tokens:3000
+        system_instruction:{parts:[{text:systemPrompt}]},
+        contents:[{role:'user',parts:[{text:textInp}]}],
+        generationConfig:{temperature:0.5,maxOutputTokens:3000}
       })
     });
     if(!chatResp.ok){
@@ -317,7 +310,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
       throw new Error(errMsg||errText||`HTTP ${chatResp.status}`);
     }
     const chatData=await chatResp.json();
-    const raw=chatData.choices?.[0]?.message?.content||'';
+    const raw=chatData.candidates?.[0]?.content?.parts?.[0]?.text||'';
     if(!raw) throw new Error("AI bo'sh javob qaytardi");
 
     let parsed;
