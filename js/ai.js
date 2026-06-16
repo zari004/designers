@@ -125,25 +125,33 @@ function aiResetInstructions(){
 }
 
 const AI_DEFAULT_INSTRUCTIONS =
-`Har bir loyiha tavsifi quyidagi bo'limlardan iborat bo'lsin:
+`SEN INFOGRAFIK DIZAYN AGENTISAN.
 
-<h2>Maqsad</h2>
-Loyihaning asosiy maqsadini 2-3 gapda yoz. Muhim so'zlarni qalin qil.
+Foydalanuvchi qisqacha yozadi (masalan: "Kerasys uchun 4 betlik dizayn").
+Sen shu ma'lumotdan to'liq, batafsil dizayn brifingi yaratasan.
 
-<h2>Bajariladigan ishlar</h2>
-Kamida 5 ta aniq vazifani ro'yxatda yoz — har biri o'lchanadigan natijaga ega bo'lsin.
+═══ UMUMIY QOIDALAR (har doim qo'llan) ═══
+• O'lcham: 1080×1440 px (vertikal)
+• Mahsulot rasmi infografikning 60-80% ini egallaydi — FOKUS MAHSULOTGA
+• Matnlar katta va o'qishga oson, faqat ENG KERAKLI ma'lumotlar
+• Uslub: YORQIN, CLEAN, zamonaviy marketplace estetikasi
+• Mahsulot dizayniga mos to'ldiruvchi dekorativ elementlar qo'shilishi mumkin
+• Har bir bet mustaqil va to'liq ko'rinishli bo'lsin
 
-<h2>Texnik talablar</h2>
-Format, o'lcham, rang, dasturiy talab va cheklovlarni ro'yxatda yoz.
+═══ BETLAR TUZILMASI ═══
+1-BET (har doim): Mahsulot nomi • Firma logosi • Asosiy 3-5 ta xarakteristika • Hero rasm
+2-BET va keyin: Tarkib / foydalanish / afzalliklar / narx / boshqa ma'lumotlar
 
-<h2>Kutilayotgan natija</h2>
-Yakuniy mahsulot qanday ko'rinishi va qanday topshirilishi kerakligini yoz.
+═══ CHIQISH FORMATI ═══
+Har bir bet uchun ALOHIDA bo'lim yoz:
+- Betning maqsadi va g'oyasi
+- Vizual tarkib (nima, qayerda, qanday o'lchamda)
+- Matn bloklari (sarlavha, kichik matn, badge'lar)
+- Rang va uslub yo'nalishi
+- Dekorativ elementlar
 
-Qo'shimcha qoidalar:
-- Rasmiy va professional tilda yoz (o'zbek tilida)
-- Mijoz ismi yoki loyiha nomi aniq bo'lsa — uni sarlavhaga kirgizt
-- Muddat aytilmasa — 2 hafta qilib qo'y
-- Har bo'limda kamida 2-3 ta aniq ma'lumot bo'lsin`;
+MUHIM: Dizayner hujjatni o'qib, XAYOLIDA to'liq vizualizatsiyani ko'ra olishi kerak.
+Jadvallar, h2/h3 sarlavhalar, ro'yxatlar — barchasini ishlatib batafsil yoz.`;
 
 function loadAiSettings(){
   const keyEl=document.getElementById('ai-key-inp');
@@ -254,49 +262,32 @@ async function aiProcess(){
     const catList=typeof catKeys==='function'?catKeys().join(', '):'A, B, C';
     const customInstr=(getAiInstructions()||'').trim();
 
-    const rulesBlock=customInstr||
-`Har bir loyiha tavsifi quyidagi bo'limlardan iborat bo'lsin:
-
-<h2>Maqsad</h2>
-Loyihaning asosiy maqsadini 4-6 gapda batafsil yoz. Loyiha nima uchun kerak, kim uchun, qanday muammoni hal qiladi — barchasini yoz. Muhim so'zlarni <strong>qalin</strong> qil.
-
-<h2>Bajariladigan ishlar</h2>
-Kamida 7-10 ta aniq vazifani <ul><li> ro'yxatida yoz. Har bir vazifa o'lchanadigan va aniq bo'lsin. Dizayn, ranglar, tipografiya, ikonkalar, animatsiyalar, ekranlar, holatlar kabi tafsilotlarni kirgizt.
-
-<h2>Texnik talablar</h2>
-Kamida 6-8 ta texnik talabni <ul><li> ro'yxatida yoz: format (Figma/Adobe XD/...), o'lchamlar (px, pt), rang palitrasini ifodalash usuli, font talablari, eksport formatlari, moslashuvchanlik (responsive), animatsiya turlari va boshqalar.
-
-<h2>Kutilayotgan natija</h2>
-Yakuniy mahsulot qanday ko'rinishi, qanday topshirilishi va qanday tekshirilishi kerakligini 4-5 gapda yoz. Mijoz nima ko'rishi kerak, qanday fayllar topshiriladi, qanday sifat standartlari bo'lishi kerak.
-
-Qo'shimcha qoidalar:
-- Rasmiy va professional tilda yoz (o'zbek tilida)
-- Foydalanuvchi qisqa ma'lumot bersa ham — kontekstdan kelib chiqib to'ldir va kengaytir
-- Mijoz ismi yoki loyiha nomi aniq bo'lsa — uni title'ga kirgizt
-- Muddat aytilmasa — 2 hafta qilib qo'y
-- Har bo'limda kamida 5-7 ta aniq ma'lumot bo'lsin
-- Hujjat professional dizayner o'qishi uchun yetarlicha batafsil bo'lsin`;
+    const rulesBlock=customInstr||AI_DEFAULT_INSTRUCTIONS;
 
     const systemPrompt=
-`Sen EXON (dizaynerlar boshqaruv tizimi) uchun loyiha tahlilchisissan.
-Foydalanuvchi o'zbek tilida qisqa, erkin ma'lumot beradi (ba'zan ovoz orqali — kichik xatolarni kontekstdan to'g'irla).
-Sening vazifang: foydalanuvchi ma'lumotini EGA QOIDALARI asosida TO'LIQ va BATAFSIL loyiha hujjatiga aylantirish.
-Foydalanuvchi qisqa yozsa ham — sohaga oid bilimingdan foydalanib, mantiqiy tafsilotlarni o'zing qo'sh va kengaytir.
+`Sen EXON tizimidagi infografik dizayn agentisan.
+Foydalanuvchi o'zbek tilida QISQACHA yozadi (masalan: "Kerasys uchun 4 betlik dizayn").
+Sening vazifang: shu qisqa ma'lumotdan professional, JUDA BATAFSIL dizayn brifingi yaratish.
 
 BUGUN: ${today}
 KATEGORIYALAR: ${catList}
 
 ═══════════════════════════════════
-EGA QOIDALARI:
+AGENT QOIDALARI:
 ═══════════════════════════════════
 ${rulesBlock}
 ═══════════════════════════════════
 
-MUHIM: descHtml maydoni HAQIQIY HTML bo'lishi SHART. Quyidagi tuzilmadan foydalan:
-<h2>Maqsad</h2><p>...</p><h2>Bajariladigan ishlar</h2><ul><li>...</li><li>...</li></ul><h2>Texnik talablar</h2><ul><li>...</li></ul><h2>Kutilayotgan natija</h2><p>...</p>
+CHIQISH TALABLARI:
+- descHtml maydoni HAQIQIY HTML bo'lsin: h2, h3, p, ul, li, strong, table teglaridan foydalan
+- Har bir bet uchun ALOHIDA bo'lim yoz (masalan: <h2>1-BET: Mahsulot taqdimoti</h2>)
+- Har bir betda vizual tarkib, matn bloklari, rang va dekor elementlari batafsil yozilsin
+- Jadval ishlatish kerak bo'lsa: <table><tr><th>...</th></tr><tr><td>...</td></tr></table>
+- Dizayner hujjatni o'qib XAYOLIDA to'liq vizualizatsiyani KO'RA OLISHI KERAK
+- Matn juda uzun bo'lsin — qisqalik XATO, batafsil yozish MAJBURIY
 
 MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
-{"title":"loyiha nomi 3-8 so'z","descHtml":"<h2>Maqsad</h2><p>...</p><h2>Bajariladigan ishlar</h2><ul><li>...</li></ul><h2>Texnik talablar</h2><ul><li>...</li></ul><h2>Kutilayotgan natija</h2><p>...</p>","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
+{"title":"loyiha nomi 3-8 so'z","descHtml":"...to'liq HTML...","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
     const key=getAiKey();
     if(!key) throw new Error("Groq API kaliti yo'q — Sozlamalar → AI Yordamchi");
