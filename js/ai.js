@@ -533,6 +533,34 @@ async function aiTranslate(html, onDone, onError){
   }catch(e){ if(onError) onError(e.message); else toast('Tarjima xatosi: '+e.message); }
 }
 
+// Tarjima sifatini tekshirish — qisqa tekstlarda (<25 harf) o'tkazib yuboriladi
+async function aiCheckTranslation(uzText, ruText, onResult){
+  if(!uzText || uzText.replace(/\s+/g,'').length < 25){ onResult(null); return; }
+  const key=getAiKey(); if(!key){ onResult(null); return; }
+  try{
+    const resp=await fetch(AI_CHAT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        model:AI_CHAT_MODEL,
+        messages:[
+          {role:'system',content:"You are a translation quality evaluator for Uzbek→Russian translations. Check if the Russian translation accurately and completely conveys the meaning of the Uzbek original. Consider semantic accuracy, completeness, and naturalness. Respond ONLY with valid JSON (no other text): {\"ok\":true,\"note\":\"\"} if accurate, or {\"ok\":false,\"note\":\"<1 sentence in Uzbek explaining the issue, max 70 chars>\"} if there are problems."},
+          {role:'user',content:`Uzbek:\n${uzText.slice(0,600)}\n\nRussian:\n${ruText.slice(0,600)}`}
+        ],
+        temperature:0.1,
+        max_tokens:120,
+        response_format:{type:'json_object'}
+      })
+    });
+    if(!resp.ok){ onResult(null); return; }
+    const data=await resp.json();
+    const raw=(data.choices?.[0]?.message?.content||'').trim();
+    const m=raw.match(/\{[\s\S]*?\}/);
+    if(!m){ onResult(null); return; }
+    onResult(JSON.parse(m[0]));
+  }catch(e){ onResult(null); }
+}
+
 // ── TASDIQLASH ──
 function aiApply(){
   const p=_aiLastResult;

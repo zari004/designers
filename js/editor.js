@@ -153,6 +153,7 @@ function openProjectPeek(id = null, preDesignerId = null){
     <div id="peek-ru-box" style="display:none;margin-top:12px;padding:14px 16px;background:var(--hover);border-radius:10px;border:1px solid var(--border)">
       <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px"><svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Ruscha tarjima<div style="margin-left:auto;display:flex;gap:3px"><button class="rte-tr-act" title="Nusxa ko'chirish" onclick="peekTrCopy()">${_TR_ICON_COPY}</button><button class="rte-tr-act" title="Almashtirish" onclick="peekTrReplace()">${_TR_ICON_REPLACE}</button></div></div>
       <div class="rich" id="peek-ru-content" style="font-size:13px;line-height:1.6;color:var(--text)"></div>
+      <div class="rte-tr-check" id="peek-ru-check" style="margin-top:8px;padding:0"></div>
     </div>
     ${p ? `<div class="section-label" style="display:block;margin:24px 0 2px">Izohlar</div>${commentBoxHtml(p,'peek')}` : ''}
   `;
@@ -195,10 +196,20 @@ function peekTranslate(){
   const html=byId('pk-rte')?.innerHTML||'';
   if(!html.trim()){ toast("Tavsif bo'sh — avval matn yozing"); return; }
   if(btn){ btn.disabled=true; btn.textContent='Tarjima qilinmoqda…'; }
+  // Original plain text — sifat tekshiruvi uchun
+  const uzDiv=document.createElement('div'); uzDiv.innerHTML=html;
+  const uzText=uzDiv.innerText||uzDiv.textContent||'';
+
   if(typeof aiTranslate==='function') aiTranslate(html, (ru)=>{
     const c=byId('peek-ru-content'); if(c) c.innerHTML=ru;
     if(box) box.style.display='block';
     if(btn){ btn.disabled=false; btn.innerHTML='<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0;vertical-align:middle;margin-right:4px"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Yashirish'; }
+    // Sifat tekshiruvi
+    const ruDiv2=document.createElement('div'); ruDiv2.innerHTML=ru;
+    const ruText=ruDiv2.innerText||ruDiv2.textContent||'';
+    _showPeekTrCheck('loading');
+    if(typeof aiCheckTranslation==='function')
+      aiCheckTranslation(uzText, ruText, r=>_showPeekTrCheck(r));
   }, (err)=>{
     if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Ruscha tarjima'; }
     toast('Tarjima xatosi: '+err);
@@ -482,6 +493,7 @@ function hideBubble(){
 
 // ── BELGILANGAN MATNNI RUS TILIGA TARJIMA ──
 let _bubbleTrRange = null;
+let _bubbleTrOrigText = '';
 
 function bubbleTranslate(){
   const s = getSelection();
@@ -496,17 +508,27 @@ function bubbleTranslate(){
   tmp.appendChild(frag);
   const selectedHtml = tmp.innerHTML.trim();
   if(!selectedHtml) return;
+  _bubbleTrOrigText = tmp.innerText || tmp.textContent || '';
 
   hideBubble();
   _showBubbleTrPop('<span style="color:var(--muted)">Tarjima qilinmoqda…</span>', rect);
+  _showBubbleTrCheck(null); // reset
 
   if(typeof aiTranslate !== 'function'){
     _updateBubbleTrBody('<span style="color:var(--danger)">AI moduli yuklanmagan</span>');
     return;
   }
   aiTranslate(selectedHtml,
-    (ruHtml) => { _updateBubbleTrBody(ruHtml); },
-    (err)    => { _updateBubbleTrBody('<span style="color:var(--danger)">Xatolik: '+esc(err)+'</span>'); }
+    (ruHtml) => {
+      _updateBubbleTrBody(ruHtml);
+      // Sifat tekshiruvi
+      const ruDiv=document.createElement('div'); ruDiv.innerHTML=ruHtml;
+      const ruText=ruDiv.innerText||ruDiv.textContent||'';
+      _showBubbleTrCheck('loading');
+      if(typeof aiCheckTranslation==='function')
+        aiCheckTranslation(_bubbleTrOrigText, ruText, r=>_showBubbleTrCheck(r));
+    },
+    (err) => { _updateBubbleTrBody('<span style="color:var(--danger)">Xatolik: '+esc(err)+'</span>'); }
   );
 }
 
@@ -528,7 +550,8 @@ function _showBubbleTrPop(html, rect){
           <button class="rte-tr-pop-close" onmousedown="event.preventDefault()" onclick="hideBubbleTrPop()">×</button>
         </div>
       </div>
-      <div class="rte-tr-pop-body rich"></div>`;
+      <div class="rte-tr-pop-body rich"></div>
+      <div class="rte-tr-check" id="rte-tr-check"></div>`;
     document.body.appendChild(pop);
   }
   _updateBubbleTrBody(html);
@@ -563,6 +586,30 @@ function hideBubbleTrPop(){
 function _trPopOutClick(e){
   const pop = byId('rte-tr-pop');
   if(!pop || !pop.contains(e.target)) hideBubbleTrPop();
+}
+
+const _CHK_IC_OK   = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 6-7"/></svg>';
+const _CHK_IC_WARN = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 5v4M8 12v.5"/><path d="M2 14L8 2l6 12H2z"/></svg>';
+
+function _renderCheckHtml(result){
+  if(!result) return '';
+  if(result === 'loading') return '<span style="color:var(--muted)">· Sifat tekshirilmoqda…</span>';
+  if(result.ok)  return `<span class="tr-check-ok">${_CHK_IC_OK} Ma'no to'g'ri uzatildi</span>`;
+  return `<span class="tr-check-warn">${_CHK_IC_WARN} ${esc(result.note||"Ma'no to'liq uzatilmagan bo'lishi mumkin")}</span>`;
+}
+
+function _showBubbleTrCheck(result){
+  const el = byId('rte-tr-check'); if(!el) return;
+  if(!result){ el.style.display='none'; el.innerHTML=''; return; }
+  el.innerHTML = _renderCheckHtml(result);
+  el.style.display = 'flex';
+}
+
+function _showPeekTrCheck(result){
+  const el = byId('peek-ru-check'); if(!el) return;
+  if(!result){ el.style.display='none'; el.innerHTML=''; return; }
+  el.innerHTML = _renderCheckHtml(result);
+  el.style.display = 'flex';
 }
 
 function bubbleTrCopy(){
