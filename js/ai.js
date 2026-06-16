@@ -1,24 +1,24 @@
 // ═══════════════════════════════════════════════
 // AI YORDAMCHI — ovoz/matn → rasmiy loyiha tavsifi
 //   · Ovoz  → Web Speech API (bepul, Chrome/Edge)
-//   · Matn  → OpenRouter — google/gemini-2.0-flash-exp:free
+//   · Matn  → OpenAI GPT-4o mini (sifatli, arzon)
 // ═══════════════════════════════════════════════
 
-const OPENROUTER_KEY_STORE = 'exon_openrouter_key';
-const AI_INSTR_STORE       = 'exon_ai_instructions';
-const OPENROUTER_CHAT_URL  = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_MODEL     = 'deepseek/deepseek-chat:free';
+const AI_KEY_STORE   = 'exon_openai_key';
+const AI_INSTR_STORE = 'exon_ai_instructions';
+const AI_CHAT_URL    = 'https://api.openai.com/v1/chat/completions';
+const AI_CHAT_MODEL  = 'gpt-4o-mini';
 
-function getOpenRouterKey(){ return localStorage.getItem(OPENROUTER_KEY_STORE)||''; }
+function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
 
 // ── MODAL OCHISH ──
 function openAiAssistant(){
-  if(!getOpenRouterKey()){
-    if(confirm("AI yordamchi uchun OpenRouter API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
+  if(!getAiKey()){
+    if(confirm("AI yordamchi uchun OpenAI API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
       showPanel('settings');
       setTimeout(()=>{
-        const el=document.getElementById('ai-or-key-inp');
+        const el=document.getElementById('ai-key-inp');
         if(el){ el.focus(); el.scrollIntoView({behavior:'smooth',block:'center'}); }
       }, 300);
     }
@@ -72,32 +72,32 @@ function _showAiModal(){
   byId('modal').style.display='flex';
 }
 
-// ── OPENROUTER KALITI ──
-let _orSaveTimer=null;
-function openRouterKeyAutoSave(val){
+// ── OPENAI KALITI ──
+let _aiKeySaveTimer=null;
+function aiKeyAutoSave(val){
   const v=(val||'').trim();
-  localStorage.setItem(OPENROUTER_KEY_STORE, v);
+  localStorage.setItem(AI_KEY_STORE, v);
   _aiUpdateSettingsBadge();
-  const hint=document.getElementById('ai-or-key-hint');
+  const hint=document.getElementById('ai-key-hint');
   if(hint) hint.textContent = v
     ? 'Saqlandi ✓ — barcha qurilmalarda ishlaydi'
     : 'Kalit kiritilmagan';
-  clearTimeout(_orSaveTimer);
-  _orSaveTimer=setTimeout(()=>{
-    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openRouterKey', v);
+  clearTimeout(_aiKeySaveTimer);
+  _aiKeySaveTimer=setTimeout(()=>{
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openAiKey', v);
   }, 700);
 }
-function openRouterKeyClear(){
-  localStorage.removeItem(OPENROUTER_KEY_STORE);
-  const el=document.getElementById('ai-or-key-inp'); if(el) el.value='';
+function aiKeyClear(){
+  localStorage.removeItem(AI_KEY_STORE);
+  const el=document.getElementById('ai-key-inp'); if(el) el.value='';
   _aiUpdateSettingsBadge();
-  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openRouterKey','');
-  const hint=document.getElementById('ai-or-key-hint');
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('openAiKey','');
+  const hint=document.getElementById('ai-key-hint');
   if(hint) hint.textContent='Kalit kiritilmagan';
-  toast("OpenRouter kaliti o'chirildi");
+  toast("OpenAI kaliti o'chirildi");
 }
 function _aiUpdateSettingsBadge(){
-  if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getOpenRouterKey());
+  if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
 }
 
 // ── O'QITISH DASTURI ──
@@ -146,8 +146,8 @@ Qo'shimcha qoidalar:
 - Har bo'limda kamida 2-3 ta aniq ma'lumot bo'lsin`;
 
 function loadAiSettings(){
-  const orEl=document.getElementById('ai-or-key-inp');
-  if(orEl) orEl.value=getOpenRouterKey();
+  const keyEl=document.getElementById('ai-key-inp');
+  if(keyEl) keyEl.value=getAiKey();
   const instr=document.getElementById('ai-instr-inp');
   if(instr) instr.value=getAiInstructions()||AI_DEFAULT_INSTRUCTIONS;
   _aiUpdateSettingsBadge();
@@ -292,18 +292,16 @@ ${rulesBlock}
 MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 {"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
-    const orKey=getOpenRouterKey();
-    if(!orKey) throw new Error("OpenRouter API kaliti yo'q — Sozlamalar → AI Yordamchi");
-    const chatResp=await fetch(OPENROUTER_CHAT_URL,{
+    const key=getAiKey();
+    if(!key) throw new Error("OpenAI API kaliti yo'q — Sozlamalar → AI Yordamchi");
+    const chatResp=await fetch(AI_CHAT_URL,{
       method:'POST',
       headers:{
-        'Authorization':'Bearer '+orKey,
-        'Content-Type':'application/json',
-        'HTTP-Referer':'https://exon-designers.uz',
-        'X-Title':'EXON'
+        'Authorization':'Bearer '+key,
+        'Content-Type':'application/json'
       },
       body:JSON.stringify({
-        model:OPENROUTER_MODEL,
+        model:AI_CHAT_MODEL,
         messages:[
           {role:'system', content:systemPrompt},
           {role:'user', content:textInp}
