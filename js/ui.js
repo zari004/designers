@@ -876,6 +876,13 @@ function saveUser(){}
 
 // ═══════════════ SOZLAMALAR ═══════════════
 function renderSettingsPage(){
+  const _sBackLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',projects:'← Loyihalar',payments:"← To'lovlar",reports:'← Hisobotlar',users:'← Foydalanuvchilar'};
+  const sBackBtn=document.getElementById('settings-back-btn');
+  if(sBackBtn){
+    const lbl=_sBackLabels[typeof _settingsReturnPanel!=='undefined'?_settingsReturnPanel:''];
+    sBackBtn.style.display=lbl?'':'none';
+    if(lbl) sBackBtn.textContent=lbl;
+  }
   const gsId=document.getElementById('gs-sheet-id');
   const gsTok=document.getElementById('gs-token');
   if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';

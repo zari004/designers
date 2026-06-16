@@ -84,7 +84,7 @@ async function exportToGoogleSheets(){
   const token=localStorage.getItem('gs_token');
   if(!sheetId||!token){
     toast("Avval Sozlamalar bo'limida Google Sheets ulanishini to'ldiring");
-    showPanel('settings');
+    goToSettingsFrom('payments');
     return;
   }
   const btn=document.getElementById('gs-export-btn');

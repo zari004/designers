@@ -20,7 +20,9 @@ const RU_FLAG='<svg width="16" height="11" viewBox="0 0 16 11" style="border-rad
 function openAiAssistant(){
   if(!getAiKey()){
     if(confirm("AI yordamchi uchun OpenAI API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
-      showPanel('settings');
+      const _src=document.querySelector('.panel.active')?.id?.replace('panel-','')||'projects';
+      if(typeof closePeek==='function') closePeek();
+      goToSettingsFrom(_src);
       setTimeout(()=>{
         const el=document.getElementById('ai-key-inp');
         if(el){ el.focus(); el.scrollIntoView({behavior:'smooth',block:'center'}); }

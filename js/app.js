@@ -63,6 +63,19 @@ function drawFavicon(){
 }
 
 // ── NAVIGATSIYA ──
+let _settingsReturnPanel = null;
+
+function goToSettingsFrom(panel){
+  _settingsReturnPanel = panel || null;
+  showPanel('settings');
+}
+
+function goBackFromSettings(){
+  const dest = _settingsReturnPanel || 'dashboard';
+  _settingsReturnPanel = null;
+  showPanel(dest);
+}
+
 function showPanel(name){
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));

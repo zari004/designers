@@ -285,7 +285,8 @@ async function sendProjectToNotion(){
   const c = notionCfg();
   if(!c.token || !c.parent){
     toast('Avval Notion sozlamalarini kiriting');
-    closePeek(); showPanel('settings');
+    const _src=document.querySelector('.panel.active')?.id?.replace('panel-','')||'projects';
+    closePeek(); goToSettingsFrom(_src);
     setTimeout(()=>byId('notion-card')?.scrollIntoView({behavior:'smooth'}),200);
     return;
   }
