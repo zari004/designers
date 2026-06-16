@@ -9,7 +9,7 @@ const AI_KEY_STORE    = 'exon_groq_key';
 const AI_INSTR_STORE  = 'exon_ai_instructions';
 const AI_CHAT_URL     = 'https://api.groq.com/openai/v1/chat/completions';
 const AI_CHAT_MODEL   = 'llama-3.3-70b-versatile';
-const AI_VISION_MODEL = 'llama-3.2-11b-vision-preview';
+const AI_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
@@ -51,7 +51,7 @@ function _showAiModal(){
         </button>
         <span id="ai-rec-status" style="font-size:12px;color:var(--muted)">Bosing va gapiring</span>
       </div>
-      <div id="ai-rec-viz" style="display:none;margin-top:10px;padding:8px 14px;background:var(--hover);border-radius:10px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <div id="ai-rec-viz" style="display:none;margin-top:10px;padding:8px 14px;background:var(--hover);border-radius:10px;border:1px solid var(--border);align-items:center;justify-content:space-between">
         <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--error)"><span class="ai-rec-dot"></span> Yozilmoqda…</span>
         <span id="ai-rec-timer" style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)">0:00</span>
       </div>
