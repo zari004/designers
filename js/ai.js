@@ -7,7 +7,7 @@
 const AI_KEY_STORE   = 'exon_gemini_key';
 const AI_INSTR_STORE = 'exon_ai_instructions';
 const AI_CHAT_URL    = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-const AI_CHAT_MODEL  = 'gemini-2.0-flash';
+const AI_CHAT_MODEL  = 'gemini-1.5-flash';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
