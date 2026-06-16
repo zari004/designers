@@ -208,7 +208,7 @@ function peekTranslate(){
 }
 
 function closePeek(){
-  hideBubble(); hideSlash();
+  hideBubble(); hideSlash(); hideBubbleTrPop();
   document.getElementById('varaq-panel')?.remove();
   _varaqStack = []; _activeRteId = 'pk-rte'; savedRange = null;
   byId('peek-overlay').classList.remove('open');
@@ -447,6 +447,8 @@ function ensureBubble(){
     <button class="bb-btn" title="Belgili ro'yxat" onmousedown="event.preventDefault()" onclick="rte('insertUnorderedList')"><svg viewBox="0 0 16 16" class="bb-ic"><circle cx="2.5" cy="3.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M5.5 3.5h9M5.5 8h9M5.5 12.5h9"/></svg></button>
     <button class="bb-btn" title="Raqamli ro'yxat" onmousedown="event.preventDefault()" onclick="rte('insertOrderedList')"><b style="font-size:11px">1.</b></button>
     ${bn('removeFormat','Formatni tozalash','<span style="font-size:11px">Tx</span>')}
+    <span class="bb-sep"></span>
+    <button class="bb-btn" title="Belgilangan matnni rus tiliga tarjima qilish" onmousedown="event.preventDefault()" onclick="bubbleTranslate()"><svg width="14" height="10" viewBox="0 0 16 11" style="border-radius:1.5px"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg></button>
   `;
   document.body.appendChild(b);
 }
@@ -477,6 +479,77 @@ function positionBubble(){
 function hideBubble(){
   const b = byId('rte-bubble');
   if(b){ b.classList.remove('open'); byId('bb-colorpop')?.classList.remove('open'); }
+}
+
+// ── BELGILANGAN MATNNI RUS TILIGA TARJIMA ──
+function bubbleTranslate(){
+  const s = getSelection();
+  if(!s || s.isCollapsed || !s.rangeCount){ toast('Avval tarjima qilinadigan matnni belgilang'); return; }
+  const range = s.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+
+  // Belgilangan matn HTML sifatida olinadi
+  const frag = range.cloneContents();
+  const tmp = document.createElement('div');
+  tmp.appendChild(frag);
+  const selectedHtml = tmp.innerHTML.trim();
+  if(!selectedHtml) return;
+
+  hideBubble();
+  _showBubbleTrPop('<span style="color:var(--muted)">Tarjima qilinmoqda…</span>', rect);
+
+  if(typeof aiTranslate !== 'function'){
+    _updateBubbleTrBody('<span style="color:var(--danger)">AI moduli yuklanmagan</span>');
+    return;
+  }
+  aiTranslate(selectedHtml,
+    (ruHtml) => { _updateBubbleTrBody(ruHtml); },
+    (err)    => { _updateBubbleTrBody('<span style="color:var(--danger)">Xatolik: '+esc(err)+'</span>'); }
+  );
+}
+
+function _showBubbleTrPop(html, rect){
+  const RU_SVG = '<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg>';
+  let pop = byId('rte-tr-pop');
+  if(!pop){
+    pop = document.createElement('div');
+    pop.id = 'rte-tr-pop';
+    pop.className = 'rte-tr-pop';
+    pop.innerHTML = `<div class="rte-tr-pop-head">${RU_SVG}Ruscha tarjima<button class="rte-tr-pop-close" onmousedown="event.preventDefault()" onclick="hideBubbleTrPop()">×</button></div><div class="rte-tr-pop-body rich"></div>`;
+    document.body.appendChild(pop);
+  }
+  _updateBubbleTrBody(html);
+  pop.classList.add('open');
+
+  // Joylashtirish: belgilangan matn ostida
+  requestAnimationFrame(()=>{
+    const pw = pop.offsetWidth || 300;
+    const ph = pop.offsetHeight || 120;
+    let left = rect.left + rect.width/2 - pw/2;
+    left = Math.max(10, Math.min(window.innerWidth - pw - 10, left));
+    let top = rect.bottom + 8;
+    if(top + ph > window.innerHeight - 10) top = Math.max(10, rect.top - ph - 8);
+    pop.style.left = left + 'px';
+    pop.style.top  = top  + 'px';
+  });
+
+  setTimeout(()=>{ document.addEventListener('mousedown', _trPopOutClick); }, 80);
+}
+
+function _updateBubbleTrBody(html){
+  const body = document.querySelector('#rte-tr-pop .rte-tr-pop-body');
+  if(body) body.innerHTML = html;
+}
+
+function hideBubbleTrPop(){
+  const pop = byId('rte-tr-pop');
+  if(pop) pop.classList.remove('open');
+  document.removeEventListener('mousedown', _trPopOutClick);
+}
+
+function _trPopOutClick(e){
+  const pop = byId('rte-tr-pop');
+  if(!pop || !pop.contains(e.target)) hideBubbleTrPop();
 }
 
 document.addEventListener('selectionchange', ()=>{
