@@ -139,12 +139,13 @@ function applyNavPermissions(user){
 // avtomatik ishlaydi (qayta kiritish shart emas).
 // ═══════════════════════════════════════════════
 const SETTINGS_FIELDS = {
-  groqKey:      'exon_groq_key',
-  gsSheetId:    'gs_sheet_id',
-  gsToken:      'gs_token',
-  notionToken:  'notion_token',
-  notionParent: 'notion_parent',
-  notionProxy:  'notion_proxy',
+  groqKey:        'exon_groq_key',
+  googleSttKey:   'exon_google_stt_key',
+  gsSheetId:      'gs_sheet_id',
+  gsToken:        'gs_token',
+  notionToken:    'notion_token',
+  notionParent:   'notion_parent',
+  notionProxy:    'notion_proxy',
   aiInstructions: 'exon_ai_instructions',
 };
 

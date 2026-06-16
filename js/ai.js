@@ -5,15 +5,18 @@
 //   · Matn  → LLaMA-3.3-70b-versatile
 // ═══════════════════════════════════════════════
 
-const AI_KEY_STORE   = 'exon_groq_key';
-const AI_INSTR_STORE = 'exon_ai_instructions';
-const GROQ_STT_URL   = 'https://api.groq.com/openai/v1/audio/transcriptions';
-const GROQ_CHAT_URL  = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_STT_MODEL  = 'whisper-large-v3';
+const AI_KEY_STORE        = 'exon_groq_key';
+const AI_INSTR_STORE      = 'exon_ai_instructions';
+const GOOGLE_STT_KEY_STORE= 'exon_google_stt_key';
+const GROQ_STT_URL        = 'https://api.groq.com/openai/v1/audio/transcriptions';
+const GROQ_CHAT_URL       = 'https://api.groq.com/openai/v1/chat/completions';
+const GOOGLE_STT_URL      = 'https://speech.googleapis.com/v1/speech:recognize';
+const GROQ_CHAT_MODEL     = 'llama-3.3-70b-versatile';
+const GROQ_STT_MODEL      = 'whisper-large-v3';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function saveAiKey(k){ localStorage.setItem(AI_KEY_STORE, k.trim()); }
+function getGoogleSttKey(){ return localStorage.getItem(GOOGLE_STT_KEY_STORE)||''; }
 
 // O'qitish dasturi — egasi AI ga doimiy ko'rsatma beradi (har bir tahlilga qo'shiladi)
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
@@ -47,12 +50,22 @@ function _showAiModal(){
     <p style="color:var(--muted);font-size:13px;margin:0 0 14px">
       Loyiha haqida o'zbekcha qisqacha gapiring yoki yozing — AI rasmiy hujjatga aylantiradi.
     </p>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-      <button class="btn btn-primary ai-mic-btn" id="ai-mic-btn" onclick="aiToggleRec()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4z"/><path d="M19 10a7 7 0 0 1-14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-        Mikrofon
-      </button>
-      <span id="ai-rec-status" style="font-size:12px;color:var(--muted)">Bosing va gapiring</span>
+    <div style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-primary ai-mic-btn" id="ai-mic-btn" onclick="aiToggleRec()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 1a4 4 0 0 1 4 4v6a4 4 0 0 1-8 0V5a4 4 0 0 1 4-4z"/><path d="M19 10a7 7 0 0 1-14 0"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          <span id="ai-mic-label">Mikrofon</span>
+        </button>
+        <span id="ai-rec-status" style="font-size:12px;color:var(--muted)">Bosing va gapiring</span>
+      </div>
+      <!-- Jonli yozish vizualizatsiyasi (kompyuter + telefon) -->
+      <div id="ai-rec-viz" style="display:none;margin-top:12px;padding:11px 14px;background:var(--hover);border-radius:10px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+          <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--error)"><span class="ai-rec-dot"></span> Yozilmoqda…</span>
+          <span id="ai-rec-timer" style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)">0:00</span>
+        </div>
+        <canvas id="ai-rec-canvas" height="44" style="width:100%;height:44px;display:block"></canvas>
+      </div>
     </div>
     <div class="form-group">
       <label class="form-label">Yoki matn yozing <small style="color:var(--muted2)">(ovoz bilan birga ham bo'ladi)</small></label>
@@ -111,6 +124,29 @@ function _aiUpdateSettingsBadge(){
   if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
 }
 
+// ── GOOGLE CLOUD STT KALITI (ixtiyoriy — o'zbekchani aniqroq taniydi) ──
+let _gSttSaveTimer=null;
+function googleSttKeyAutoSave(val){
+  const v=(val||'').trim();
+  localStorage.setItem(GOOGLE_STT_KEY_STORE, v);
+  const hint=document.getElementById('ai-google-key-hint');
+  if(hint) hint.textContent = v
+    ? 'Saqlandi ✓ — Google STT ishlatiladi (o\'zbekcha aniq taniydi)'
+    : 'Kiritilmagan bo\'lsa Groq Whisper ishlatiladi';
+  clearTimeout(_gSttSaveTimer);
+  _gSttSaveTimer=setTimeout(()=>{
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('googleSttKey', v);
+  }, 700);
+}
+function googleSttKeyClear(){
+  localStorage.removeItem(GOOGLE_STT_KEY_STORE);
+  const el=document.getElementById('ai-google-key-inp'); if(el) el.value='';
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('googleSttKey','');
+  const hint=document.getElementById('ai-google-key-hint');
+  if(hint) hint.textContent="Kiritilmagan bo'lsa Groq Whisper ishlatiladi";
+  toast("Google STT kaliti o'chirildi");
+}
+
 // ── O'QITISH DASTURI (maxsus ko'rsatmalar) ──
 let _aiInstrSaveTimer=null;
 function aiInstrAutoSave(val){
@@ -157,6 +193,8 @@ Qo'shimcha qoidalar:
 function loadAiSettings(){
   const el=document.getElementById('ai-key-inp');
   if(el) el.value=getAiKey();
+  const gEl=document.getElementById('ai-google-key-inp');
+  if(gEl) gEl.value=getGoogleSttKey();
   const instr=document.getElementById('ai-instr-inp');
   if(instr){
     // Bo'sh bo'lsa — default shablonni ko'rsat (localStorage'ga saqlanmaydi, faqat ko'rsatish uchun)
@@ -165,7 +203,9 @@ function loadAiSettings(){
   _aiUpdateSettingsBadge();
 }
 
-// ── MIKROFON YOZISH ──
+// ── MIKROFON YOZISH (jonli vizualizatsiya bilan) ──
+let _aiVizCtx=null, _aiAnalyser=null, _aiVizRAF=null, _aiTimerInt=null, _aiRecStart=0;
+
 async function aiToggleRec(){
   if(_aiRecording){ aiStopRec(); return; }
   try{
@@ -175,11 +215,13 @@ async function aiToggleRec(){
                : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : '';
     _aiRecorder=new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
     _aiRecorder.ondataavailable=e=>{ if(e.data.size>0) _aiChunks.push(e.data); };
-    _aiRecorder.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); _aiConvertAudio(); };
+    _aiRecorder.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); _aiStopViz(); _aiConvertAudio(); };
     _aiRecorder.start(200);
     _aiRecording=true;
     const btn=byId('ai-mic-btn'); if(btn) btn.classList.add('ai-mic-active');
-    const st=byId('ai-rec-status'); if(st) st.innerHTML='<span class="ai-rec-dot"></span> Yozilmoqda… qayta bosing — to\'xtatish';
+    const lbl=byId('ai-mic-label'); if(lbl) lbl.textContent="To'xtatish";
+    const st=byId('ai-rec-status'); if(st) st.textContent='Gapiring… tugagach qayta bosing';
+    _aiStartViz(stream);
   }catch(e){
     toast("Mikrofonga ruxsat berilmadi: "+e.message);
   }
@@ -188,8 +230,97 @@ function aiStopRec(){
   if(!_aiRecorder||!_aiRecording) return;
   _aiRecording=false;
   _aiRecorder.stop();
-  const btn=byId('ai-mic-btn'); if(btn) btn.classList.remove('ai-mic-active');
   const st=byId('ai-rec-status'); if(st) st.textContent='Tayyorlanmoqda…';
+}
+
+// Jonli to'lqin + taymer
+function _aiStartViz(stream){
+  const viz=byId('ai-rec-viz'); if(viz) viz.style.display='';
+  // Taymer
+  _aiRecStart=Date.now();
+  const tEl=byId('ai-rec-timer'); if(tEl) tEl.textContent='0:00';
+  _aiTimerInt=setInterval(()=>{
+    const s=Math.floor((Date.now()-_aiRecStart)/1000);
+    if(tEl) tEl.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  },250);
+  // To'lqin (mikrofon darajasi)
+  try{
+    const AC=window.AudioContext||window.webkitAudioContext;
+    _aiVizCtx=new AC();
+    const src=_aiVizCtx.createMediaStreamSource(stream);
+    _aiAnalyser=_aiVizCtx.createAnalyser();
+    _aiAnalyser.fftSize=256;
+    src.connect(_aiAnalyser);
+    const canvas=byId('ai-rec-canvas'); if(!canvas) return;
+    const cx=canvas.getContext('2d');
+    const data=new Uint8Array(_aiAnalyser.frequencyBinCount);
+    const accent=(getComputedStyle(document.documentElement).getPropertyValue('--accent')||'#16a34a').trim()||'#16a34a';
+    const bars=34;
+    const step=Math.max(1,Math.floor(data.length/bars));
+    function draw(){
+      _aiVizRAF=requestAnimationFrame(draw);
+      const w=canvas.clientWidth||300, h=canvas.height;
+      if(canvas.width!==w) canvas.width=w;
+      _aiAnalyser.getByteFrequencyData(data);
+      cx.clearRect(0,0,w,h);
+      const bw=w/bars;
+      cx.fillStyle=accent;
+      for(let i=0;i<bars;i++){
+        const v=data[i*step]/255;
+        const bh=Math.max(3, v*h*0.95);
+        cx.beginPath();
+        const x=i*bw+1, y=(h-bh)/2, ww=Math.max(2,bw-3), r=Math.min(2,ww/2);
+        if(cx.roundRect) cx.roundRect(x,y,ww,bh,r); else cx.rect(x,y,ww,bh);
+        cx.fill();
+      }
+    }
+    draw();
+  }catch(e){ /* vizualizatsiya ixtiyoriy */ }
+}
+function _aiStopViz(){
+  if(_aiVizRAF) cancelAnimationFrame(_aiVizRAF); _aiVizRAF=null;
+  if(_aiTimerInt) clearInterval(_aiTimerInt); _aiTimerInt=null;
+  if(_aiVizCtx){ try{_aiVizCtx.close();}catch(e){} _aiVizCtx=null; }
+  _aiAnalyser=null;
+  const viz=byId('ai-rec-viz'); if(viz) viz.style.display='none';
+  const btn=byId('ai-mic-btn'); if(btn) btn.classList.remove('ai-mic-active');
+  const lbl=byId('ai-mic-label'); if(lbl) lbl.textContent='Mikrofon';
+}
+
+// ── GOOGLE CLOUD STT (uz-UZ, LINEAR16) ──
+async function _aiTranscribeGoogle(key){
+  // WAV = 44 bayt sarlavha + raw PCM — Google LINEAR16 uchun faqat PCM kerak
+  const pcm=_aiAudioWav.slice(44);
+  // Katta massivni qismlarga bo'lib base64'ga aylantirish (stack overflow oldini olish)
+  let binary='';
+  const chunk=8192;
+  for(let i=0;i<pcm.length;i+=chunk){
+    binary+=String.fromCharCode(...pcm.subarray(i,Math.min(i+chunk,pcm.length)));
+  }
+  const audioContent=btoa(binary);
+
+  const resp=await fetch(`${GOOGLE_STT_URL}?key=${encodeURIComponent(key)}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      config:{
+        encoding:'LINEAR16',
+        sampleRateHertz:16000,
+        languageCode:'uz-UZ',
+        enableAutomaticPunctuation:true,
+        model:'latest_long'
+      },
+      audio:{content:audioContent}
+    })
+  });
+  if(!resp.ok){
+    const err=await resp.json().catch(()=>({}));
+    throw new Error('Google STT xatosi: '+(err.error?.message||resp.statusText));
+  }
+  const data=await resp.json();
+  const text=(data.results||[]).map(r=>r.alternatives?.[0]?.transcript||'').join(' ').trim();
+  if(!text) throw new Error("Google STT matn olinmadi — qayta aniqroq gapiring");
+  return text;
 }
 
 // ── OVOZNI WAV (16kHz mono) GA AYLANTIRISH ──
@@ -243,26 +374,34 @@ async function aiProcess(){
   if(!key){ res.innerHTML=`<div style="color:var(--error);padding:12px;background:rgba(239,68,68,.08);border-radius:8px;font-size:13px">API kalit topilmadi — sozlamalarga o'ting</div>`; return; }
 
   try{
-    // 1-qadam: ovoz bo'lsa — Groq Whisper bilan tekstga aylantirish
+    // 1-qadam: ovoz bo'lsa — STT bilan tekstga aylantirish
+    // Google Cloud STT kalit bo'lsa — Google (o'zbekchani aniqroq taniydi)
+    // Aks holda — Groq Whisper (fallback)
     let transcript='';
     if(_aiAudioWav){
-      res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Ovoz transkripsiya qilinmoqda…</div></div>`;
-      const fd=new FormData();
-      fd.append('file', new Blob([_aiAudioWav],{type:'audio/wav'}), 'audio.wav');
-      fd.append('model', GROQ_STT_MODEL);
-      fd.append('language', 'uz');
-      fd.append('response_format', 'text');
-      const sttResp=await fetch(GROQ_STT_URL,{
-        method:'POST',
-        headers:{'Authorization':'Bearer '+key},
-        body:fd
-      });
-      if(!sttResp.ok){
-        const err=await sttResp.json().catch(()=>({}));
-        throw new Error('Ovoz xatosi: '+(err.error?.message||sttResp.statusText));
+      const googleKey=getGoogleSttKey();
+      if(googleKey){
+        res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Google AI ovoz taniyapti…</div></div>`;
+        transcript=await _aiTranscribeGoogle(googleKey);
+      } else {
+        res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Groq Whisper transkripsiya qilmoqda…</div></div>`;
+        const fd=new FormData();
+        fd.append('file', new Blob([_aiAudioWav],{type:'audio/wav'}), 'audio.wav');
+        fd.append('model', GROQ_STT_MODEL);
+        fd.append('language', 'uz');
+        fd.append('response_format', 'text');
+        const sttResp=await fetch(GROQ_STT_URL,{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+key},
+          body:fd
+        });
+        if(!sttResp.ok){
+          const err=await sttResp.json().catch(()=>({}));
+          throw new Error('Ovoz xatosi: '+(err.error?.message||sttResp.statusText));
+        }
+        transcript=(await sttResp.text()).trim();
+        if(!transcript) throw new Error("Ovozdan matn olinmadi — qayta gapiring");
       }
-      transcript=(await sttResp.text()).trim();
-      if(!transcript) throw new Error("Ovozdan matn olinmadi — qayta gapiring");
     }
 
     // Matn manbasi: ovoz + qo'lda kiritilgan matn
@@ -353,7 +492,12 @@ function _showAiResult(p, transcript){
   const res=byId('ai-result'); if(!res) return;
   const priLabel={low:"Past",medium:"O'rta",high:"Yuqori"}[p.priority]||p.priority||'—';
   const priColor={low:"var(--muted)",medium:"var(--warning)",high:"var(--error)"}[p.priority]||'var(--muted)';
-  const transcriptHtml=transcript?`<div style="margin-top:10px;padding:8px 12px;background:var(--hover);border-radius:8px;font-size:12px;color:var(--muted)"><strong>Transkripsiya:</strong> ${esc(transcript)}</div>`:'';
+  const sttLabel=getGoogleSttKey()?'Google STT':'Groq Whisper';
+  const transcriptHtml=transcript?`
+    <div style="margin-bottom:12px;padding:10px 14px;background:var(--bg);border-radius:8px;border-left:3px solid var(--accent)">
+      <div style="font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Ovoz matni (${sttLabel})</div>
+      <div style="font-size:13.5px;color:var(--text);line-height:1.6">${esc(transcript)}</div>
+    </div>`:'';
   res.innerHTML=`
     <div style="border:1.5px solid var(--accent);border-radius:10px;overflow:hidden">
       <div style="background:var(--accent-soft);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -365,9 +509,9 @@ function _showAiResult(p, transcript){
         </div>
       </div>
       <div style="padding:14px 16px">
+        ${transcriptHtml}
         <div style="font-weight:700;font-size:15px;margin-bottom:8px">${esc(p.title||'')}</div>
         <div class="rich" style="font-size:13px;line-height:1.6;color:var(--muted)">${p.descHtml||''}</div>
-        ${transcriptHtml}
       </div>
       <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
         <button class="btn btn-primary" style="flex:1" onclick="aiApply()">
