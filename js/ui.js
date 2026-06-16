@@ -150,7 +150,7 @@ function renderDashboard(){
   const recent=[...projects].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
   document.getElementById('dash-projects').innerHTML = recent.length ? recent.map(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    return `<div class="table-row" style="grid-template-columns:1fr auto">
+    return `<div class="table-row" style="grid-template-columns:1fr auto;cursor:pointer" onclick="openProjectPeek(${p.id})">
       <div>
         <div style="font-size:12.5px;font-weight:600;margin-bottom:2px">${esc(p.title)}</div>
         <div style="font-size:11.5px;color:var(--muted)">${esc(d?.name||'')} · ${p.date}${p.deadline?' · muddat: '+p.deadline:''}</div>
@@ -971,19 +971,19 @@ function buildNotifications(){
   const list=[];
   projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'od-'+p.id,type:'overdue',title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
+    list.push({id:'od-'+p.id,type:'overdue',projId:p.id,title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
   });
   projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)===0).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'td-'+p.id,type:'today',title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+    list.push({id:'td-'+p.id,type:'today',projId:p.id,title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
   projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)>0&&deadlineDays(p.deadline)<=3).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'soon-'+p.id,type:'soon',title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+    list.push({id:'soon-'+p.id,type:'soon',projId:p.id,title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
   projects.filter(p=>p.status==='review').forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'rev-'+p.id,type:'review',title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
+    list.push({id:'rev-'+p.id,type:'review',projId:p.id,title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
   });
   const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
   list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
@@ -1000,11 +1000,20 @@ function renderNotifPanel(){
   if(!notifications.length){ el.innerHTML='<div class="notif-item" style="color:var(--muted2);font-size:12.5px">Bildirishnomalar yo\'q</div>'; return; }
   const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)'};
   el.innerHTML=notifications.map(n=>`
-    <div class="notif-item${n.read?'':' unread'}">
+    <div class="notif-item${n.read?'':' unread'}" style="cursor:pointer" onclick="notifClick('${n.id}')">
       <div class="notif-item-title"><span class="notif-dot" style="background:${dotColor[n.type]||'var(--muted)'}"></span>${esc(n.title)}</div>
       ${n.sub?`<div class="notif-item-sub">${esc(n.sub)}</div>`:''}
       <div class="notif-item-time">${n.time||''}</div>
     </div>`).join('');
+}
+
+function notifClick(nid){
+  const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
+  if(!saved.includes(nid)) saved.push(nid);
+  localStorage.setItem('exon_notif_read',JSON.stringify(saved));
+  document.getElementById('notif-panel').classList.remove('open');
+  const n=notifications.find(x=>x.id===nid);
+  if(n?.projId) openProjectPeek(n.projId);
 }
 
 function toggleNotifPanel(){
