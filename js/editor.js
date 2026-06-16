@@ -138,7 +138,7 @@ function openProjectPeek(id = null, preDesignerId = null){
       })())}
       ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
       ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
-      ${propRow('Birlik soni','hash',`<input type="text" inputmode="decimal" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()" onkeydown="if(event.key==='Enter'){evalMathInput(this);event.preventDefault()}" onblur="evalMathInput(this)"/>`)}
+      ${propRow('Birlik soni','hash',`<input type="text" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()" onkeydown="if(event.key==='Enter'){evalMathInput(this);event.preventDefault()}" onblur="evalMathInput(this)"/>`)}
       ${propRow("Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`)}
       ${propRow("Jami to'lov",'sum',`<span class="prop-total" id="pk-total">—</span>`)}
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
