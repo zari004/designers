@@ -235,11 +235,24 @@ function deleteDesigner(id){
 }
 
 // ═══════════════ DIZAYNER PROFILI ═══════════════
-function openDetail(id){ currentDesignerId=id; showPanel('detail'); }
+let _detailFromPanel = 'designers';
+
+function openDetail(id){
+  _detailFromPanel = document.querySelector('.panel.active')?.id?.replace('panel-','') || 'designers';
+  currentDesignerId=id;
+  showPanel('detail');
+}
+
+function goBackFromDetail(){
+  showPanel(_detailFromPanel || 'designers');
+}
 
 function renderDetail(){
   const d=designers.find(x=>x.id===currentDesignerId);
   if(!d){ showPanel('designers'); return; }
+  const _backLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',reports:'← Hisobotlar',payments:"← To'lovlar"};
+  const backBtn=document.querySelector('#panel-detail .back-btn');
+  if(backBtn) backBtn.textContent=_backLabels[_detailFromPanel]||'← Dizaynerlar';
   const ci=CAT_INFO[d.category];
   const dProjs=projects.filter(p=>p.designerId===d.id);
   const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
