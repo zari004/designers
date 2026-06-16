@@ -136,7 +136,6 @@ function openProjectPeek(id = null, preDesignerId = null){
           catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(CAT_INFO[c].label||c)}</option>`).join('')
         }</select>`;
       })())}
-      ${propRow('Boshlangan','cal',`<input type="text" class="prop-input dp-input" id="pk-date" readonly data-iso-date="${p?.date||today}" value="${dpFmt(p?.date||today)||today}" onclick="dpOpen(this)" placeholder="Sana tanlang…"/>`)}
       ${propRow('Muddat','clock',`<input type="text" class="prop-input dp-input" id="pk-deadline" readonly data-iso-date="${p?.deadline||''}" value="${dpFmt(p?.deadline||'')||''}" onclick="dpOpen(this)" placeholder="Sana tanlang…"/>`)}
       ${propRow('Birlik soni','hash',`<input type="text" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()" onkeydown="if(event.key==='Enter'){evalMathInput(this);event.preventDefault()}" onblur="evalMathInput(this)"/>`)}
       ${propRow("Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`)}
@@ -279,7 +278,7 @@ function collectPeekProject(){
     category: byId('pk-cat').value,
     units: parseFloat(byId('pk-units').value)||1,
     pricePerUnit: parseInt(byId('pk-price').value)||0,
-    date: byId('pk-date').dataset.isoDate || new Date().toISOString().slice(0,10),
+    date: new Date().toISOString().slice(0,10),
     deadline: byId('pk-deadline').dataset.isoDate || null,
     status,
     priority: byId('pk-priority').value,
