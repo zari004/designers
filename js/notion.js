@@ -177,8 +177,9 @@ function blockFromEl(el, blocks){
     case 'P': case 'DIV': {
       // Varaq bloki (.rte-page-ref) → Notionda child_page
       if(el.classList.contains('rte-page-ref')){
-        const title = el.innerText.replace('📄','').trim() || 'Yangi sahifa';
-        blocks.push({object:'block',type:'child_page',child_page:{title}});
+        const vid   = el.dataset.vid || '';
+        const title = (el.dataset.title || el.innerText.replace('📄','').trim()) || 'Yangi sahifa';
+        blocks.push({object:'block',type:'child_page',child_page:{title},_vid:vid});
         break;
       }
       // ichida blok elementlari bo'lsa — ularni alohida ishlash
@@ -300,15 +301,23 @@ async function sendProjectToNotion(){
       url = page.url || ('https://notion.so/'+page.id.replace(/-/g,''));
     }
 
-    // Varaq bloklarini loyiha sahifasi ICHIDA yaratish
+    // Varaq bloklarini loyiha sahifasi ICHIDA yaratish (mazmun bilan)
     for(const cp of childPages){
+      const vid         = cp._vid || '';
+      const varaq       = vid ? ((data.varaqs || {})[vid] || {}) : {};
+      const varaqTitle  = varaq.title || cp.child_page.title || 'Yangi sahifa';
+      const varaqBlocks = htmlToNotionBlocks(varaq.descHtml || '');
       try{
-        await notionFetch('/pages','POST',{
+        const sub = await notionFetch('/pages','POST',{
           parent:{type:'page_id', page_id: page.id},
-          properties:{title:{title:[{type:'text',text:{content:cp.child_page.title}}]}},
-          children:[],
+          properties:{title:{title:[{type:'text',text:{content:varaqTitle}}]}},
+          children: varaqBlocks.slice(0,100),
         });
-      }catch(e){ console.warn('Varaq yaratishda xato:', e.message); }
+        // 100 dan ortiq blok bo'lsa qo'shimcha yuborish
+        for(let i=100; i<varaqBlocks.length; i+=100){
+          await notionFetch(`/blocks/${sub.id}/children`,'PATCH',{children:varaqBlocks.slice(i,i+100)});
+        }
+      }catch(e){ console.warn('Varaq yaratishda xato:', varaqTitle, e.message); }
     }
 
     if(peekProjId){
