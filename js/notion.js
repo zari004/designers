@@ -203,6 +203,45 @@ function htmlToNotionBlocks(html){
   return blocks;
 }
 
+// _vid va child_page bloklarni tozalash (Notion API qabul qilmaydigan maydonlar)
+function notionClean(blocks){
+  return blocks
+    .filter(b => b.type !== 'child_page')
+    .map(b => {
+      const c = {...b};
+      delete c._vid;
+      const inner = c[c.type];
+      if(inner && Array.isArray(inner.children)){
+        c[c.type] = {...inner, children: notionClean(inner.children)};
+      }
+      return c;
+    });
+}
+
+// Ichki varaqlarni (child_page) rekursiv ravishda Notionda yaratish
+async function _notionCreateSubPages(parentId, rawBlocks, varaqs, depth){
+  if(depth > 6) return;
+  const childPageBlocks = rawBlocks.filter(b => b.type === 'child_page');
+  for(const cp of childPageBlocks){
+    const vid = cp._vid || '';
+    const varaq = vid ? (varaqs[vid] || {}) : {};
+    const varaqTitle = varaq.title || cp.child_page.title || 'Yangi sahifa';
+    const subRaw = htmlToNotionBlocks(varaq.descHtml || '');
+    const subBlocks = notionClean(subRaw);
+    try{
+      const sub = await notionFetch('/pages','POST',{
+        parent:{type:'page_id', page_id: parentId},
+        properties:{title:{title:[{type:'text',text:{content:varaqTitle}}]}},
+        children: subBlocks.slice(0,100),
+      });
+      for(let i=100; i<subBlocks.length; i+=100){
+        await notionFetch(`/blocks/${sub.id}/children`,'PATCH',{children:subBlocks.slice(i,i+100)});
+      }
+      await _notionCreateSubPages(sub.id, subRaw, varaqs, depth+1);
+    }catch(e){ console.warn('Ichki varaq yaratishda xato:', varaqTitle, e.message); }
+  }
+}
+
 // ── API ──
 async function notionFetch(path, method, body){
   const c = notionCfg();
@@ -265,9 +304,7 @@ async function sendProjectToNotion(){
   try{
     const d = designers.find(x=>x.id===data.designerId);
     const allBlocks = buildProjectBlocks(data, d);
-    // Varaq (child_page) bloklarini ajratish — ular alohida POST /pages orqali yaratiladi
-    const childPages = allBlocks.filter(b => b.type === 'child_page');
-    const blocks = allBlocks.filter(b => b.type !== 'child_page');
+    const blocks = notionClean(allBlocks);
     let page, url, updated=false;
 
     if(existingPageId){
@@ -301,24 +338,8 @@ async function sendProjectToNotion(){
       url = page.url || ('https://notion.so/'+page.id.replace(/-/g,''));
     }
 
-    // Varaq bloklarini loyiha sahifasi ICHIDA yaratish (mazmun bilan)
-    for(const cp of childPages){
-      const vid         = cp._vid || '';
-      const varaq       = vid ? ((data.varaqs || {})[vid] || {}) : {};
-      const varaqTitle  = varaq.title || cp.child_page.title || 'Yangi sahifa';
-      const varaqBlocks = htmlToNotionBlocks(varaq.descHtml || '');
-      try{
-        const sub = await notionFetch('/pages','POST',{
-          parent:{type:'page_id', page_id: page.id},
-          properties:{title:{title:[{type:'text',text:{content:varaqTitle}}]}},
-          children: varaqBlocks.slice(0,100),
-        });
-        // 100 dan ortiq blok bo'lsa qo'shimcha yuborish
-        for(let i=100; i<varaqBlocks.length; i+=100){
-          await notionFetch(`/blocks/${sub.id}/children`,'PATCH',{children:varaqBlocks.slice(i,i+100)});
-        }
-      }catch(e){ console.warn('Varaq yaratishda xato:', varaqTitle, e.message); }
-    }
+    // Varaqlarni rekursiv ravishda yaratish (cheksiz ichiga kirish)
+    await _notionCreateSubPages(page.id, allBlocks, data.varaqs || {}, 0);
 
     if(peekProjId){
       projects = projects.map(p=>p.id===peekProjId?{...p,notionUrl:url,notionPageId:page.id}:p);

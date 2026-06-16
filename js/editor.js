@@ -691,7 +691,7 @@ const SLASH_ITEMS = [
     const vid='v'+Date.now();
     rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
     peekVaraqs[vid]={title:'Yangi sahifa',descHtml:''};
-    syncPeekVaraqs();
+    if(_activeRteId==='varaq-rte') saveVaraqNow(); else syncPeekVaraqs();
   }},
 ];
 
