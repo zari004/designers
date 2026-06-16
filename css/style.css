@@ -556,6 +556,7 @@ select.prop-input{cursor:pointer}
 .ai-rec-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;animation:ai-pulse 1s infinite;margin-right:4px}
 @keyframes ai-spin{to{transform:rotate(360deg)}}
 .ai-loader{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:ai-spin .8s linear infinite;margin:0 auto}
+@keyframes ai-blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* ── PRINT ── */
 @media print{

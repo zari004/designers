@@ -43,7 +43,9 @@ function openAiAssistant(){
 let _aiRecorder=null, _aiChunks=[], _aiRecording=false, _aiAudioWav=null, _aiLastResult=null;
 
 function _showAiModal(){
-  _aiAudioWav=null;
+  // Modal qayta ochilganda eski sessiyani tozalash
+  _aiAudioWav=null; _aiWebSpeechFinal=''; _aiRecording=false;
+  if(_aiWebSpeechRec){ try{_aiWebSpeechRec.stop();}catch(e){} _aiWebSpeechRec=null; }
   const tt=byId('modal-title-text'); if(tt) tt.textContent='AI Yordamchi';
   const mb=byId('modal-body'); if(!mb) return;
   mb.innerHTML=`
@@ -59,13 +61,17 @@ function _showAiModal(){
         <span id="ai-rec-status" style="font-size:12px;color:var(--muted)">Bosing va gapiring</span>
       </div>
       <!-- Jonli yozish vizualizatsiyasi (kompyuter + telefon) -->
-      <div id="ai-rec-viz" style="display:none;margin-top:12px;padding:11px 14px;background:var(--hover);border-radius:10px;border:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+      <div id="ai-rec-viz" style="display:none;margin-top:12px;padding:9px 14px;background:var(--hover);border-radius:10px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between">
           <span style="display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--error)"><span class="ai-rec-dot"></span> Yozilmoqda…</span>
           <span id="ai-rec-timer" style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)">0:00</span>
         </div>
-        <canvas id="ai-rec-canvas" height="44" style="width:100%;height:44px;display:block"></canvas>
-        <div id="ai-speech-preview" style="display:none;font-size:13px;line-height:1.6;color:var(--text);min-height:40px;padding:2px 0;word-break:break-word"></div>
+        <canvas id="ai-rec-canvas" height="36" style="width:100%;height:36px;display:block;margin-top:8px"></canvas>
+      </div>
+      <!-- Google Translate uslubida jonli transkript -->
+      <div id="ai-live-text" style="display:none;min-height:64px;max-height:180px;overflow-y:auto;padding:12px 16px;background:var(--bg);border:1.5px solid var(--accent);border-radius:10px;font-size:15px;line-height:1.7;color:var(--text);word-break:break-word;margin-top:10px">
+        <span id="ai-live-final"></span><span id="ai-live-interim" style="color:var(--muted);font-style:italic"></span>
+        <span id="ai-live-cursor" style="display:inline-block;width:2px;height:1.1em;background:var(--accent);vertical-align:text-bottom;margin-left:2px;animation:ai-blink 1s step-end infinite"></span>
       </div>
     </div>
     <div class="form-group">
@@ -224,10 +230,13 @@ async function aiToggleRec(){
       _aiRecording=true;
       const btn=byId('ai-mic-btn'); if(btn) btn.classList.add('ai-mic-active');
       const lbl=byId('ai-mic-label'); if(lbl) lbl.textContent="To'xtatish";
-      const st=byId('ai-rec-status'); if(st) st.textContent='Gapiring… brauzer tanib olmoqda';
+      const st=byId('ai-rec-status'); if(st) st.textContent='Gapiring…';
       const viz=byId('ai-rec-viz'); if(viz) viz.style.display='';
       const canvas=byId('ai-rec-canvas'); if(canvas) canvas.style.display='none';
-      const preview=byId('ai-speech-preview'); if(preview){ preview.style.display=''; preview.textContent='…'; }
+      // Jonli transkript maydonini ko'rsat (Google Translate uslubi)
+      const liveBox=byId('ai-live-text'); if(liveBox) liveBox.style.display='';
+      const liveF=byId('ai-live-final'); if(liveF) liveF.textContent='';
+      const liveI=byId('ai-live-interim'); if(liveI) liveI.textContent='';
       _aiRecStart=Date.now();
       const tEl=byId('ai-rec-timer'); if(tEl) tEl.textContent='0:00';
       _aiTimerInt=setInterval(()=>{
@@ -241,8 +250,12 @@ async function aiToggleRec(){
         if(e.results[i].isFinal) _aiWebSpeechFinal+=e.results[i][0].transcript+' ';
         else interim+=e.results[i][0].transcript;
       }
-      const preview=byId('ai-speech-preview');
-      if(preview) preview.textContent=(_aiWebSpeechFinal+(interim||'')).trim()||'…';
+      // Tasdiqlangan so'zlar qora, hali tugamagan so'z kulrang+kursiv
+      const liveF=byId('ai-live-final'); if(liveF) liveF.textContent=_aiWebSpeechFinal;
+      const liveI=byId('ai-live-interim'); if(liveI) liveI.textContent=interim;
+      // Avtomatik pastga scroll
+      const liveBox=byId('ai-live-text');
+      if(liveBox) liveBox.scrollTop=liveBox.scrollHeight;
     };
     _aiWebSpeechRec.onerror=(e)=>{
       if(e.error==='no-speech') return;
@@ -298,7 +311,9 @@ function _aiWebSpeechCleanup(showError){
   const lbl=byId('ai-mic-label'); if(lbl) lbl.textContent='Mikrofon';
   const viz=byId('ai-rec-viz'); if(viz) viz.style.display='none';
   const canvas=byId('ai-rec-canvas'); if(canvas) canvas.style.display='';
-  const preview=byId('ai-speech-preview'); if(preview) preview.style.display='none';
+  // Kursorni yashir, tayyor matnni ko'rsatib qol
+  const cursor=byId('ai-live-cursor'); if(cursor) cursor.style.display='none';
+  const liveI=byId('ai-live-interim'); if(liveI) liveI.textContent='';
   const final=(_aiWebSpeechFinal||'').trim();
   if(final){
     const textInp=byId('ai-text-inp');
@@ -306,10 +321,12 @@ function _aiWebSpeechCleanup(showError){
       const ex=(textInp.value||'').trim();
       textInp.value=ex?ex+'\n'+final:final;
     }
+    // Live box qolsin — foydalanuvchi nima aytganini ko'rsin
     const st=byId('ai-rec-status');
     if(st) st.innerHTML="Tayyor ✓ — endi <b>Tahlil qilish</b> bosing";
-  } else if(showError){
-    toast("Ovoz tanilmadi — brauzer mikrofon ruxsatini tekshiring");
+  } else {
+    const liveBox=byId('ai-live-text'); if(liveBox) liveBox.style.display='none';
+    if(showError) toast("Ovoz tanilmadi — brauzer mikrofon ruxsatini tekshiring");
   }
 }
 
