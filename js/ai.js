@@ -14,6 +14,8 @@ const AI_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
 
+const RU_FLAG='<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;vertical-align:middle;margin-right:4px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg>';
+
 // ── MODAL OCHISH ──
 function openAiAssistant(){
   if(!getAiKey()){
@@ -440,13 +442,13 @@ function _showAiResult(p){
         <div style="font-weight:700;font-size:15px;margin-bottom:8px">${esc(p.title||'')}</div>
         <div class="rich" id="ai-res-desc" style="font-size:13px;line-height:1.6;color:var(--muted)">${p.descHtml||''}</div>
         <div id="ai-res-ru" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
-          <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🇷🇺 Ruscha tarjima</div>
+          <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">${RU_FLAG} Ruscha tarjima</div>
           <div class="rich" id="ai-res-ru-content" style="font-size:13px;line-height:1.6;color:var(--muted)"></div>
         </div>
       </div>
       <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" style="flex:1" onclick="aiApply()">✓ Tasdiqlash</button>
-        <button class="btn btn-ghost" id="ai-ru-btn" onclick="aiResultTranslate()">🇷🇺 Ruscha</button>
+        <button class="btn btn-ghost" id="ai-ru-btn" onclick="aiResultTranslate()">${RU_FLAG} Ruscha</button>
         <button class="btn btn-ghost" onclick="aiProcess()">Qayta tahlil</button>
       </div>
     </div>`;
@@ -455,16 +457,16 @@ function _showAiResult(p){
 function aiResultTranslate(){
   const btn=byId('ai-ru-btn');
   const ruBox=byId('ai-res-ru');
-  if(ruBox&&ruBox.style.display!=='none'){ ruBox.style.display='none'; if(btn) btn.textContent='🇷🇺 Ruscha'; return; }
+  if(ruBox&&ruBox.style.display!=='none'){ ruBox.style.display='none'; if(btn) btn.innerHTML=RU_FLAG+' Ruscha'; return; }
   const html=(_aiLastResult?.descHtml||'');
   if(!html) return;
   if(btn){ btn.disabled=true; btn.textContent='Tarjima qilinmoqda…'; }
   aiTranslate(html, (ru)=>{
     const rc=byId('ai-res-ru-content'); if(rc) rc.innerHTML=ru;
     if(ruBox) ruBox.style.display='block';
-    if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Yashirish'; }
+    if(btn){ btn.disabled=false; btn.innerHTML=RU_FLAG+' Yashirish'; }
   }, (err)=>{
-    if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Ruscha'; }
+    if(btn){ btn.disabled=false; btn.innerHTML=RU_FLAG+' Ruscha'; }
     toast('Tarjima xatosi: '+err);
   });
 }
