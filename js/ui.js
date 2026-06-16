@@ -68,6 +68,17 @@ function priorityBadge(pr){
   return map[pr]||'';
 }
 
+const _COPY_IC=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>`;
+
+function copyField(btn){
+  const text=btn?.dataset?.copy||''; if(!text||text==='—') return;
+  const done=()=>{ btn.classList.add('copy-ok'); setTimeout(()=>btn.classList.remove('copy-ok'),1200); toast('Nusxalandi ✓'); };
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(done).catch(()=>_clipFallback(text,done)); }
+  else _clipFallback(text,done);
+}
+function _clipFallback(t,cb){ const a=document.createElement('textarea'); a.value=t; a.style.cssText='position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try{document.execCommand('copy');cb();}catch(e){} document.body.removeChild(a); }
+function _cpBtn(val){ return `<button class="copy-btn" data-copy="${esc(val)}" onclick="event.stopPropagation();copyField(this)" title="Nusxalash">${_COPY_IC}</button>`; }
+
 function maskCard(c){ if(!c) return '—'; return c.replace(/(\d{4})\s?(\d{4})\s?(\d{4})\s?(\d{4})/,'$1 •••• •••• $4'); }
 
 // Faol panelni qayta chizish
@@ -214,9 +225,10 @@ function renderDesigners(){
         </div>
       </div>
       <div class="d-card-footer">
-        <div>
-          <div class="d-contact">${esc(d.phone||'—')}</div>
-          <div class="d-contact card-num">${maskCard(d.cardNumber)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="d-contact-row">${esc(d.phone||'—')}${d.phone?_cpBtn(d.phone):''}</div>
+          <div class="d-contact-row"><span class="card-num">${maskCard(d.cardNumber)}</span>${d.cardNumber?_cpBtn(d.cardNumber):''}</div>
+          ${d.telegram?`<div class="d-contact-row">${esc(d.telegram)}${_cpBtn(d.telegram)}</div>`:''}
         </div>
         <div class="d-actions" onclick="event.stopPropagation()">
           <button class="btn btn-ghost btn-xs" onclick="openDesignerModal(${d.id})">Tahrir</button>
@@ -273,9 +285,9 @@ function renderDetail(){
           ${(d.skills||[]).map(s=>`<span class="skill-tag">${esc(s)}</span>`).join('')}
         </div>
         <div class="detail-contacts">
-          <span class="contact-item">Tel: ${esc(d.phone||'—')}</span>
-          <span class="contact-item">Karta: <span class="card-num">${esc(d.cardNumber||'—')}</span></span>
-          <span class="contact-item">Telegram: ${esc(d.telegram||'—')}</span>
+          <span class="contact-item">Tel: ${esc(d.phone||'—')}${d.phone?_cpBtn(d.phone):''}</span>
+          <span class="contact-item">Karta: <span class="card-num">${esc(d.cardNumber||'—')}</span>${d.cardNumber?_cpBtn(d.cardNumber):''}</span>
+          <span class="contact-item">Telegram: ${esc(d.telegram||'—')}${d.telegram?_cpBtn(d.telegram):''}</span>
           <span class="contact-item">Qo'shilgan: ${d.joinedAt||'—'}</span>
         </div>
       </div>
