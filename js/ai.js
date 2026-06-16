@@ -1,12 +1,13 @@
 // ═══════════════════════════════════════════════
 // AI YORDAMCHI — ovoz/matn → rasmiy loyiha tavsifi
 //   · Ovoz  → Web Speech API (bepul, Chrome/Edge)
-//   · Matn  → Google Gemini 1.5 Flash (bepul, 1500/kun)
+//   · Matn  → Groq LLaMA 3.3 70B (bepul, tez)
 // ═══════════════════════════════════════════════
 
-const AI_KEY_STORE   = 'exon_gemini_key';
+const AI_KEY_STORE   = 'exon_groq_key';
 const AI_INSTR_STORE = 'exon_ai_instructions';
-const AI_CHAT_MODEL  = 'gemini-2.0-flash';
+const AI_CHAT_URL    = 'https://api.groq.com/openai/v1/chat/completions';
+const AI_CHAT_MODEL  = 'llama-3.3-70b-versatile';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
@@ -83,17 +84,17 @@ function aiKeyAutoSave(val){
     : 'Kalit kiritilmagan';
   clearTimeout(_aiKeySaveTimer);
   _aiKeySaveTimer=setTimeout(()=>{
-    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('geminiKey', v);
+    if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('groqKey', v);
   }, 700);
 }
 function aiKeyClear(){
   localStorage.removeItem(AI_KEY_STORE);
   const el=document.getElementById('ai-key-inp'); if(el) el.value='';
   _aiUpdateSettingsBadge();
-  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('geminiKey','');
+  if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('groqKey','');
   const hint=document.getElementById('ai-key-hint');
   if(hint) hint.textContent='Kalit kiritilmagan';
-  toast("Gemini kaliti o'chirildi");
+  toast("Groq kaliti o'chirildi");
 }
 function _aiUpdateSettingsBadge(){
   if(typeof setConnBadge==='function') setConnBadge('ai-status-badge', !!getAiKey());
@@ -292,9 +293,8 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 {"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
     const key=getAiKey();
-    if(!key) throw new Error("Gemini API kaliti yo'q — Sozlamalar → AI Yordamchi");
-    const apiUrl='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    const chatResp=await fetch(apiUrl,{
+    if(!key) throw new Error("Groq API kaliti yo'q — Sozlamalar → AI Yordamchi");
+    const chatResp=await fetch(AI_CHAT_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
       body:JSON.stringify({
@@ -304,7 +304,8 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
           {role:'user',content:textInp}
         ],
         temperature:0.5,
-        max_tokens:3000
+        max_tokens:3000,
+        response_format:{type:'json_object'}
       })
     });
     if(!chatResp.ok){
