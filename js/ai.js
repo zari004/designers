@@ -514,7 +514,7 @@ async function aiTranslate(html, onDone, onError){
       body:JSON.stringify({
         model:AI_CHAT_MODEL,
         messages:[
-          {role:'system',content:"Siz HTML tarjimon agentisiz. Foydalanuvchi o'zbek tilida HTML yuboradi. Siz HTML tuzilmasini (barcha teglar va atributlar) TO'LIQ SAQLAGAN HOLDA faqat matn mazmunini o'zbek tilidan rus tiliga tarjima qilasiz. Faqat tarjima qilingan HTML qaytaring, hech qanday izoh, kod bloki (```) yoki qo'shimcha matn yozmang."},
+          {role:'system',content:"You are a professional Uzbek-to-Russian translator working with HTML content.\n\nYour STRICT rules:\n1. Translate EVERY word from Uzbek to Russian - leave nothing in Uzbek\n2. Write Russian text ONLY in Cyrillic script: А Б В Г Д Е Ё Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я\n3. NEVER use Latin letters for Russian words (wrong: 'Beliy', correct: 'Белый')\n4. Keep all HTML tags and attributes exactly as-is, only translate text inside tags\n5. Return ONLY the translated HTML - no explanations, no code fences (```), no extra text\n\nTranslation examples:\n- 'Asosiy rang: Oq' → 'Основной цвет: Белый'\n- 'Mahsulot nomi' → 'Название товара'\n- 'Loyiha tavsifi' → 'Описание проекта'\n- 'Dizayn' → 'Дизайн'\n- 'Sahifa' → 'Страница'\n- 'Fon' → 'Фон'\n- 'Sarlavha' → 'Заголовок'"},
           {role:'user',content:html}
         ],
         temperature:0.3,
