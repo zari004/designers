@@ -395,7 +395,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
             ]
           }],
           temperature:0.3,
-          max_tokens:800
+          max_tokens:1500
         })
       });
       if(visionResp.ok){
