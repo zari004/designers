@@ -144,10 +144,17 @@ function openProjectPeek(id = null, preDesignerId = null){
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
       ${propRow('Fayllar','clip',`<input class="prop-input" id="pk-files" value="${esc(p?.files?.join(', ')||'')}" placeholder="design.fig, export.zip"/>`)}
     </div>
-    <div class="section-label" style="display:block;margin:18px 0 8px">Tavsif <span class="rte-tip">— matnni belgilang yoki yangi qatorda <b>/</b> bosing</span></div>
+    <div class="section-label" style="display:block;margin:18px 0 8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <span>Tavsif <span class="rte-tip">— matnni belgilang yoki yangi qatorda <b>/</b> bosing</span></span>
+      <button class="btn btn-ghost btn-xs" id="peek-ru-btn" onclick="peekTranslate()" style="font-size:11px">🇷🇺 Ruscha tarjima</button>
+    </div>
     <div class="rte rich" id="pk-rte" contenteditable="true"
       data-placeholder="Bu yerga loyiha tavsifini yozing. Formatlash uchun matnni belgilang. Blok qo'shish uchun yangi qatorda / bosing."
       oninput="rteInput()" onkeydown="rteKeydown(event)" onkeyup="rteSaveSel()" onmouseup="rteSaveSel()"></div>
+    <div id="peek-ru-box" style="display:none;margin-top:12px;padding:14px 16px;background:var(--hover);border-radius:10px;border:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">🇷🇺 Ruscha tarjima</div>
+      <div class="rich" id="peek-ru-content" style="font-size:13px;line-height:1.6;color:var(--text)"></div>
+    </div>
     ${p ? `<div class="section-label" style="display:block;margin:24px 0 2px">Izohlar</div>${commentBoxHtml(p,'peek')}` : ''}
   `;
 
@@ -181,6 +188,24 @@ function updateNotionBtnLabel(p){
 }
 
 function openProjectModal(id = null, preDesignerId = null){ openProjectPeek(id, preDesignerId); }
+
+function peekTranslate(){
+  const btn=byId('peek-ru-btn');
+  const box=byId('peek-ru-box');
+  if(box&&box.style.display!=='none'){ box.style.display='none'; if(btn) btn.textContent='🇷🇺 Ruscha tarjima'; return; }
+  const html=byId('pk-rte')?.innerHTML||'';
+  if(!html.trim()){ toast("Tavsif bo'sh — avval matn yozing"); return; }
+  if(btn){ btn.disabled=true; btn.textContent='Tarjima qilinmoqda…'; }
+  if(typeof aiTranslate==='function') aiTranslate(html, (ru)=>{
+    const c=byId('peek-ru-content'); if(c) c.innerHTML=ru;
+    if(box) box.style.display='block';
+    if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Yashirish'; }
+  }, (err)=>{
+    if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Ruscha tarjima'; }
+    toast('Tarjima xatosi: '+err);
+  });
+  else toast("AI moduli yuklanmagan");
+}
 
 function closePeek(){
   hideBubble(); hideSlash();

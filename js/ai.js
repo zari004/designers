@@ -438,13 +438,65 @@ function _showAiResult(p){
       </div>
       <div style="padding:14px 16px">
         <div style="font-weight:700;font-size:15px;margin-bottom:8px">${esc(p.title||'')}</div>
-        <div class="rich" style="font-size:13px;line-height:1.6;color:var(--muted)">${p.descHtml||''}</div>
+        <div class="rich" id="ai-res-desc" style="font-size:13px;line-height:1.6;color:var(--muted)">${p.descHtml||''}</div>
+        <div id="ai-res-ru" style="display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--border)">
+          <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🇷🇺 Ruscha tarjima</div>
+          <div class="rich" id="ai-res-ru-content" style="font-size:13px;line-height:1.6;color:var(--muted)"></div>
+        </div>
       </div>
-      <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px">
-        <button class="btn btn-primary" style="flex:1" onclick="aiApply()">✓ Tasdiqlash — loyihaga qo'shish</button>
+      <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" style="flex:1" onclick="aiApply()">✓ Tasdiqlash</button>
+        <button class="btn btn-ghost" id="ai-ru-btn" onclick="aiResultTranslate()">🇷🇺 Ruscha</button>
         <button class="btn btn-ghost" onclick="aiProcess()">Qayta tahlil</button>
       </div>
     </div>`;
+}
+
+function aiResultTranslate(){
+  const btn=byId('ai-ru-btn');
+  const ruBox=byId('ai-res-ru');
+  if(ruBox&&ruBox.style.display!=='none'){ ruBox.style.display='none'; if(btn) btn.textContent='🇷🇺 Ruscha'; return; }
+  const html=(_aiLastResult?.descHtml||'');
+  if(!html) return;
+  if(btn){ btn.disabled=true; btn.textContent='Tarjima qilinmoqda…'; }
+  aiTranslate(html, (ru)=>{
+    const rc=byId('ai-res-ru-content'); if(rc) rc.innerHTML=ru;
+    if(ruBox) ruBox.style.display='block';
+    if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Yashirish'; }
+  }, (err)=>{
+    if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Ruscha'; }
+    toast('Tarjima xatosi: '+err);
+  });
+}
+
+// ── RUS TILIGA TARJIMA (umumiy) ──
+async function aiTranslate(html, onDone, onError){
+  const key=getAiKey();
+  if(!key){ toast("Groq kaliti yo'q — Sozlamalar → AI Yordamchi"); return; }
+  try{
+    const resp=await fetch(AI_CHAT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        model:AI_CHAT_MODEL,
+        messages:[
+          {role:'system',content:"Siz HTML tarjimon agentisiz. Foydalanuvchi o'zbek tilida HTML yuboradi. Siz HTML tuzilmasini (barcha teglar va atributlar) TO'LIQ SAQLAGAN HOLDA faqat matn mazmunini o'zbek tilidan rus tiliga tarjima qilasiz. Faqat tarjima qilingan HTML qaytaring, hech qanday izoh, kod bloki (```) yoki qo'shimcha matn yozmang."},
+          {role:'user',content:html}
+        ],
+        temperature:0.3,
+        max_tokens:4000
+      })
+    });
+    if(!resp.ok){
+      const t=await resp.text().catch(()=>''); let m='';
+      try{m=JSON.parse(t)?.error?.message||'';}catch(e){}
+      throw new Error(m||`HTTP ${resp.status}`);
+    }
+    const data=await resp.json();
+    const out=(data.choices?.[0]?.message?.content||'').replace(/```html|```/g,'').trim();
+    if(!out) throw new Error("Bo'sh javob");
+    onDone(out);
+  }catch(e){ if(onError) onError(e.message); else toast('Tarjima xatosi: '+e.message); }
 }
 
 // ── TASDIQLASH ──
