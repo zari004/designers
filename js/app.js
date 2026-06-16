@@ -140,8 +140,6 @@ function applyNavPermissions(user){
 // ═══════════════════════════════════════════════
 const SETTINGS_FIELDS = {
   openRouterKey:  'exon_openrouter_key',
-  groqKey:        'exon_groq_key',
-  googleSttKey:   'exon_google_stt_key',
   gsSheetId:      'gs_sheet_id',
   gsToken:        'gs_token',
   notionToken:    'notion_token',
