@@ -287,13 +287,16 @@ BUGUN: ${today}
 KATEGORIYALAR: ${catList}
 
 ═══════════════════════════════════
-EGA QOIDALARI — har bir bo'limni to'liq va professional yoz:
+EGA QOIDALARI:
 ═══════════════════════════════════
 ${rulesBlock}
 ═══════════════════════════════════
 
+MUHIM: descHtml maydoni HAQIQIY HTML bo'lishi SHART. Quyidagi tuzilmadan foydalan:
+<h2>Maqsad</h2><p>...</p><h2>Bajariladigan ishlar</h2><ul><li>...</li><li>...</li></ul><h2>Texnik talablar</h2><ul><li>...</li></ul><h2>Kutilayotgan natija</h2><p>...</p>
+
 MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
-{"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq batafsil HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
+{"title":"loyiha nomi 3-8 so'z","descHtml":"<h2>Maqsad</h2><p>...</p><h2>Bajariladigan ishlar</h2><ul><li>...</li></ul><h2>Texnik talablar</h2><ul><li>...</li></ul><h2>Kutilayotgan natija</h2><p>...</p>","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
     const key=getAiKey();
     if(!key) throw new Error("Groq API kaliti yo'q — Sozlamalar → AI Yordamchi");
