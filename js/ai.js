@@ -7,7 +7,7 @@
 const OPENROUTER_KEY_STORE = 'exon_openrouter_key';
 const AI_INSTR_STORE       = 'exon_ai_instructions';
 const OPENROUTER_CHAT_URL  = 'https://openrouter.ai/api/v1/chat/completions';
-const OPENROUTER_MODEL     = 'meta-llama/llama-3.3-70b-instruct:free';
+const OPENROUTER_MODEL     = 'deepseek/deepseek-chat:free';
 
 function getOpenRouterKey(){ return localStorage.getItem(OPENROUTER_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
