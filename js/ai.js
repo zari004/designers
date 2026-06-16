@@ -293,10 +293,10 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 
     const key=getAiKey();
     if(!key) throw new Error("Gemini API kaliti yo'q — Sozlamalar → AI Yordamchi");
-    const apiUrl=`https://generativelanguage.googleapis.com/v1beta/models/${AI_CHAT_MODEL}:generateContent?key=${encodeURIComponent(key)}`;
+    const apiUrl=`https://generativelanguage.googleapis.com/v1beta/models/${AI_CHAT_MODEL}:generateContent`;
     const chatResp=await fetch(apiUrl,{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','x-goog-api-key':key},
       body:JSON.stringify({
         system_instruction:{parts:[{text:systemPrompt}]},
         contents:[{role:'user',parts:[{text:textInp}]}],
