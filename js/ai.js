@@ -393,9 +393,9 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
         {role:'user',content:userContent}
       ],
       temperature:0.5,
-      max_tokens:4000
+      max_tokens:4000,
+      response_format:{type:'json_object'}
     };
-    if(!hasImgs) body.response_format={type:'json_object'};
 
     const chatResp=await fetch(AI_CHAT_URL,{
       method:'POST',
@@ -413,8 +413,17 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
     if(!raw) throw new Error("AI bo'sh javob qaytardi");
 
     let parsed;
-    try{ parsed=JSON.parse(raw.replace(/```json|```/g,'').trim()); }
-    catch{ throw new Error("AI javobi noto'g'ri formatda — qayta urining"); }
+    try{
+      // avval to'g'ridan-to'g'ri parse qilib ko'r
+      const cleaned=raw.replace(/```json|```/g,'').trim();
+      try{ parsed=JSON.parse(cleaned); }
+      catch{
+        // JSON blokini qidirish: { ... } orasidan ajrat
+        const m=cleaned.match(/\{[\s\S]*\}/);
+        if(m) parsed=JSON.parse(m[0]);
+        else throw new Error("JSON topilmadi");
+      }
+    }catch{ throw new Error("AI javobi noto'g'ri formatda — qayta urining"); }
     if(parsed.deadline==='null'||parsed.deadline==='') parsed.deadline=null;
     if(parsed.category==='null'||parsed.category==='') parsed.category=null;
     _showAiResult(parsed);
