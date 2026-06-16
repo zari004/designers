@@ -541,7 +541,7 @@ function aiApply(){
     if(p.title){ const el=byId('pk-title'); if(el) el.value=p.title; }
     if(p.descHtml){ const rte=byId('pk-rte'); if(rte){ rte.innerHTML=p.descHtml; typeof rteInput==='function'&&rteInput(); } }
     if(p.priority){ const el=byId('pk-priority'); if(el) el.value=p.priority; }
-    if(p.deadline){ const el=byId('pk-deadline'); if(el) el.value=p.deadline; }
+    if(p.deadline){ const el=byId('pk-deadline'); if(el){ el.dataset.isoDate=p.deadline; el.value=typeof dpFmt==='function'?dpFmt(p.deadline):p.deadline; } }
     if(p.category&&typeof CAT_INFO!=='undefined'&&CAT_INFO[p.category]){
       const el=byId('pk-cat'); if(el){ el.value=p.category; typeof peekCatChange==='function'&&peekCatChange(); }
     }
