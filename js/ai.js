@@ -32,7 +32,7 @@ function openAiAssistant(){
 let _aiRecording=false, _aiLastResult=null;
 let _aiWebSpeechRec=null, _aiWebSpeechFinal='';
 let _aiTimerInt=null, _aiRecStart=0;
-let _aiImages=[];  // max 10 ta base64
+let _aiImages=[];  // max 5 ta base64
 
 function _showAiModal(){
   _aiWebSpeechFinal=''; _aiRecording=false; _aiImages=[];
@@ -70,7 +70,7 @@ function _showAiModal(){
       <div id="ai-drop-zone" style="padding:14px 16px;border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;text-align:center;transition:all .2s">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin-bottom:6px;display:block;margin-inline:auto"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
         <div id="ai-drop-label" style="font-weight:500">Rasmlarni shu yerga sudrab tashlang yoki bosib tanlang</div>
-        <div style="font-size:11px;margin-top:3px;opacity:.6">Ctrl+V bilan ham joylashtirish mumkin &nbsp;•&nbsp; 10 tagacha rasm</div>
+        <div style="font-size:11px;margin-top:3px;opacity:.6">Ctrl+V bilan ham joylashtirish mumkin &nbsp;•&nbsp; 5 tagacha rasm</div>
       </div>
       <input type="file" id="ai-img-input" accept="image/*" multiple style="display:none" onchange="_aiAddImages(this.files)"/>
       <div id="ai-img-thumbs" style="display:none;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
@@ -95,7 +95,7 @@ function _showAiModal(){
 // ── RASM YUKLASH (ko'p rasm, drag&drop, Ctrl+V) ──
 function _aiAddImages(files){
   if(!files||!files.length) return;
-  const arr=Array.from(files).filter(f=>f.type.startsWith('image/')).slice(0, 10-_aiImages.length);
+  const arr=Array.from(files).filter(f=>f.type.startsWith('image/')).slice(0, 5-_aiImages.length);
   if(!arr.length) return;
   let done=0;
   arr.forEach(file=>{
@@ -138,7 +138,7 @@ function _aiRenderThumbs(){
       <img src="${src}" style="height:80px;width:80px;object-fit:cover;border-radius:8px;border:1.5px solid var(--accent);display:block"/>
       <button onclick="aiImageRemove(${i})" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:20px;text-align:center;padding:0">×</button>
     </div>`).join('');
-  if(lbl) lbl.textContent=`${_aiImages.length} ta rasm biriktirildi ✓ — yana qo'shish mumkin (${10-_aiImages.length} ta qoldi)`;
+  if(lbl) lbl.textContent=`${_aiImages.length} ta rasm biriktirildi ✓ — yana qo'shish mumkin (${5-_aiImages.length} ta qoldi)`;
   if(dz){ dz.style.borderColor='var(--accent)'; dz.style.borderStyle='solid'; }
 }
 function _aiResizeImage(dataUrl, maxPx, cb){
