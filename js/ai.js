@@ -65,6 +65,7 @@ function _showAiModal(){
           <span id="ai-rec-timer" style="font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)">0:00</span>
         </div>
         <canvas id="ai-rec-canvas" height="44" style="width:100%;height:44px;display:block"></canvas>
+        <div id="ai-speech-preview" style="display:none;font-size:13px;line-height:1.6;color:var(--text);min-height:40px;padding:2px 0;word-break:break-word"></div>
       </div>
     </div>
     <div class="form-group">
@@ -131,8 +132,8 @@ function googleSttKeyAutoSave(val){
   localStorage.setItem(GOOGLE_STT_KEY_STORE, v);
   const hint=document.getElementById('ai-google-key-hint');
   if(hint) hint.textContent = v
-    ? 'Saqlandi ✓ — Google STT ishlatiladi (o\'zbekcha aniq taniydi)'
-    : 'Kiritilmagan bo\'lsa Groq Whisper ishlatiladi';
+    ? 'Saqlandi ✓ — Firefox/Safari uchun Google STT ishlatiladi'
+    : 'Kiritilmagan bo\'lsa brauzerning o\'zi taniydi (Chrome/Edge)';
   clearTimeout(_gSttSaveTimer);
   _gSttSaveTimer=setTimeout(()=>{
     if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('googleSttKey', v);
@@ -205,15 +206,67 @@ function loadAiSettings(){
 
 // ── MIKROFON YOZISH (jonli vizualizatsiya bilan) ──
 let _aiVizCtx=null, _aiAnalyser=null, _aiVizRAF=null, _aiTimerInt=null, _aiRecStart=0;
+let _aiUseWebSpeech=false, _aiWebSpeechRec=null, _aiWebSpeechFinal='';
 
 async function aiToggleRec(){
   if(_aiRecording){ aiStopRec(); return; }
+
+  // Birinchi navbat: brauzerning o'zi — bepul, kalit shart emas, Google backend
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(SR){
+    _aiUseWebSpeech=true;
+    _aiWebSpeechFinal='';
+    _aiWebSpeechRec=new SR();
+    _aiWebSpeechRec.lang='uz-UZ';
+    _aiWebSpeechRec.continuous=true;
+    _aiWebSpeechRec.interimResults=true;
+    _aiWebSpeechRec.onstart=()=>{
+      _aiRecording=true;
+      const btn=byId('ai-mic-btn'); if(btn) btn.classList.add('ai-mic-active');
+      const lbl=byId('ai-mic-label'); if(lbl) lbl.textContent="To'xtatish";
+      const st=byId('ai-rec-status'); if(st) st.textContent='Gapiring… brauzer tanib olmoqda';
+      const viz=byId('ai-rec-viz'); if(viz) viz.style.display='';
+      const canvas=byId('ai-rec-canvas'); if(canvas) canvas.style.display='none';
+      const preview=byId('ai-speech-preview'); if(preview){ preview.style.display=''; preview.textContent='…'; }
+      _aiRecStart=Date.now();
+      const tEl=byId('ai-rec-timer'); if(tEl) tEl.textContent='0:00';
+      _aiTimerInt=setInterval(()=>{
+        const s=Math.floor((Date.now()-_aiRecStart)/1000);
+        if(tEl) tEl.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+      },250);
+    };
+    _aiWebSpeechRec.onresult=(e)=>{
+      let interim='';
+      for(let i=e.resultIndex;i<e.results.length;i++){
+        if(e.results[i].isFinal) _aiWebSpeechFinal+=e.results[i][0].transcript+' ';
+        else interim+=e.results[i][0].transcript;
+      }
+      const preview=byId('ai-speech-preview');
+      if(preview) preview.textContent=(_aiWebSpeechFinal+(interim||'')).trim()||'…';
+    };
+    _aiWebSpeechRec.onerror=(e)=>{
+      if(e.error==='no-speech') return;
+      _aiRecording=false;
+      _aiWebSpeechCleanup(e.error!=='aborted');
+    };
+    _aiWebSpeechRec.onend=()=>{
+      // Chrome ba'zan sukut sababli to'xtatadi — davom ettir
+      if(_aiRecording){ try{ _aiWebSpeechRec.start(); }catch(ex){ _aiRecording=false; _aiWebSpeechCleanup(false); } }
+      else _aiWebSpeechCleanup(false);
+    };
+    try{ _aiWebSpeechRec.start(); }
+    catch(e){ toast("Mikrofonga ruxsat berilmadi: "+e.message); _aiUseWebSpeech=false; }
+    return;
+  }
+
+  // Fallback: MediaRecorder → WAV → Groq Whisper yoki Google STT
+  _aiUseWebSpeech=false;
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true});
     _aiChunks=[];
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
-               : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus' : '';
-    _aiRecorder=new MediaRecorder(stream, mime?{mimeType:mime}:undefined);
+    const mime=MediaRecorder.isTypeSupported('audio/webm;codecs=opus')?'audio/webm;codecs=opus'
+              :MediaRecorder.isTypeSupported('audio/ogg;codecs=opus')?'audio/ogg;codecs=opus':'';
+    _aiRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
     _aiRecorder.ondataavailable=e=>{ if(e.data.size>0) _aiChunks.push(e.data); };
     _aiRecorder.onstop=()=>{ stream.getTracks().forEach(t=>t.stop()); _aiStopViz(); _aiConvertAudio(); };
     _aiRecorder.start(200);
@@ -226,11 +279,38 @@ async function aiToggleRec(){
     toast("Mikrofonga ruxsat berilmadi: "+e.message);
   }
 }
+
 function aiStopRec(){
-  if(!_aiRecorder||!_aiRecording) return;
   _aiRecording=false;
+  if(_aiUseWebSpeech){
+    if(_aiWebSpeechRec){ try{ _aiWebSpeechRec.stop(); }catch(e){} }
+    return;
+  }
+  if(!_aiRecorder) return;
   _aiRecorder.stop();
   const st=byId('ai-rec-status'); if(st) st.textContent='Tayyorlanmoqda…';
+}
+
+// Web Speech API tugagach tozalash
+function _aiWebSpeechCleanup(showError){
+  if(_aiTimerInt){ clearInterval(_aiTimerInt); _aiTimerInt=null; }
+  const btn=byId('ai-mic-btn'); if(btn) btn.classList.remove('ai-mic-active');
+  const lbl=byId('ai-mic-label'); if(lbl) lbl.textContent='Mikrofon';
+  const viz=byId('ai-rec-viz'); if(viz) viz.style.display='none';
+  const canvas=byId('ai-rec-canvas'); if(canvas) canvas.style.display='';
+  const preview=byId('ai-speech-preview'); if(preview) preview.style.display='none';
+  const final=(_aiWebSpeechFinal||'').trim();
+  if(final){
+    const textInp=byId('ai-text-inp');
+    if(textInp){
+      const ex=(textInp.value||'').trim();
+      textInp.value=ex?ex+'\n'+final:final;
+    }
+    const st=byId('ai-rec-status');
+    if(st) st.innerHTML="Tayyor ✓ — endi <b>Tahlil qilish</b> bosing";
+  } else if(showError){
+    toast("Ovoz tanilmadi — brauzer mikrofon ruxsatini tekshiring");
+  }
 }
 
 // Jonli to'lqin + taymer

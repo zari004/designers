@@ -465,23 +465,23 @@
             <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">Kalitni o'chirish</button>
           </div>
 
-          <!-- Google Cloud STT (ixtiyoriy — o'zbekchani aniqroq taniydi) -->
+          <!-- Google Cloud STT (ixtiyoriy — Chrome bo'lmagan brauzerlar uchun) -->
           <div style="border-top:1px solid var(--border);margin:14px 0 0;padding-top:14px">
             <div style="margin-bottom:8px">
               <label class="form-label" style="margin:0">
-                Google STT kaliti
-                <small style="color:var(--muted);font-weight:400;margin-left:4px">(ixtiyoriy — o'zbekchani aniqroq taniydi)</small>
+                Google Cloud STT kaliti
+                <small style="color:var(--muted);font-weight:400;margin-left:4px">(ixtiyoriy — faqat Firefox/Safari uchun)</small>
               </label>
             </div>
             <div class="settings-note" style="margin-bottom:10px">
-              Groq Whisper o'zbek tilini noto'g'ri tanishi mumkin. <strong>Google Cloud Speech-to-Text</strong> ko'proq aniq.<br/>
+              <strong>Chrome/Edge brauzerda</strong> ovoz avtomatik bepul taniladi — bu kalit kerak emas.<br/>
+              Faqat <strong>Firefox yoki Safari</strong> da ishlatadigan bo'lsangiz kiriting:<br/>
               <strong>1.</strong> <a href="https://console.cloud.google.com/apis/library/speech.googleapis.com" target="_blank" rel="noopener">Google Cloud Console</a> → Speech-to-Text APIni yoqing<br/>
-              <strong>2.</strong> <em>Credentials → Create API Key</em><br/>
-              <strong>3.</strong> Kalitni quyida kiriting — kiritilsa ovoz uchun Google STT ishlatiladi
+              <strong>2.</strong> <em>Credentials → Create API Key</em> → kalitni kiriting
             </div>
             <div class="form-group">
               <input class="form-input" id="ai-google-key-inp" type="password" placeholder="AIzaSy..." oninput="googleSttKeyAutoSave(this.value)"/>
-              <div class="form-hint" id="ai-google-key-hint">Kiritilmagan bo'lsa Groq Whisper ishlatiladi</div>
+              <div class="form-hint" id="ai-google-key-hint">Kiritilmagan bo'lsa brauzerning o'zi taniydi (Chrome/Edge)</div>
             </div>
             <div style="display:flex;gap:8px;margin-top:6px">
               <button class="btn btn-ghost btn-sm" onclick="googleSttKeyClear()">Kalitni o'chirish</button>
