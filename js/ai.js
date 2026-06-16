@@ -128,8 +128,8 @@ function _aiRenderThumbs(){
   if(!grid) return;
   if(!_aiImages.length){
     grid.style.display='none';
+    if(dz){ dz.style.display='block'; dz.style.borderColor='var(--border)'; dz.style.borderStyle='dashed'; }
     if(lbl) lbl.textContent='Rasmlarni shu yerga sudrab tashlang yoki bosib tanlang';
-    if(dz){ dz.style.borderColor='var(--border)'; dz.style.borderStyle='dashed'; }
     return;
   }
   grid.style.display='flex';
@@ -138,8 +138,9 @@ function _aiRenderThumbs(){
       <img src="${src}" style="height:80px;width:80px;object-fit:cover;border-radius:8px;border:1.5px solid var(--accent);display:block"/>
       <button onclick="aiImageRemove(${i})" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:20px;text-align:center;padding:0">×</button>
     </div>`).join('');
+  if(dz) dz.style.display=_aiImages.length>=5?'none':'block';
   if(lbl) lbl.textContent=`${_aiImages.length} ta rasm biriktirildi ✓ — yana qo'shish mumkin (${5-_aiImages.length} ta qoldi)`;
-  if(dz){ dz.style.borderColor='var(--accent)'; dz.style.borderStyle='solid'; }
+  if(_aiImages.length<5&&dz){ dz.style.borderColor='var(--accent)'; dz.style.borderStyle='solid'; }
 }
 function _aiResizeImage(dataUrl, maxPx, cb){
   const img=new Image();
