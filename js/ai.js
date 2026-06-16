@@ -258,39 +258,42 @@ async function aiProcess(){
 `Har bir loyiha tavsifi quyidagi bo'limlardan iborat bo'lsin:
 
 <h2>Maqsad</h2>
-Loyihaning asosiy maqsadini 2-3 gapda yoz. Muhim so'zlarni <strong>qalin</strong> qil.
+Loyihaning asosiy maqsadini 4-6 gapda batafsil yoz. Loyiha nima uchun kerak, kim uchun, qanday muammoni hal qiladi — barchasini yoz. Muhim so'zlarni <strong>qalin</strong> qil.
 
 <h2>Bajariladigan ishlar</h2>
-Kamida 5 ta aniq vazifani <ul><li> ro'yxatida yoz — har biri o'lchanadigan natijaga ega bo'lsin.
+Kamida 7-10 ta aniq vazifani <ul><li> ro'yxatida yoz. Har bir vazifa o'lchanadigan va aniq bo'lsin. Dizayn, ranglar, tipografiya, ikonkalar, animatsiyalar, ekranlar, holatlar kabi tafsilotlarni kirgizt.
 
 <h2>Texnik talablar</h2>
-Format, o'lcham, rang, dasturiy talab va cheklovlarni <ul><li> ro'yxatida yoz.
+Kamida 6-8 ta texnik talabni <ul><li> ro'yxatida yoz: format (Figma/Adobe XD/...), o'lchamlar (px, pt), rang palitrasini ifodalash usuli, font talablari, eksport formatlari, moslashuvchanlik (responsive), animatsiya turlari va boshqalar.
 
 <h2>Kutilayotgan natija</h2>
-Yakuniy mahsulot qanday ko'rinishi va qanday topshirilishi kerakligini yoz.
+Yakuniy mahsulot qanday ko'rinishi, qanday topshirilishi va qanday tekshirilishi kerakligini 4-5 gapda yoz. Mijoz nima ko'rishi kerak, qanday fayllar topshiriladi, qanday sifat standartlari bo'lishi kerak.
 
 Qo'shimcha qoidalar:
 - Rasmiy va professional tilda yoz (o'zbek tilida)
+- Foydalanuvchi qisqa ma'lumot bersa ham — kontekstdan kelib chiqib to'ldir va kengaytir
 - Mijoz ismi yoki loyiha nomi aniq bo'lsa — uni title'ga kirgizt
 - Muddat aytilmasa — 2 hafta qilib qo'y
-- Har bo'limda kamida 2-3 ta aniq ma'lumot bo'lsin`;
+- Har bo'limda kamida 5-7 ta aniq ma'lumot bo'lsin
+- Hujjat professional dizayner o'qishi uchun yetarlicha batafsil bo'lsin`;
 
     const systemPrompt=
 `Sen EXON (dizaynerlar boshqaruv tizimi) uchun loyiha tahlilchisissan.
 Foydalanuvchi o'zbek tilida qisqa, erkin ma'lumot beradi (ba'zan ovoz orqali — kichik xatolarni kontekstdan to'g'irla).
-Sening YAGONA vazifang: foydalanuvchi ma'lumotini quyidagi EGA QOIDALARI asosida loyiha hujjatiga aylantirish.
+Sening vazifang: foydalanuvchi ma'lumotini EGA QOIDALARI asosida TO'LIQ va BATAFSIL loyiha hujjatiga aylantirish.
+Foydalanuvchi qisqa yozsa ham — sohaga oid bilimingdan foydalanib, mantiqiy tafsilotlarni o'zing qo'sh va kengaytir.
 
 BUGUN: ${today}
 KATEGORIYALAR: ${catList}
 
 ═══════════════════════════════════
-EGA QOIDALARI — bu qoidalarga QATTIQ amal qil, o'zingdan hech narsa qo'shma:
+EGA QOIDALARI — har bir bo'limni to'liq va professional yoz:
 ═══════════════════════════════════
 ${rulesBlock}
 ═══════════════════════════════════
 
 MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
-{"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
+{"title":"loyiha nomi 3-8 so'z","descHtml":"ega qoidalaridagi tuzilmada to'liq batafsil HTML","priority":"low|medium|high","deadline":"YYYY-MM-DD yoki null","category":"kategoriyalardan biri yoki null"}`;
 
     const key=getAiKey();
     if(!key) throw new Error("Groq API kaliti yo'q — Sozlamalar → AI Yordamchi");
