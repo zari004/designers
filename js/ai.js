@@ -32,10 +32,10 @@ function openAiAssistant(){
 let _aiRecording=false, _aiLastResult=null;
 let _aiWebSpeechRec=null, _aiWebSpeechFinal='';
 let _aiTimerInt=null, _aiRecStart=0;
-let _aiImageBase64=null;
+let _aiImages=[];  // max 10 ta base64
 
 function _showAiModal(){
-  _aiWebSpeechFinal=''; _aiRecording=false; _aiImageBase64=null;
+  _aiWebSpeechFinal=''; _aiRecording=false; _aiImages=[];
   if(_aiWebSpeechRec){ try{_aiWebSpeechRec.stop();}catch(e){} _aiWebSpeechRec=null; }
   const tt=byId('modal-title-text'); if(tt) tt.textContent='AI Yordamchi';
   const mb=byId('modal-body'); if(!mb) return;
@@ -67,16 +67,13 @@ function _showAiModal(){
         style="width:100%;resize:vertical"></textarea>
     </div>
     <div style="margin-bottom:14px">
-      <div id="ai-img-zone" onclick="byId('ai-img-input').click()" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;transition:border-color .2s" onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)'">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
-        <span id="ai-img-label">Mahsulot rasmini biriktirish <small style="opacity:.6">(ixtiyoriy — AI ranglar va xususiyatlarni o'rganadi)</small></span>
+      <div id="ai-drop-zone" style="padding:14px 16px;border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;color:var(--muted);font-size:13px;text-align:center;transition:all .2s">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" style="margin-bottom:6px;display:block;margin-inline:auto"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <div id="ai-drop-label" style="font-weight:500">Rasmlarni shu yerga sudrab tashlang yoki bosib tanlang</div>
+        <div style="font-size:11px;margin-top:3px;opacity:.6">Ctrl+V bilan ham joylashtirish mumkin &nbsp;•&nbsp; 10 tagacha rasm</div>
       </div>
-      <input type="file" id="ai-img-input" accept="image/*" style="display:none" onchange="aiImageUpload(this)"/>
-      <div id="ai-img-preview" style="display:none;margin-top:8px;position:relative;display:none">
-        <img id="ai-img-thumb" style="max-height:130px;border-radius:8px;border:1.5px solid var(--accent);display:block"/>
-        <button onclick="aiImageClear(event)" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
-        <div id="ai-img-info" style="font-size:11px;color:var(--muted);margin-top:4px"></div>
-      </div>
+      <input type="file" id="ai-img-input" accept="image/*" multiple style="display:none" onchange="_aiAddImages(this.files)"/>
+      <div id="ai-img-thumbs" style="display:none;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
     </div>
     <button class="btn btn-primary" onclick="aiProcess()" style="width:100%;margin-top:4px">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="margin-right:6px"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1z"/></svg>
@@ -85,44 +82,69 @@ function _showAiModal(){
     <div id="ai-result" style="display:none;margin-top:18px"></div>
   `;
   byId('modal').style.display='flex';
+  // Drag & drop
+  const dz=byId('ai-drop-zone');
+  dz.addEventListener('click',()=>byId('ai-img-input').click());
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.style.borderColor='var(--accent)';dz.style.background='var(--accent-soft)';});
+  dz.addEventListener('dragleave',()=>{dz.style.borderColor='var(--border)';dz.style.background='';});
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.style.borderColor='var(--border)';dz.style.background='';_aiAddImages(e.dataTransfer.files);});
+  // Paste (Ctrl+V)
+  document.addEventListener('paste',_aiPasteHandler);
 }
 
-// ── RASM YUKLASH ──
-function aiImageUpload(input){
-  const file=input.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    const raw=e.target.result;
-    _aiResizeImage(raw, 1024, (resized)=>{
-      _aiImageBase64=resized;
-      const thumb=byId('ai-img-thumb');
-      if(thumb){ thumb.src=resized; }
-      const preview=byId('ai-img-preview');
-      if(preview) preview.style.display='block';
-      const info=byId('ai-img-info');
-      if(info) info.textContent=file.name+' — AI bu rasmni tahlil qiladi';
-      const zone=byId('ai-img-zone');
-      if(zone){ zone.style.borderColor='var(--accent)'; zone.style.borderStyle='solid'; }
-      const lbl=byId('ai-img-label');
-      if(lbl) lbl.innerHTML='<strong style="color:var(--accent)">Rasm biriktirildi ✓</strong> — boshqasini tanlash uchun bosing';
-    });
-  };
-  reader.readAsDataURL(file);
+// ── RASM YUKLASH (ko'p rasm, drag&drop, Ctrl+V) ──
+function _aiAddImages(files){
+  if(!files||!files.length) return;
+  const arr=Array.from(files).filter(f=>f.type.startsWith('image/')).slice(0, 10-_aiImages.length);
+  if(!arr.length) return;
+  let done=0;
+  arr.forEach(file=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      _aiResizeImage(e.target.result, 1024, resized=>{
+        _aiImages.push(resized);
+        done++;
+        if(done===arr.length) _aiRenderThumbs();
+      });
+    };
+    reader.readAsDataURL(file);
+  });
 }
-function aiImageClear(e){
-  if(e) e.stopPropagation();
-  _aiImageBase64=null;
-  const input=byId('ai-img-input'); if(input) input.value='';
-  const preview=byId('ai-img-preview'); if(preview) preview.style.display='none';
-  const zone=byId('ai-img-zone');
-  if(zone){ zone.style.borderColor='var(--border)'; zone.style.borderStyle='dashed'; }
-  const lbl=byId('ai-img-label');
-  if(lbl) lbl.innerHTML='Mahsulot rasmini biriktirish <small style="opacity:.6">(ixtiyoriy — AI ranglar va xususiyatlarni o\'rganadi)</small>';
+function _aiPasteHandler(e){
+  if(!byId('ai-drop-zone')) return; // modal yopiq
+  const items=Array.from(e.clipboardData?.items||[]).filter(i=>i.type.startsWith('image/'));
+  if(!items.length) return;
+  _aiAddImages(items.map(i=>i.getAsFile()).filter(Boolean));
+}
+function aiImageRemove(i){
+  _aiImages.splice(i,1);
+  _aiRenderThumbs();
+  if(!_aiImages.length){ const inp=byId('ai-img-input'); if(inp) inp.value=''; }
+}
+function _aiRenderThumbs(){
+  const grid=byId('ai-img-thumbs');
+  const lbl=byId('ai-drop-label');
+  const dz=byId('ai-drop-zone');
+  if(!grid) return;
+  if(!_aiImages.length){
+    grid.style.display='none';
+    if(lbl) lbl.textContent='Rasmlarni shu yerga sudrab tashlang yoki bosib tanlang';
+    if(dz){ dz.style.borderColor='var(--border)'; dz.style.borderStyle='dashed'; }
+    return;
+  }
+  grid.style.display='flex';
+  grid.innerHTML=_aiImages.map((src,i)=>`
+    <div style="position:relative;flex-shrink:0">
+      <img src="${src}" style="height:80px;width:80px;object-fit:cover;border-radius:8px;border:1.5px solid var(--accent);display:block"/>
+      <button onclick="aiImageRemove(${i})" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:20px;text-align:center;padding:0">×</button>
+    </div>`).join('');
+  if(lbl) lbl.textContent=`${_aiImages.length} ta rasm biriktirildi ✓ — yana qo'shish mumkin (${10-_aiImages.length} ta qoldi)`;
+  if(dz){ dz.style.borderColor='var(--accent)'; dz.style.borderStyle='solid'; }
 }
 function _aiResizeImage(dataUrl, maxPx, cb){
   const img=new Image();
   img.onload=()=>{
-    const scale=Math.min(1, maxPx/Math.max(img.width, img.height));
+    const scale=Math.min(1, maxPx/Math.max(img.width,img.height));
     const w=Math.round(img.width*scale), h=Math.round(img.height*scale);
     const c=document.createElement('canvas');
     c.width=w; c.height=h;
@@ -352,10 +374,13 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
     const key=getAiKey();
     if(!key) throw new Error("Groq API kaliti yo'q — Sozlamalar → AI Yordamchi");
 
-    const hasImg=!!_aiImageBase64;
-    const activeModel=hasImg ? AI_VISION_MODEL : AI_CHAT_MODEL;
-    const userContent=hasImg
-      ? [{type:'image_url',image_url:{url:_aiImageBase64}},{type:'text',text:textInp||'Mahsulot rasmini tahlil qil va dizayn briefi tuz'}]
+    const hasImgs=_aiImages.length>0;
+    const activeModel=hasImgs ? AI_VISION_MODEL : AI_CHAT_MODEL;
+    const userContent=hasImgs
+      ? [
+          ..._aiImages.map(url=>({type:'image_url',image_url:{url}})),
+          {type:'text',text:textInp||'Mahsulot rasmlarini tahlil qil va dizayn briefi tuz'}
+        ]
       : textInp;
 
     const body={
@@ -367,7 +392,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
       temperature:0.5,
       max_tokens:4000
     };
-    if(!hasImg) body.response_format={type:'json_object'};
+    if(!hasImgs) body.response_format={type:'json_object'};
 
     const chatResp=await fetch(AI_CHAT_URL,{
       method:'POST',

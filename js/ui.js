@@ -566,7 +566,10 @@ function deleteComment(pid,idx){
 }
 
 // ═══════════════ MODALLAR ═══════════════
-function closeModal(){ document.getElementById('modal').style.display='none'; }
+function closeModal(){
+  document.getElementById('modal').style.display='none';
+  document.removeEventListener('paste',_aiPasteHandler);
+}
 
 function openDesignerModal(id=null){
   const d=id?designers.find(x=>x.id===id):null;
