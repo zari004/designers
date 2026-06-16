@@ -336,11 +336,11 @@ function _aiWebSpeechCleanup(showError){
 // ── OPENROUTER ORQALI TAHLIL ──
 async function aiProcess(){
   const textInp=(byId('ai-text-inp')?.value||'').trim();
-  if(!textInp){ toast("Avval ovoz yozing yoki matn kiriting"); return; }
+  if(!textInp && !_aiImages.length){ toast("Avval ovoz yozing, matn kiriting yoki rasm biriktiring"); return; }
 
   const res=byId('ai-result'); if(!res) return;
   res.style.display='block';
-  res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Tahlil qilinmoqda…</div></div>`;
+  res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">${_aiImages.length?'Rasmlar tahlil qilinmoqda… (1/2)':'Tahlil qilinmoqda…'}</div></div>`;
 
   try{
     const today=new Date().toISOString().slice(0,10);
@@ -377,30 +377,53 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
     const key=getAiKey();
     if(!key) throw new Error("Groq API kaliti yo'q — Sozlamalar → AI Yordamchi");
 
-    const hasImgs=_aiImages.length>0;
-    const activeModel=hasImgs ? AI_VISION_MODEL : AI_CHAT_MODEL;
-    const userContent=hasImgs
-      ? [
-          ..._aiImages.map(url=>({type:'image_url',image_url:{url}})),
-          {type:'text',text:textInp||'Mahsulot rasmlarini tahlil qil va dizayn briefi tuz'}
-        ]
-      : textInp;
+    // 2-BOSQICHLI PIPELINE: Vision → Text
+    let productInfo='';
+    if(_aiImages.length>0){
+      // 1-bosqich: rasmlardan mahsulot ma'lumotlarini qisqa ol
+      res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Rasmlar tahlil qilinmoqda… (1/2)</div></div>`;
+      const visionResp=await fetch(AI_CHAT_URL,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+        body:JSON.stringify({
+          model:AI_VISION_MODEL,
+          messages:[{
+            role:'user',
+            content:[
+              ..._aiImages.map(url=>({type:'image_url',image_url:{url}})),
+              {type:'text',text:'Bu mahsulot rasmlaridan quyidagilarni aniqla va qisqacha yoz (JSON emas, oddiy matn):\n- Mahsulot nomi va brend\n- Qadoq ranglari va vizual uslub\n- Qadoqdagi asosiy matnlar va xususiyatlar\n- Mahsulot turi va kategoriyasi\n- Ko\'zga tashlanadigan boshqa ma\'lumotlar'}
+            ]
+          }],
+          temperature:0.3,
+          max_tokens:800
+        })
+      });
+      if(visionResp.ok){
+        const vd=await visionResp.json();
+        productInfo=vd.choices?.[0]?.message?.content||'';
+      }
+      res.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted)"><div class="ai-loader"></div><div style="margin-top:8px;font-size:13px">Dizayn briefi yaratilmoqda… (2/2)</div></div>`;
+    }
 
-    const body={
-      model:activeModel,
-      messages:[
-        {role:'system',content:systemPrompt},
-        {role:'user',content:userContent}
-      ],
-      temperature:0.5,
-      max_tokens:4000,
-      response_format:{type:'json_object'}
-    };
+    // 2-bosqich: LLaMA 70B bilan to'liq tz yarat
+    const finalUserText=[
+      productInfo?`RASMLARDAN OLINGAN MAHSULOT MA'LUMOTLARI:\n${productInfo}`:'',
+      textInp?`FOYDALANUVCHI TALABI:\n${textInp}`:''
+    ].filter(Boolean).join('\n\n') || 'Dizayn briefi yarat';
 
     const chatResp=await fetch(AI_CHAT_URL,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-      body:JSON.stringify(body)
+      body:JSON.stringify({
+        model:AI_CHAT_MODEL,
+        messages:[
+          {role:'system',content:systemPrompt},
+          {role:'user',content:finalUserText}
+        ],
+        temperature:0.5,
+        max_tokens:4000,
+        response_format:{type:'json_object'}
+      })
     });
     if(!chatResp.ok){
       const errText=await chatResp.text().catch(()=>'');
