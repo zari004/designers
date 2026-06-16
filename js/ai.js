@@ -6,7 +6,7 @@
 
 const AI_KEY_STORE   = 'exon_gemini_key';
 const AI_INSTR_STORE = 'exon_ai_instructions';
-const AI_CHAT_MODEL  = 'gemini-1.5-flash';
+const AI_CHAT_MODEL  = 'gemini-2.0-flash';
 
 function getAiKey(){ return localStorage.getItem(AI_KEY_STORE)||''; }
 function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
@@ -293,14 +293,18 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
 
     const key=getAiKey();
     if(!key) throw new Error("Gemini API kaliti yo'q — Sozlamalar → AI Yordamchi");
-    const apiUrl=`https://generativelanguage.googleapis.com/v1beta/models/${AI_CHAT_MODEL}:generateContent`;
+    const apiUrl='https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
     const chatResp=await fetch(apiUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
       body:JSON.stringify({
-        system_instruction:{parts:[{text:systemPrompt}]},
-        contents:[{role:'user',parts:[{text:textInp}]}],
-        generationConfig:{temperature:0.5,maxOutputTokens:3000}
+        model:AI_CHAT_MODEL,
+        messages:[
+          {role:'system',content:systemPrompt},
+          {role:'user',content:textInp}
+        ],
+        temperature:0.5,
+        max_tokens:3000
       })
     });
     if(!chatResp.ok){
@@ -310,7 +314,7 @@ MAJBURIY JAVOB FORMATI — faqat shu JSON, boshqa hech narsa yozma:
       throw new Error(errMsg||errText||`HTTP ${chatResp.status}`);
     }
     const chatData=await chatResp.json();
-    const raw=chatData.candidates?.[0]?.content?.parts?.[0]?.text||'';
+    const raw=chatData.choices?.[0]?.message?.content||'';
     if(!raw) throw new Error("AI bo'sh javob qaytardi");
 
     let parsed;
