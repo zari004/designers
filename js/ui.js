@@ -1033,7 +1033,13 @@ function notifClick(nid){
   localStorage.setItem('exon_notif_read',JSON.stringify(saved));
   document.getElementById('notif-panel').classList.remove('open');
   const n=notifications.find(x=>x.id===nid);
-  if(n?.projId) openProjectPeek(n.projId);
+  if(!n) return;
+  if(n.type==='review'){
+    setProjFilter('review');
+    showPanel('projects');
+  } else if(n.projId){
+    openProjectPeek(n.projId);
+  }
 }
 
 function toggleNotifPanel(){

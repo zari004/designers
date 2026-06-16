@@ -259,10 +259,10 @@
       <div class="page-sub">Art direktor paneli · exon-designers.uz</div>
     </div>
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-val" id="st-active" style="color:var(--success)">0</div><div class="stat-label">Faol dizayner</div></div>
-      <div class="stat-card"><div class="stat-val" id="st-total">0</div><div class="stat-label">Jami dizayner</div></div>
-      <div class="stat-card"><div class="stat-val" id="st-wip" style="color:var(--accent2)">0</div><div class="stat-label">Jarayondagi loyiha</div></div>
-      <div class="stat-card"><div class="stat-val" id="st-budget" style="color:var(--accent-text)">0</div><div class="stat-label">Jami to'lov (so'm)</div></div>
+      <div class="stat-card" style="cursor:pointer" onclick="showPanel('designers')" title="Faol dizaynerlar ro'yxati"><div class="stat-val" id="st-active" style="color:var(--success)">0</div><div class="stat-label">Faol dizayner</div></div>
+      <div class="stat-card" style="cursor:pointer" onclick="showPanel('designers')" title="Barcha dizaynerlar"><div class="stat-val" id="st-total">0</div><div class="stat-label">Jami dizayner</div></div>
+      <div class="stat-card" style="cursor:pointer" onclick="setProjFilter('wip');showPanel('projects')" title="Jarayondagi loyihalar"><div class="stat-val" id="st-wip" style="color:var(--accent2)">0</div><div class="stat-label">Jarayondagi loyiha</div></div>
+      <div class="stat-card" style="cursor:pointer" onclick="showPanel('payments')" title="To'lovlar hisobi"><div class="stat-val" id="st-budget" style="color:var(--accent-text)">0</div><div class="stat-label">Jami to'lov (so'm)</div></div>
     </div>
     <div id="dash-alerts"></div>
     <div class="dash-grid">
