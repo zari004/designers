@@ -467,41 +467,6 @@
             <button class="btn btn-ghost btn-sm" onclick="openRouterKeyClear()">Kalitni o'chirish</button>
           </div>
 
-          <!-- Groq (ixtiyoriy — faqat ovoz STT fallback uchun) -->
-          <div style="border-top:1px solid var(--border);margin:14px 0 0;padding-top:14px">
-            <div class="form-group">
-              <label class="form-label">Groq API kaliti <small style="color:var(--muted);font-weight:400">(ixtiyoriy — ovoz STT uchun)</small></label>
-              <input class="form-input" id="ai-key-inp" type="password" placeholder="gsk_..." oninput="aiKeyAutoSave(this.value)"/>
-              <div class="form-hint" id="ai-key-hint">Chrome/Edge da kerak emas — brauzer o'zi taniydi</div>
-            </div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-ghost btn-sm" onclick="aiClearKey()">O'chirish</button>
-            </div>
-          </div>
-
-          <!-- Google Cloud STT (ixtiyoriy — Chrome bo'lmagan brauzerlar uchun) -->
-          <div style="border-top:1px solid var(--border);margin:14px 0 0;padding-top:14px">
-            <div style="margin-bottom:8px">
-              <label class="form-label" style="margin:0">
-                Google Cloud STT kaliti
-                <small style="color:var(--muted);font-weight:400;margin-left:4px">(ixtiyoriy — faqat Firefox/Safari uchun)</small>
-              </label>
-            </div>
-            <div class="settings-note" style="margin-bottom:10px">
-              <strong>Chrome/Edge brauzerda</strong> ovoz avtomatik bepul taniladi — bu kalit kerak emas.<br/>
-              Faqat <strong>Firefox yoki Safari</strong> da ishlatadigan bo'lsangiz kiriting:<br/>
-              <strong>1.</strong> <a href="https://console.cloud.google.com/apis/library/speech.googleapis.com" target="_blank" rel="noopener">Google Cloud Console</a> → Speech-to-Text APIni yoqing<br/>
-              <strong>2.</strong> <em>Credentials → Create API Key</em> → kalitni kiriting
-            </div>
-            <div class="form-group">
-              <input class="form-input" id="ai-google-key-inp" type="password" placeholder="AIzaSy..." oninput="googleSttKeyAutoSave(this.value)"/>
-              <div class="form-hint" id="ai-google-key-hint">Kiritilmagan bo'lsa brauzerning o'zi taniydi (Chrome/Edge)</div>
-            </div>
-            <div style="display:flex;gap:8px;margin-top:6px">
-              <button class="btn btn-ghost btn-sm" onclick="googleSttKeyClear()">Kalitni o'chirish</button>
-            </div>
-          </div>
-
           <div style="border-top:1px solid var(--border);margin:16px 0 0;padding-top:16px">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
               <label class="form-label" style="margin:0">AI qoidalari <small style="color:var(--muted);font-weight:400">(o'qitish dasturi)</small></label>
