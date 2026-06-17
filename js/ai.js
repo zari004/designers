@@ -552,3 +552,244 @@ function aiApply(){
     setTimeout(()=>aiApply(), 400);
   }
 }
+
+// ═══════════════════════════════════════════════
+// XUSUSIY AI YORDAMCHI — chat panel
+// ═══════════════════════════════════════════════
+
+let _aiChatHistory=[];
+let _aiChatReady=false;
+
+function _aiCtx(){
+  const dList=designers.map(d=>`ID:${d.id} "${d.name}" (${d.role}, ${d.category} kat., ${d.status})`).join('\n');
+  const pList=[...projects].filter(p=>p.status!=='deleted').sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,30).map(p=>{
+    const d=designers.find(x=>x.id===p.designerId);
+    return `ID:${p.id} "${p.title}" dizayner:"${d?.name||'?'}"(ID:${p.designerId}) holat:${p.status}${p.deadline?' muddat:'+p.deadline:''} narx:${p.units}x${p.pricePerUnit}`;
+  }).join('\n');
+  const today=new Date().toISOString().slice(0,10);
+  const cats=typeof CAT_INFO!=='undefined'?Object.entries(CAT_INFO).map(([k,v])=>`${k}:${v.label},${v.priceRange[0]}-${v.priceRange[1]}`).join('; '):'';
+  return `Bugun: ${today}\n\nDIZAYNERLAR:\n${dList||'(yo\'q)'}\n\nLOYIHALAR (so'nggi 30):\n${pList||'(yo\'q)'}\n\nKATEGORIYALAR: ${cats}`;
+}
+
+function _aiChatSysPrompt(){
+  return `Sen EXON loyiha boshqaruv tizimining AI yordamchisisan. Art direktor seni ishlatadi. O'zbek tilida javob ber.
+
+${_aiCtx()}
+
+SEN QILA OLADIGAN AMALLAR (actions massivida qaytarasan):
+
+1. create_project — yangi loyiha yaratish
+   params: {title, designerId(raqam), description(HTML tavsif/TZ), deadline(YYYY-MM-DD), priority(low/medium/high), units(raqam), pricePerUnit(raqam)}
+   Agar TZ yozish kerak bo'lsa, description ga batafsil professional texnik topshiriq yoz (h2, h3, p, ul, ol, table, strong).
+
+2. update_project — loyihani yangilash
+   params: {id(raqam), status(wip/review/done), deadline, title, designerId, priority}
+
+3. delete_project — chiqitdonga tashlash
+   params: {id(raqam)}
+
+4. create_designer — yangi dizayner qo'shish
+   params: {name, role, category(A/B/C), phone, telegram, cardNumber, skills(massiv)}
+
+5. send_to_notion — Notionga yuborish
+   params: {id(raqam)}
+
+6. open_project — loyihani peek panelda ochish
+   params: {id(raqam)}
+
+7. navigate — sahifaga o'tish
+   params: {panel} (dashboard/designers/projects/payments/reports/settings)
+
+JAVOB FORMATI — har doim faqat JSON:
+{"reply":"Foydalanuvchiga o'zbek tilida javob","actions":[{"name":"action_name","params":{...}}]}
+
+Agar hech qanday amal kerak bo'lmasa: actions bo'sh massiv [].
+Bir necha amal kerak bo'lsa, hammasini actions ga qo'sh.
+
+QOIDALAR:
+- Har doim o'zbek tilida javob ber
+- Dizayner/loyiha nomini izlab, to'g'ri ID bilan amal qil
+- Deadline formati YYYY-MM-DD
+- Agar ma'lumot yetmasa (qaysi dizayner, qanday loyiha), so'ra — bajarma
+- Faqat JSON javob ber, boshqa hech narsa yo'q`;
+}
+
+function _ensureAiChat(){
+  if(_aiChatReady) return;
+  _aiChatReady=true;
+  const fab=document.createElement('button');
+  fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi';
+  fab.innerHTML='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>';
+  fab.onclick=toggleAiChat;
+  document.body.appendChild(fab);
+
+  const p=document.createElement('div');
+  p.id='ai-chat-panel';p.className='ai-chat-panel';
+  p.innerHTML=`
+    <div class="ai-chat-head">
+      <div class="ai-chat-head-title">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        EXON AI Yordamchi
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="ai-chat-head-btn" onclick="_aiChatClear()" title="Tarixni tozalash">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M5.5 4V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1"/><path d="M3.5 4l.7 9a1 1 0 0 0 1 1h5.6a1 1 0 0 0 1-1l.7-9"/></svg>
+        </button>
+        <button class="ai-chat-head-btn" onclick="toggleAiChat()">✕</button>
+      </div>
+    </div>
+    <div class="ai-chat-msgs" id="ai-chat-msgs">
+      <div class="ai-chat-msg ai-msg"><div class="ai-chat-bubble">Salom! Men EXON AI yordamchiman.<br>Loyiha yaratish, TZ yozish, dizayner qo'shish, Notionga yuborish — ixtiyoringizda. Nima qilishim kerak?</div></div>
+    </div>
+    <div class="ai-chat-footer">
+      <input class="ai-chat-inp" id="ai-chat-inp" placeholder="Buyruq yoki savol yozing…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiChat()}"/>
+      <button class="ai-chat-send" onclick="sendAiChat()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M14.7 1.3a1 1 0 0 0-1.1-.2L1.4 6.5a1 1 0 0 0 .1 1.8l4.3 1.7 1.7 4.3a1 1 0 0 0 1.8.1l5.4-12.2a1 1 0 0 0-.2-1z"/></svg>
+      </button>
+    </div>`;
+  document.body.appendChild(p);
+}
+
+function toggleAiChat(){
+  _ensureAiChat();
+  const panel=document.getElementById('ai-chat-panel');
+  const fab=document.getElementById('ai-chat-fab');
+  const open=panel.classList.toggle('open');
+  if(fab) fab.classList.toggle('hide',open);
+  if(open) setTimeout(()=>document.getElementById('ai-chat-inp')?.focus(),200);
+}
+
+function _aiChatClear(){
+  _aiChatHistory=[];
+  const m=document.getElementById('ai-chat-msgs');
+  if(m) m.innerHTML='<div class="ai-chat-msg ai-msg"><div class="ai-chat-bubble">Tarix tozalandi. Yangi savol yoki buyruq bering!</div></div>';
+}
+
+function _chatBubble(role,html,id){
+  const m=document.getElementById('ai-chat-msgs');if(!m) return;
+  const d=document.createElement('div');
+  d.className='ai-chat-msg '+(role==='user'?'user-msg':'ai-msg');
+  if(id) d.id=id;
+  d.innerHTML='<div class="ai-chat-bubble">'+html+'</div>';
+  m.appendChild(d);m.scrollTop=m.scrollHeight;
+}
+
+function _replaceThink(html){
+  const el=document.getElementById('ai-chat-think');
+  if(el){el.querySelector('.ai-chat-bubble').innerHTML=html;el.removeAttribute('id');
+    document.getElementById('ai-chat-msgs').scrollTop=document.getElementById('ai-chat-msgs').scrollHeight;}
+}
+
+async function sendAiChat(){
+  const inp=document.getElementById('ai-chat-inp');
+  const text=(inp?.value||'').trim();if(!text) return;
+  inp.value='';
+  _chatBubble('user',esc(text));
+  _chatBubble('ai','<span class="ai-typing">Javob tayyorlanmoqda</span>','ai-chat-think');
+
+  const key=getAiKey();
+  if(!key){_replaceThink('AI kaliti sozlanmagan. <b>Sozlamalar → Groq API kaliti</b> ni kiriting.');return;}
+
+  _aiChatHistory.push({role:'user',content:text});
+
+  try{
+    const res=await fetch(AI_CHAT_URL,{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+key,'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:AI_CHAT_MODEL,
+        messages:[{role:'system',content:_aiChatSysPrompt()},..._aiChatHistory.slice(-16)],
+        response_format:{type:'json_object'},
+        max_tokens:4000,
+        temperature:0.3,
+      })
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.error?.message||'HTTP '+res.status);}
+    const data=await res.json();
+    const raw=data.choices?.[0]?.message?.content||'';
+    let parsed;
+    try{parsed=JSON.parse(raw);}catch{parsed={reply:raw,actions:[]};}
+    _aiChatHistory.push({role:'assistant',content:raw});
+
+    const results=[];
+    if(parsed.actions?.length){for(const act of parsed.actions){const r=_aiExec(act);if(r)results.push(r);}}
+
+    let html=esc(parsed.reply||'Tayyor.').replace(/\n/g,'<br>');
+    if(results.length) html+='<div class="ai-chat-actions">'+results.map(r=>
+      '<span class="ai-act-tag '+(r.ok?'ok':'err')+'">'+esc(r.label)+'</span>').join('')+'</div>';
+    _replaceThink(html);
+  }catch(e){_replaceThink('<span style="color:var(--error)">Xatolik: '+esc(e.message)+'</span>');}
+}
+
+function _aiExec(act){
+  const p=act.params||{};
+  try{switch(act.name){
+    case 'create_project':{
+      const did=Number(p.designerId)||designers[0]?.id;
+      if(!designers.find(d=>d.id===did)) return{ok:false,label:'Dizayner topilmadi'};
+      const cat=designers.find(d=>d.id===did)?.category||'B';
+      const ci=typeof CAT_INFO!=='undefined'?(CAT_INFO[cat]||Object.values(CAT_INFO)[0]):null;
+      const obj={title:p.title||'Yangi loyiha',designerId:did,
+        descHtml:typeof sanitizeHtml==='function'?sanitizeHtml(p.description||''):(p.description||''),
+        status:'wip',priority:p.priority||'medium',category:cat,
+        units:Number(p.units)||1,pricePerUnit:Number(p.pricePerUnit)||(ci?ci.priceRange[0]:15000),
+        deadline:p.deadline||null,date:new Date().toISOString().slice(0,10),
+        tags:[],files:'',varaqs:{},comments:[],id:nextPId++};
+      projects.push(obj);persist();rerenderActive();
+      toast('Loyiha yaratildi: '+obj.title);
+      return{ok:true,label:'✓ '+obj.title};}
+
+    case 'update_project':{
+      const id=Number(p.id),pi=projects.findIndex(x=>x.id===id);
+      if(pi<0) return{ok:false,label:'Loyiha topilmadi (ID:'+p.id+')'};
+      if(p.status) projects[pi].status=p.status;
+      if(p.deadline) projects[pi].deadline=p.deadline;
+      if(p.title) projects[pi].title=p.title;
+      if(p.designerId) projects[pi].designerId=Number(p.designerId);
+      if(p.priority) projects[pi].priority=p.priority;
+      if(p.status==='done'&&!projects[pi].doneDate) projects[pi].doneDate=new Date().toISOString().slice(0,10);
+      persist();rerenderActive();
+      toast('Yangilandi: '+projects[pi].title);
+      return{ok:true,label:'✓ '+projects[pi].title+' yangilandi'};}
+
+    case 'delete_project':{
+      const id=Number(p.id),proj=projects.find(x=>x.id===id);
+      if(!proj) return{ok:false,label:'Loyiha topilmadi'};
+      if(typeof trashProject==='function') trashProject(id);
+      else projects=projects.filter(x=>x.id!==id);
+      persist();rerenderActive();
+      toast("O'chirildi: "+proj.title);
+      return{ok:true,label:'✓ '+proj.title+" o'chirildi"};}
+
+    case 'create_designer':{
+      const d={id:nextDId++,name:p.name||'Yangi dizayner',role:p.role||'Dizayner',
+        category:p.category||'B',phone:p.phone||'',telegram:p.telegram||'',
+        cardNumber:p.cardNumber||'',status:'active',skills:p.skills||[],
+        photo:'',joinedAt:new Date().toISOString().slice(0,10)};
+      designers.push(d);persist();rerenderActive();
+      toast("Dizayner qo'shildi: "+d.name);
+      return{ok:true,label:'✓ '+d.name+" qo'shildi"};}
+
+    case 'send_to_notion':{
+      const id=Number(p.id),proj=projects.find(x=>x.id===id);
+      if(!proj) return{ok:false,label:'Loyiha topilmadi'};
+      typeof openProjectPeek==='function'&&openProjectPeek(id);
+      setTimeout(()=>{typeof sendProjectToNotion==='function'&&sendProjectToNotion();},700);
+      return{ok:true,label:'↗ '+proj.title+' Notionga yuborilmoqda…'};}
+
+    case 'open_project':{
+      typeof openProjectPeek==='function'&&openProjectPeek(Number(p.id));
+      return{ok:true,label:'✓ Loyiha ochildi'};}
+
+    case 'navigate':{
+      typeof showPanel==='function'&&showPanel(p.panel||'dashboard');
+      return{ok:true,label:'✓ '+(p.panel||'dashboard')};}
+
+    default:return null;
+  }}catch(e){return{ok:false,label:e.message};}
+}
+
+window.addEventListener('exon-ready',()=>{
+  if(new URLSearchParams(location.search).get('share')) return;
+  _ensureAiChat();
+});
