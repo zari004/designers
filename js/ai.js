@@ -685,7 +685,7 @@ function _ensureAiChat(){
       _canDrag=true;
       fab.style.transition='none';fab.style.cursor='grabbing';
       fab.classList.add('drag-ready');
-    },500);
+    },1000);
   });
 
   fab.addEventListener('pointermove',e=>{
