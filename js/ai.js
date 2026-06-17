@@ -672,7 +672,42 @@ function _ensureAiChat(){
 
   const fab=document.createElement('button');
   fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi';
-  fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line class="ai-eye" x1="8" y1="11" x2="12" y2="11"/><line class="ai-eye ai-eye-r" x1="16" y1="11" x2="20" y2="11"/><path class="ai-m ai-m1" d="M9 19Q14 23 19 19"/><line class="ai-m ai-m2" x1="10" y1="20" x2="18" y2="20"/><path class="ai-m ai-m3" d="M9 21Q14 18 19 21"/></svg>`;
+  fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 100 100" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <g class="nf nf-neutral">
+      <path d="M20 42 Q31 31 42 42"/>
+      <path d="M58 42 Q69 31 80 42"/>
+      <g class="nf-eyes-look"><g class="nf-eyes-blink">
+        <path d="M22 55 L42 53"/>
+        <path d="M58 53 L78 55"/>
+        <circle cx="29" cy="60" r="4" fill="#fff" stroke="none"/>
+        <circle cx="65" cy="60" r="4" fill="#fff" stroke="none"/>
+      </g></g>
+      <path d="M44 75 Q50 69 56 75"/>
+    </g>
+    <g class="nf nf-happy">
+      <path d="M20 38 Q31 30 42 38"/>
+      <path d="M58 38 Q69 30 80 38"/>
+      <path d="M22 56 Q31 47 40 56"/>
+      <path d="M60 56 Q69 47 78 56"/>
+      <path d="M36 66 Q50 82 64 66"/>
+    </g>
+    <g class="nf nf-angry">
+      <path d="M20 36 L40 47"/>
+      <path d="M60 47 L80 36"/>
+      <path d="M24 57 L40 57"/>
+      <path d="M60 57 L76 57"/>
+      <circle cx="32" cy="57" r="3.5" fill="#fff" stroke="none"/>
+      <circle cx="68" cy="57" r="3.5" fill="#fff" stroke="none"/>
+      <path d="M40 77 Q50 71 60 77"/>
+    </g>
+    <g class="nf nf-sad">
+      <path d="M20 43 Q30 37 40 39"/>
+      <path d="M60 39 Q70 37 80 43"/>
+      <circle cx="31" cy="55" r="5" fill="#fff" stroke="none"/>
+      <circle cx="69" cy="55" r="5" fill="#fff" stroke="none"/>
+      <path d="M40 79 Q50 68 60 79"/>
+    </g>
+  </svg>`;
 
   let _holdTimer=0,_canDrag=false,_dragging=false,_moved=false,_pid=0;
   let _sx,_sy,_fabL,_fabT;

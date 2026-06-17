@@ -617,16 +617,19 @@ select.prop-input{cursor:pointer}
 .ai-fab-trash{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(.7);z-index:899;width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.15);border:2px dashed var(--error,#ef4444);color:var(--error,#ef4444);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:transform .25s,opacity .2s,background .15s}
 .ai-fab-trash.visible{opacity:1;transform:translateX(-50%) scale(1)}
 .ai-fab-trash.over{background:rgba(239,68,68,.35);transform:translateX(-50%) scale(1.15)}
-.ai-eye{transform-box:fill-box;transform-origin:center;animation:aiBlink 4s ease-in-out infinite}
-.ai-eye-r{animation-delay:.1s}
-@keyframes aiBlink{0%,88%,100%{transform:scaleY(1)}92%,96%{transform:scaleY(0)}}
-.ai-m{opacity:0}
-.ai-m1{animation:aiSmile 14s ease infinite}
-.ai-m2{animation:aiBored 14s ease infinite}
-.ai-m3{animation:aiSad 14s ease infinite}
-@keyframes aiSmile{0%,3%{opacity:0}6%,45%{opacity:1}48%,100%{opacity:0}}
-@keyframes aiBored{0%,48%{opacity:0}51%,72%{opacity:1}75%,100%{opacity:0}}
-@keyframes aiSad{0%,75%{opacity:0}78%,94%{opacity:1}97%,100%{opacity:0}}
+.nf{opacity:0}
+.nf-neutral{animation:nfNeutral 18s infinite}
+.nf-happy{animation:nfHappy 18s infinite}
+.nf-angry{animation:nfAngry 18s infinite}
+.nf-sad{animation:nfSad 18s infinite}
+.nf-eyes-look{transform-box:fill-box;transform-origin:center;animation:nfLook 18s infinite}
+.nf-eyes-blink{transform-box:fill-box;transform-origin:center;animation:nfBlink 3.6s ease-in-out infinite}
+@keyframes nfNeutral{0%,36%{opacity:1}39%,94%{opacity:0}97%,100%{opacity:1}}
+@keyframes nfHappy{0%,37%{opacity:0}40%,55%{opacity:1}58%,100%{opacity:0}}
+@keyframes nfAngry{0%,56%{opacity:0}59%,73%{opacity:1}76%,100%{opacity:0}}
+@keyframes nfSad{0%,74%{opacity:0}77%,93%{opacity:1}96%,100%{opacity:0}}
+@keyframes nfBlink{0%,90%,100%{transform:scaleY(1)}94%,96%{transform:scaleY(.08)}}
+@keyframes nfLook{0%,8%{transform:translateX(0)}12%,18%{transform:translateX(7px)}22%,28%{transform:translateX(-7px)}32%,36%{transform:translateX(0)}100%{transform:translateX(0)}}
 .ai-chat-panel{position:fixed;bottom:24px;right:24px;z-index:950;width:400px;max-width:calc(100vw - 16px);height:560px;max-height:calc(100vh - 48px);background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;transform:translateY(20px) scale(.95);opacity:0;pointer-events:none;transition:transform .25s ease,opacity .2s}
 .ai-chat-panel.open{transform:none;opacity:1;pointer-events:auto}
 .ai-chat-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--success);color:#fff;flex-shrink:0;cursor:grab;touch-action:none;user-select:none}
