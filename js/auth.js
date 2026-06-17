@@ -7,6 +7,13 @@ const PERM_LABELS = {
   reports:'Hisobotlar', users:'Foydalanuvchilar', settings:'Sozlamalar'
 };
 
+// Default role definitions
+let ROLE_DEFS = JSON.parse(localStorage.getItem('exon_role_defs') || JSON.stringify({
+  admin:   { label:'Admin', perms:{designers:true, projects:true, payments:true, reports:true, users:true, settings:true} },
+  manager: { label:'Menejer', perms:{designers:true, projects:true, payments:true, reports:true, users:false, settings:false} },
+  viewer:  { label:'Ko\'ruvchi', perms:{designers:true, projects:true, payments:false, reports:true, users:false, settings:false} }
+}));
+
 let _currentUser = null; // { uid, email, displayName, role, permissions }
 let _fbUsersCache = [];  // Firestore users ro'yxati (admin panel uchun)
 
@@ -35,9 +42,7 @@ function setupAuthListener(onLogin, onLogout){
       if(!profile){
         // Firestore profili yo'q — birinchi foydalanuvchimikan?
         const role = hasAdmin ? 'viewer' : 'admin';
-        const perms = role === 'admin'
-          ? { designers:true, projects:true, payments:true, reports:true, users:true, settings:true }
-          : { designers:true, projects:true, payments:false, reports:true, users:false, settings:false };
+        const perms = ROLE_DEFS[role]?.perms || { designers:true, projects:true, payments:false, reports:true, users:false, settings:false };
         profile = {
           uid: fbUser.uid, email: fbUser.email,
           displayName: fbUser.displayName || fbUser.email.split('@')[0],
@@ -48,7 +53,7 @@ function setupAuthListener(onLogin, onLogout){
       } else if(!hasAdmin && profile.role !== 'admin'){
         // Tizimda admin yo'q — bu foydalanuvchini admin qil
         profile.role = 'admin';
-        profile.permissions = { designers:true, projects:true, payments:true, reports:true, users:true, settings:true };
+        profile.permissions = ROLE_DEFS['admin']?.perms || { designers:true, projects:true, payments:true, reports:true, users:true, settings:true };
         await saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions });
       }
       _currentUser = profile;
@@ -235,4 +240,47 @@ async function fbDeleteUser(uid, name){
     toast("Foydalanuvchi o'chirildi");
     renderFbUsersAdmin();
   }catch(e){ toast("Xato: " + e.message); }
+}
+
+// ── ROL BOSHQARISH ──
+function saveRoleDefs(){
+  localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
+}
+
+function updateRolePerms(roleName, perms){
+  if(!ROLE_DEFS[roleName]) return;
+  ROLE_DEFS[roleName].perms = perms;
+  saveRoleDefs();
+  // Hozirgi foydalanuvchining roli o'zgarganda, UI yangilansin
+  if(_currentUser?.role === roleName){
+    _currentUser.permissions = perms;
+    if(typeof rerenderActive==='function') rerenderActive();
+  }
+}
+
+function toggleRolePerm(roleName, permKey, checked){
+  if(!ROLE_DEFS[roleName]) return;
+  ROLE_DEFS[roleName].perms[permKey] = checked;
+  updateRolePerms(roleName, ROLE_DEFS[roleName].perms);
+  toast(`${esc(PERM_LABELS[permKey])} — ${checked?'Ruxsat berildi':'Ruxsat o\'chirildi'}`);
+}
+
+function renderRoleManager(){
+  const el = document.getElementById('role-mgr-content');
+  if(!el) return;
+  let html = '';
+  for(const [rName, rDef] of Object.entries(ROLE_DEFS)){
+    html += `<div class="role-item" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
+      <div style="font-weight:600;margin-bottom:8px">${esc(rDef.label)} (${esc(rName)})</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:8px">`;
+    for(const [pKey, pLabel] of Object.entries(PERM_LABELS)){
+      const checked = rDef.perms[pKey] ? 'checked' : '';
+      html += `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+        <input type="checkbox" ${checked} onchange="toggleRolePerm('${rName}','${pKey}',this.checked)"/>
+        ${esc(pLabel)}
+      </label>`;
+    }
+    html += `</div></div>`;
+  }
+  el.innerHTML = html;
 }

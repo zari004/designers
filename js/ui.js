@@ -921,6 +921,8 @@ function renderSettingsPage(){
   if(adminCard) adminCard.style.display='none'; // Firebase'da eski karta yo'q
 
   renderCatManager();
+  const cur = getCurrentUser();
+  if(cur?.role === 'admin' && typeof renderRoleManager === 'function') renderRoleManager();
   if(typeof loadAiSettings==='function') loadAiSettings();
 }
 

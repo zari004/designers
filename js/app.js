@@ -97,7 +97,21 @@ function goBackFromSettings(){
   showPanel(dest);
 }
 
+function updateNavVisibility(){
+  const u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
+  const perms = u?.permissions || {};
+  const permMap = {designers:'nav-designers', projects:'nav-projects', payments:'nav-payments', reports:'nav-reports', users:'nav-users', settings:'nav-settings'};
+  for(const [pKey, navId] of Object.entries(permMap)){
+    const nav = document.getElementById(navId);
+    if(nav) nav.style.display = (perms[pKey] || pKey === 'dashboard') ? '' : 'none';
+  }
+}
+
 function showPanel(name){
+  if(typeof hasPermission === 'function' && !hasPermission(name) && name !== 'detail' && name !== 'dashboard'){
+    toast(`"${name}" bo'limiga kirish ruxsati yo'q`);
+    return;
+  }
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelectorAll('.bnav-item').forEach(n=>n.classList.remove('active'));
@@ -248,6 +262,7 @@ function initApp(user){
   if(sba) sba.textContent=name.slice(0,2).toUpperCase();
 
   applyNavPermissions(user);
+  if(typeof updateNavVisibility === 'function') updateNavVisibility();
   updateCounts();
   renderDashboard();
   renderNotifPanel();
