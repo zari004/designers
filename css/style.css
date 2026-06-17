@@ -617,19 +617,16 @@ select.prop-input{cursor:pointer}
 .ai-fab-trash{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(.7);z-index:899;width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.15);border:2px dashed var(--error,#ef4444);color:var(--error,#ef4444);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:transform .25s,opacity .2s,background .15s}
 .ai-fab-trash.visible{opacity:1;transform:translateX(-50%) scale(1)}
 .ai-fab-trash.over{background:rgba(239,68,68,.35);transform:translateX(-50%) scale(1.15)}
-.nf{opacity:0}
-.nf-neutral{animation:nfNeutral 18s infinite}
-.nf-happy{animation:nfHappy 18s infinite}
-.nf-angry{animation:nfAngry 18s infinite}
-.nf-sad{animation:nfSad 18s infinite}
-.nf-eyes-look{transform-box:fill-box;transform-origin:center;animation:nfLook 18s infinite}
+.nf{opacity:0;transition:opacity .35s ease}
+.ai-fab-face .nf-neutral{opacity:1}
+.ai-fab-face.exp-happy .nf-neutral,.ai-fab-face.exp-angry .nf-neutral,.ai-fab-face.exp-sad .nf-neutral{opacity:0}
+.ai-fab-face.exp-happy .nf-happy{opacity:1}
+.ai-fab-face.exp-angry .nf-angry{opacity:1}
+.ai-fab-face.exp-sad .nf-sad{opacity:1}
+.nf-eyes-look{transform-box:fill-box;transform-origin:center;animation:nfLook 9s ease-in-out infinite}
 .nf-eyes-blink{transform-box:fill-box;transform-origin:center;animation:nfBlink 3.6s ease-in-out infinite}
-@keyframes nfNeutral{0%,36%{opacity:1}39%,94%{opacity:0}97%,100%{opacity:1}}
-@keyframes nfHappy{0%,37%{opacity:0}40%,55%{opacity:1}58%,100%{opacity:0}}
-@keyframes nfAngry{0%,56%{opacity:0}59%,73%{opacity:1}76%,100%{opacity:0}}
-@keyframes nfSad{0%,74%{opacity:0}77%,93%{opacity:1}96%,100%{opacity:0}}
 @keyframes nfBlink{0%,90%,100%{transform:scaleY(1)}94%,96%{transform:scaleY(.08)}}
-@keyframes nfLook{0%,8%{transform:translateX(0)}12%,18%{transform:translateX(7px)}22%,28%{transform:translateX(-7px)}32%,36%{transform:translateX(0)}100%{transform:translateX(0)}}
+@keyframes nfLook{0%,18%{transform:translateX(0)}26%,40%{transform:translateX(7px)}48%,62%{transform:translateX(-7px)}70%,100%{transform:translateX(0)}}
 .ai-chat-panel{position:fixed;bottom:24px;right:24px;z-index:950;width:400px;max-width:calc(100vw - 16px);height:560px;max-height:calc(100vh - 48px);background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.18);display:flex;flex-direction:column;overflow:hidden;transform:translateY(20px) scale(.95);opacity:0;pointer-events:none;transition:transform .25s ease,opacity .2s}
 .ai-chat-panel.open{transform:none;opacity:1;pointer-events:auto}
 .ai-chat-head{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--success);color:#fff;flex-shrink:0;cursor:grab;touch-action:none;user-select:none}

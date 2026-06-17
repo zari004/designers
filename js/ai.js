@@ -709,6 +709,17 @@ function _ensureAiChat(){
     </g>
   </svg>`;
 
+  const _face=fab.querySelector('.ai-fab-face');
+  (function _moodLoop(){
+    const wait=7000+Math.random()*11000; // 7–18s neutral oraliq
+    setTimeout(()=>{
+      const moods=['happy','angry','sad'];
+      const m=moods[Math.floor(Math.random()*moods.length)];
+      _face.classList.add('exp-'+m);
+      setTimeout(()=>{_face.classList.remove('exp-'+m);_moodLoop();},1600+Math.random()*1400);
+    },wait);
+  })();
+
   let _holdTimer=0,_canDrag=false,_dragging=false,_moved=false,_pid=0;
   let _sx,_sy,_fabL,_fabT;
 
