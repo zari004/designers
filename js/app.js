@@ -108,7 +108,8 @@ function updateNavVisibility(){
 }
 
 function showPanel(name){
-  if(typeof hasPermission === 'function' && !hasPermission(name) && name !== 'detail' && name !== 'dashboard'){
+  const freePanels = ['dashboard','detail','trash'];
+  if(!freePanels.includes(name) && typeof hasPermission === 'function' && typeof getCurrentUser === 'function' && getCurrentUser() && !hasPermission(name)){
     toast(`"${name}" bo'limiga kirish ruxsati yo'q`);
     return;
   }

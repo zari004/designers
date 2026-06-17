@@ -48,11 +48,14 @@ async function initFirebase(){
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     _auth = firebase.auth();
     _db   = firebase.firestore();
-    // Oflayn kesh (IndexedDB)
+    // Oflayn kesh (IndexedDB) — tez ishlamasligi uchun timeout
     try{
-      await _db.enablePersistence({ synchronizeTabs:true });
+      await Promise.race([
+        _db.enablePersistence({ synchronizeTabs:true }),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
+      ]);
     }catch(e){
-      if(e.code !== 'failed-precondition' && e.code !== 'unimplemented')
+      if(e.code !== 'failed-precondition' && e.code !== 'unimplemented' && e.message !== 'timeout')
         console.warn('Firebase persistence:', e);
     }
     _fbReady = true;
