@@ -653,7 +653,7 @@ function _ensureAiChat(){
   _aiChatReady=true;
   const fab=document.createElement('button');
   fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi';
-  fab.innerHTML='<span class="ai-fab-face">🤖</span>';
+  fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line class="ai-eye" x1="8" y1="11" x2="12" y2="11"/><line class="ai-eye ai-eye-r" x1="16" y1="11" x2="20" y2="11"/><path class="ai-m ai-m1" d="M9 19Q14 23 19 19"/><line class="ai-m ai-m2" x1="10" y1="20" x2="18" y2="20"/><path class="ai-m ai-m3" d="M9 21Q14 18 19 21"/></svg>`;
   fab.onclick=toggleAiChat;
   document.body.appendChild(fab);
 
