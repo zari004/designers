@@ -48,16 +48,10 @@ async function initFirebase(){
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     _auth = firebase.auth();
     _db   = firebase.firestore();
-    // Oflayn kesh (IndexedDB) — tez ishlamasligi uchun timeout
-    try{
-      await Promise.race([
-        _db.enablePersistence({ synchronizeTabs:true }),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
-      ]);
-    }catch(e){
-      if(e.code !== 'failed-precondition' && e.code !== 'unimplemented' && e.message !== 'timeout')
-        console.warn('Firebase persistence:', e);
-    }
+    // IndexedDB oflayn kesh (enablePersistence) BUTUNLAY olib tashlandi.
+    // Sabab: synchronizeTabs ba'zi brauzerlarda Firestore ulanishini
+    // butunlay qotirib qo'yadi (Auth ishlaydi, lekin .get() abadiy kutadi).
+    // Ilova oflayn keshni localStorage orqali o'zi saqlaydi — IndexedDB shart emas.
     _fbReady = true;
     return true;
   }catch(e){
