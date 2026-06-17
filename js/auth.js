@@ -47,23 +47,19 @@ function setupAuthListener(onLogin, onLogout){
   auth.onAuthStateChanged(async fbUser => {
     if(fbUser){
       setSyncStatus('load', "Profil yuklanmoqda...");
-      let profile = null;
+      const T = 5000;
+      let profile = null, hasAdmin = false;
       try {
-        profile = await _fbQueryWithTimeout(getFbUserProfile(fbUser.uid), 8000);
+        const [prof, adminSnap] = await Promise.all([
+          _fbQueryWithTimeout(getFbUserProfile(fbUser.uid), T).catch(() => null),
+          _fbQueryWithTimeout(
+            getDb()?.collection('users').where('role','==','admin').limit(1).get() || Promise.resolve(null), T
+          ).catch(() => null)
+        ]);
+        profile = prof;
+        hasAdmin = !!(adminSnap && adminSnap.size > 0);
       } catch(e) {
-        console.warn('Profil yuklash:', e.message);
-      }
-      let hasAdmin = false;
-      try {
-        const db = getDb();
-        if(db){
-          const adminSnap = await _fbQueryWithTimeout(
-            db.collection('users').where('role','==','admin').limit(1).get(), 8000
-          );
-          hasAdmin = !!(adminSnap && adminSnap.size > 0);
-        }
-      } catch(e) {
-        console.warn('Admin tekshirish:', e.message);
+        console.warn('Auth queries:', e.message);
       }
       if(!profile){
         const role = hasAdmin ? 'viewer' : 'admin';
@@ -74,17 +70,17 @@ function setupAuthListener(onLogin, onLogout){
           role, permissions: perms,
           createdAt: new Date().toISOString(),
         };
-        try { await _fbQueryWithTimeout(saveFbUserProfile(fbUser.uid, profile), 5000); } catch {}
+        saveFbUserProfile(fbUser.uid, profile).catch(() => {});
       } else if(!hasAdmin && profile.role !== 'admin'){
         profile.role = 'admin';
         profile.permissions = ROLE_DEFS['admin']?.perms || { designers:true, projects:true, payments:true, reports:true, users:true, settings:true };
-        try { await _fbQueryWithTimeout(saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions }), 5000); } catch {}
+        saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions }).catch(() => {});
       }
       _currentUser = profile;
-      if(profile.role === 'admin'){
-        try { _fbUsersCache = await _fbQueryWithTimeout(getAllFbUsers(), 8000); } catch { _fbUsersCache = []; }
-      }
       onLogin(profile);
+      if(profile.role === 'admin'){
+        getAllFbUsers().then(u => { _fbUsersCache = u; }).catch(() => {});
+      }
     } else {
       _currentUser = null;
       onLogout();

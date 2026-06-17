@@ -323,7 +323,7 @@ setTimeout(drawFavicon, 2500);
     try {
       ok = await Promise.race([
         initFirebase(),
-        new Promise(resolve => setTimeout(() => resolve(false), 10000))
+        new Promise(resolve => setTimeout(() => resolve(false), 6000))
       ]);
     } catch(e) {
       console.error('Firebase init xato:', e);

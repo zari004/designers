@@ -95,7 +95,7 @@ async function fbLoad(){
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('Serverga ulanib bo\'lmadi (timeout)')),10000))
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('Serverga ulanib bo\'lmadi (timeout)')),6000))
     ]);
     if(!snap.exists){
       if(designers.length || projects.length){
