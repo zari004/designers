@@ -1,6 +1,6 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v46';
+const CACHE_VER  = 'exon-v47';
 const SHELL_URLS = [
   '/',
   '/index.html',
