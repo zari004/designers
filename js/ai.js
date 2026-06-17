@@ -631,8 +631,13 @@ SEN QILA OLADIGAN AMALLAR (actions massivida qaytarasan):
 6. open_project — loyihani peek panelda ochish
    params: {id(raqam)}
 
-7. navigate — sahifaga o'tish
+7. navigate — sahifaga o'tish (foydalanuvchi "... bo'limiga o't", "... page siga olib bor" desa)
    params: {panel} (dashboard/designers/projects/payments/reports/settings)
+
+8. show_data — ma'lumotlarni to'liq jadval/hisobot ko'rinishida chatda ko'rsatish va yuklab olish uchun fayl tayyorlash
+   params: {type} (designers/projects/payments)
+   Foydalanuvchi "dizaynerlar ma'lumotini ko'rsat", "loyihalar ro'yxatini ber", "to'lovlarni fayl qilib ber" desa shuni ishlat.
+   Agar u "o'sha bo'limga o't" desa — navigate ishlat; "ma'lumotni ko'rsat/fayl qilib ber" desa — show_data ishlat.
 
 JAVOB FORMATI — har doim faqat JSON:
 {"reply":"Foydalanuvchiga o'zbek tilida javob","actions":[{"name":"action_name","params":{...}}]}
@@ -914,6 +919,51 @@ async function sendAiChat(){
   }catch(e){_replaceThink('<span style="color:var(--error)">Xatolik: '+esc(e.message)+'</span>');}
 }
 
+function _aiDataReport(type){
+  const ST={wip:'Jarayonda',review:"Ko'rib chiqilmoqda",done:'Bajarildi'};
+  const cE=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
+  if(type==='designers'){
+    const rows=designers.map(d=>{
+      const pc=projects.filter(p=>p.designerId===d.id&&p.status!=='deleted').length;
+      const earned=projects.filter(p=>p.designerId===d.id&&p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+      return{name:d.name,role:d.role||'',cat:d.category||'',phone:d.phone||'',card:d.cardNumber||'',tg:d.telegram||'',pc,earned};
+    });
+    const html='<div class="ai-data-tbl"><table><thead><tr><th>Ism</th><th>Lavozim</th><th>Kat</th><th>Tel</th><th>Karta</th><th>Loyiha</th><th>Topildi</th></tr></thead><tbody>'+
+      rows.map(r=>`<tr><td>${esc(r.name)}</td><td>${esc(r.role)}</td><td>${esc(r.cat)}</td><td>${esc(r.phone||'—')}</td><td>${esc(r.card||'—')}</td><td>${r.pc}</td><td>${fmtPrice(r.earned)}</td></tr>`).join('')+
+      '</tbody></table></div>';
+    const csv=['Ism,Lavozim,Kategoriya,Telefon,Karta,Telegram,Loyihalar,Topilgan(som)']
+      .concat(rows.map(r=>[r.name,r.role,r.cat,r.phone,r.card,r.tg,r.pc,r.earned].map(cE).join(','))).join('\n');
+    return{title:`Dizaynerlar (${rows.length})`,html,csv,file:'dizaynerlar.csv'};
+  }
+  if(type==='projects'){
+    const rows=projects.filter(p=>p.status!=='deleted').map(p=>{
+      const d=designers.find(x=>x.id===p.designerId);
+      return{title:p.title,designer:d?.name||'—',status:ST[p.status]||p.status,deadline:p.deadline||'—',sum:p.units*p.pricePerUnit};
+    });
+    const html='<div class="ai-data-tbl"><table><thead><tr><th>Loyiha</th><th>Dizayner</th><th>Holat</th><th>Muddat</th><th>Summa</th></tr></thead><tbody>'+
+      rows.map(r=>`<tr><td>${esc(r.title)}</td><td>${esc(r.designer)}</td><td>${esc(r.status)}</td><td>${esc(r.deadline)}</td><td>${fmtPrice(r.sum)}</td></tr>`).join('')+
+      '</tbody></table></div>';
+    const csv=['Loyiha,Dizayner,Holat,Muddat,Summa(som)']
+      .concat(rows.map(r=>[r.title,r.designer,r.status,r.deadline,r.sum].map(cE).join(','))).join('\n');
+    return{title:`Loyihalar (${rows.length})`,html,csv,file:'loyihalar.csv'};
+  }
+  if(type==='payments'){
+    const rows=projects.filter(p=>p.status==='done').map(p=>{
+      const d=designers.find(x=>x.id===p.designerId);
+      return{title:p.title,designer:d?.name||'—',date:p.doneDate||p.date||'—',sum:p.units*p.pricePerUnit};
+    });
+    const total=rows.reduce((s,r)=>s+r.sum,0);
+    const html='<div class="ai-data-tbl"><table><thead><tr><th>Loyiha</th><th>Dizayner</th><th>Sana</th><th>Summa</th></tr></thead><tbody>'+
+      rows.map(r=>`<tr><td>${esc(r.title)}</td><td>${esc(r.designer)}</td><td>${esc(r.date)}</td><td>${fmtPrice(r.sum)}</td></tr>`).join('')+
+      `</tbody><tfoot><tr><td colspan="3"><b>Jami</b></td><td><b>${fmtPrice(total)}</b></td></tr></tfoot></table></div>`;
+    const csv=['Loyiha,Dizayner,Sana,Summa(som)']
+      .concat(rows.map(r=>[r.title,r.designer,r.date,r.sum].map(cE).join(',')))
+      .concat([`"JAMI","","",${total}`]).join('\n');
+    return{title:`To'lovlar (${rows.length})`,html,csv,file:'tolovlar.csv'};
+  }
+  return null;
+}
+
 function _aiExec(act){
   const p=act.params||{};
   try{switch(act.name){
@@ -977,6 +1027,13 @@ function _aiExec(act){
     case 'navigate':{
       typeof showPanel==='function'&&showPanel(p.panel||'dashboard');
       return{ok:true,label:'✓ '+(p.panel||'dashboard')};}
+
+    case 'show_data':{
+      const rep=_aiDataReport(p.type||'designers');
+      if(!rep) return{ok:false,label:'Noma\'lum ma\'lumot turi'};
+      const url=URL.createObjectURL(new Blob(['﻿'+rep.csv],{type:'text/csv;charset=utf-8'}));
+      _chatBubble('ai',`<div class="ai-data-title">${esc(rep.title)}</div>${rep.html}<a class="ai-data-dl" href="${url}" download="${rep.file}"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8M5 7l3 3 3-3M3 13h10"/></svg>Faylni yuklab olish (CSV)</a>`);
+      return{ok:true,label:'✓ '+rep.title};}
 
     default:return null;
   }}catch(e){return{ok:false,label:e.message};}
