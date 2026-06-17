@@ -674,37 +674,63 @@ function _ensureAiChat(){
   fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi';
   fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line class="ai-eye" x1="8" y1="11" x2="12" y2="11"/><line class="ai-eye ai-eye-r" x1="16" y1="11" x2="20" y2="11"/><path class="ai-m ai-m1" d="M9 19Q14 23 19 19"/><line class="ai-m ai-m2" x1="10" y1="20" x2="18" y2="20"/><path class="ai-m ai-m3" d="M9 21Q14 18 19 21"/></svg>`;
 
-  let _startX,_startY,_dragging=false,_origR,_origB;
+  let _holdTimer=0,_canDrag=false,_dragging=false,_moved=false,_pid=0;
+  let _sx,_sy,_fabL,_fabT;
+
   fab.addEventListener('pointerdown',e=>{
-    _startX=e.clientX;_startY=e.clientY;_dragging=false;
-    const r=fab.getBoundingClientRect();
-    _origR=window.innerWidth-r.right;_origB=window.innerHeight-r.bottom;
+    _pid=e.pointerId;_sx=e.clientX;_sy=e.clientY;
+    _canDrag=false;_dragging=false;_moved=false;
     fab.setPointerCapture(e.pointerId);
-    fab.style.transition='none';
+    _holdTimer=setTimeout(()=>{
+      _canDrag=true;
+      fab.style.transition='none';fab.style.cursor='grabbing';
+      fab.classList.add('drag-ready');
+    },500);
   });
+
   fab.addEventListener('pointermove',e=>{
-    const dx=e.clientX-_startX,dy=e.clientY-_startY;
-    if(!_dragging&&Math.abs(dx)+Math.abs(dy)<8) return;
-    _dragging=true;
-    fab.style.right=(_origR-dx)+'px';
-    fab.style.bottom=(_origB-dy)+'px';
-    trash.classList.add('visible');
+    if(!_canDrag) return;
+    const dx=e.clientX-_sx,dy=e.clientY-_sy;
+    if(!_dragging&&Math.abs(dx)+Math.abs(dy)<4) return;
+    if(!_dragging){
+      _dragging=true;_moved=true;
+      const r=fab.getBoundingClientRect();
+      _fabL=r.left;_fabT=r.top;
+      trash.classList.add('visible');
+    }
+    const nx=_fabL+e.clientX-_sx, ny=_fabT+e.clientY-_sy;
+    fab.style.left=nx+'px';fab.style.top=ny+'px';
+    fab.style.right='auto';fab.style.bottom='auto';
     const tR=trash.getBoundingClientRect(),fR=fab.getBoundingClientRect();
     const hit=fR.left<tR.right&&fR.right>tR.left&&fR.top<tR.bottom&&fR.bottom>tR.top;
     trash.classList.toggle('over',hit);
   });
-  const endDrag=e=>{
-    fab.releasePointerCapture(e.pointerId);
-    if(!_dragging){fab.style.transition='';return;}
-    const tR=trash.getBoundingClientRect(),fR=fab.getBoundingClientRect();
-    const hit=fR.left<tR.right&&fR.right>tR.left&&fR.top<tR.bottom&&fR.bottom>tR.top;
-    if(hit){dismissAiFab();}
-    else{fab.style.transition='right .3s,bottom .3s';fab.style.right='';fab.style.bottom='';trash.classList.remove('visible','over');}
-    _dragging=false;
-  };
+
+  function endDrag(e){
+    clearTimeout(_holdTimer);
+    try{fab.releasePointerCapture(_pid);}catch{}
+    fab.classList.remove('drag-ready');
+    fab.style.cursor='';
+    if(_dragging){
+      const tR=trash.getBoundingClientRect(),fR=fab.getBoundingClientRect();
+      const hit=fR.left<tR.right&&fR.right>tR.left&&fR.top<tR.bottom&&fR.bottom>tR.top;
+      trash.classList.remove('visible','over');
+      if(hit){dismissAiFab();return;}
+      const cl=Math.max(0,Math.min(parseFloat(fab.style.left),window.innerWidth-fab.offsetWidth));
+      const ct=Math.max(0,Math.min(parseFloat(fab.style.top),window.innerHeight-fab.offsetHeight));
+      fab.style.left=cl+'px';fab.style.top=ct+'px';
+      fab.style.transition='';
+    }
+    _canDrag=false;_dragging=false;
+  }
   fab.addEventListener('pointerup',endDrag);
   fab.addEventListener('pointercancel',endDrag);
-  fab.addEventListener('click',e=>{if(_dragging)return;toggleAiChat();});
+
+  fab.addEventListener('click',e=>{
+    if(_moved){_moved=false;return;}
+    toggleAiChat();
+  });
+
   document.body.appendChild(fab);
 }
 
@@ -713,7 +739,7 @@ function _buildChatPanel(){
   const p=document.createElement('div');
   p.id='ai-chat-panel';p.className='ai-chat-panel';
   p.innerHTML=`
-    <div class="ai-chat-head">
+    <div class="ai-chat-head" id="ai-chat-head">
       <div class="ai-chat-head-title">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         EXON AI Yordamchi
@@ -735,6 +761,28 @@ function _buildChatPanel(){
       </button>
     </div>`;
   document.body.appendChild(p);
+
+  const head=document.getElementById('ai-chat-head');
+  let _pd=false,_psx,_psy,_pleft,_ptop;
+  head.addEventListener('pointerdown',e=>{
+    if(e.target.closest('.ai-chat-head-btn')) return;
+    if(window.innerWidth<=880) return;
+    _pd=true;_psx=e.clientX;_psy=e.clientY;
+    const r=p.getBoundingClientRect();
+    _pleft=r.left;_ptop=r.top;
+    head.setPointerCapture(e.pointerId);
+    p.style.transition='none';
+  });
+  head.addEventListener('pointermove',e=>{
+    if(!_pd) return;
+    let nx=_pleft+e.clientX-_psx, ny=_ptop+e.clientY-_psy;
+    nx=Math.max(0,Math.min(nx,window.innerWidth-p.offsetWidth));
+    ny=Math.max(0,Math.min(ny,window.innerHeight-p.offsetHeight));
+    p.style.left=nx+'px';p.style.top=ny+'px';p.style.right='auto';p.style.bottom='auto';
+  });
+  const panelEnd=()=>{_pd=false;p.style.transition='';};
+  head.addEventListener('pointerup',panelEnd);
+  head.addEventListener('pointercancel',panelEnd);
 }
 
 function toggleAiChat(){
@@ -742,9 +790,20 @@ function toggleAiChat(){
   const panel=document.getElementById('ai-chat-panel');
   const fab=document.getElementById('ai-chat-fab');
   if(!panel) return;
-  const open=panel.classList.toggle('open');
-  if(fab) fab.classList.toggle('hide',open);
-  if(open) setTimeout(()=>document.getElementById('ai-chat-inp')?.focus(),200);
+  const opening=!panel.classList.contains('open');
+  if(opening&&fab){
+    const r=fab.getBoundingClientRect();
+    const pw=400,ph=560;
+    let pl=r.left-pw-12, pt=r.top+r.height-ph;
+    if(pl<8) pl=r.right+12;
+    if(pt<8) pt=8;
+    if(pl+pw>window.innerWidth-8) pl=window.innerWidth-pw-8;
+    if(window.innerWidth<=880){panel.style.left='';panel.style.top='';panel.style.right='';panel.style.bottom='';}
+    else{panel.style.left=pl+'px';panel.style.top=pt+'px';panel.style.right='auto';panel.style.bottom='auto';}
+  }
+  panel.classList.toggle('open');
+  if(fab) fab.classList.toggle('hide',panel.classList.contains('open'));
+  if(panel.classList.contains('open')) setTimeout(()=>document.getElementById('ai-chat-inp')?.focus(),200);
 }
 
 function _aiChatClear(){
