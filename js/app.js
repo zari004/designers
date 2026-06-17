@@ -318,7 +318,7 @@ setTimeout(drawFavicon, 2500);
 
   // Firebase konfiguratsiyasi bor bo'lsa — Firebase bilan ishlash
   if(typeof hasFbConfig === 'function' && hasFbConfig()){
-    setSyncStatus('load', "Firebase ulanmoqda...");
+    setSyncStatus('load', "Firebase ulanmoqda… (v65)");
     let ok = false;
     try {
       ok = await Promise.race([

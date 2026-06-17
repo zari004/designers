@@ -44,48 +44,50 @@ function _fbQueryWithTimeout(promise, ms){
 function setupAuthListener(onLogin, onLogout){
   const auth = getFbAuth();
   if(!auth){ onLogout(); return; }
-  auth.onAuthStateChanged(async fbUser => {
+  auth.onAuthStateChanged(fbUser => {
     if(fbUser){
-      setSyncStatus('load', "Profil yuklanmoqda...");
-      const T = 5000;
-      let profile = null, hasAdmin = false;
-      try {
-        const [prof, adminSnap] = await Promise.all([
-          _fbQueryWithTimeout(getFbUserProfile(fbUser.uid), T).catch(() => null),
-          _fbQueryWithTimeout(
-            getDb()?.collection('users').where('role','==','admin').limit(1).get() || Promise.resolve(null), T
-          ).catch(() => null)
-        ]);
-        profile = prof;
-        hasAdmin = !!(adminSnap && adminSnap.size > 0);
-      } catch(e) {
-        console.warn('Auth queries:', e.message);
-      }
-      if(!profile){
-        const role = hasAdmin ? 'viewer' : 'admin';
-        const perms = ROLE_DEFS[role]?.perms || { designers:true, projects:true, payments:false, reports:true, users:false, settings:false };
-        profile = {
-          uid: fbUser.uid, email: fbUser.email,
-          displayName: fbUser.displayName || fbUser.email.split('@')[0],
-          role, permissions: perms,
-          createdAt: new Date().toISOString(),
-        };
-        saveFbUserProfile(fbUser.uid, profile).catch(() => {});
-      } else if(!hasAdmin && profile.role !== 'admin'){
-        profile.role = 'admin';
-        profile.permissions = ROLE_DEFS['admin']?.perms || { designers:true, projects:true, payments:true, reports:true, users:true, settings:true };
-        saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions }).catch(() => {});
-      }
-      _currentUser = profile;
-      onLogin(profile);
-      if(profile.role === 'admin'){
-        getAllFbUsers().then(u => { _fbUsersCache = u; }).catch(() => {});
-      }
+      // Firestore KUTILMAYDI — darhol Auth ma'lumotlaridan profil yaratib ilovani ochish.
+      // Firestore profili fonda yuklanadi.
+      const quickProfile = {
+        uid: fbUser.uid, email: fbUser.email,
+        displayName: fbUser.displayName || fbUser.email?.split('@')[0] || '?',
+        role: 'admin',
+        permissions: ROLE_DEFS['admin']?.perms || {designers:true,projects:true,payments:true,reports:true,users:true,settings:true},
+        createdAt: new Date().toISOString(),
+      };
+      _currentUser = quickProfile;
+      onLogin(quickProfile);
+      // Fonda: Firestore profili bor bo'lsa — uni yuklash va yangilash
+      _loadFirestoreProfile(fbUser.uid);
     } else {
       _currentUser = null;
       onLogout();
     }
   });
+}
+
+// Firestore profilini fonda yuklash (ilova allaqachon ochilgan)
+async function _loadFirestoreProfile(uid){
+  try {
+    if(!isFbReady()) return;
+    const snap = await Promise.race([
+      getDb().collection('users').doc(uid).get(),
+      new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
+    ]);
+    if(snap.exists){
+      const profile = snap.data();
+      _currentUser = profile;
+      if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
+    }
+  } catch(e) { console.warn('Firestore profil:', e); }
+  // Admin foydalanuvchilar ro'yxati
+  try {
+    const users = await Promise.race([
+      getAllFbUsers(),
+      new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
+    ]);
+    _fbUsersCache = users || [];
+  } catch { _fbUsersCache = []; }
 }
 
 // ── KIRISH ──

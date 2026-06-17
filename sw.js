@@ -1,6 +1,11 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v64';
+const CACHE_VER  = 'exon-v65';
+
+// Sahifadan "yangilansin" xabar kelsa — darhol faollashuv
+self.addEventListener('message', e => {
+  if(e.data?.type === 'SKIP_WAITING') self.skipWaiting();
+});
 const SHELL_URLS = [
   '/',
   '/index.html',

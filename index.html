@@ -670,14 +670,15 @@
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
       .then(reg => {
-        // Yangi versiya kelsa foydalanuvchiga bildirish
+        reg.update().catch(()=>{});
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
           nw.addEventListener('statechange', () => {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              toast("Yangi versiya tayyor — sahifani yangilang");
+              nw.postMessage({ type: 'SKIP_WAITING' });
+              setTimeout(() => location.reload(), 500);
             }
           });
         });
