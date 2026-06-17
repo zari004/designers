@@ -28,6 +28,27 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e=>{
   }
 });
 
+// ── PAROL KO'RSATISH TOGGLE ──
+function togglePw(btn){
+  const inp=btn.parentElement.querySelector('input');
+  if(!inp) return;
+  const show=inp.type==='password';
+  inp.type=show?'text':'password';
+  btn.innerHTML=show
+    ?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17.9 17.9A10.1 10.1 0 0 1 12 20C5 20 1 12 1 12a18.4 18.4 0 0 1 5.1-5.9M9.9 4.2A9 9 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.2 3.1"/><path d="M1 1l22 22"/><path d="M8.4 8.4a3 3 0 0 0 4.2 4.2"/></svg>'
+    :'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+}
+
+// ── MODAL ESCAPE ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const m=document.getElementById('modal');
+    if(m&&m.style.display!=='none'){typeof closeModal==='function'&&closeModal();return;}
+    const np=document.getElementById('notif-panel');
+    if(np&&np.classList.contains('open')){typeof toggleNotifPanel==='function'&&toggleNotifPanel();}
+  }
+});
+
 // ── FAVICON ──
 // Ikona shrifti yuklangach, undan favicon chiziladi —
 // tab'dagi belgi sahifadagi logo bilan aynan bir xil bo'ladi.

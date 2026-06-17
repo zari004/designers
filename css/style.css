@@ -250,6 +250,11 @@ a{color:var(--accent-text)}
 .form-input,.form-select,.form-textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text);font-size:13.5px;outline:none;transition:border-color .12s}
 .form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--accent)}
 .form-input::placeholder,.form-textarea::placeholder{color:var(--muted2)}
+.pw-wrap{position:relative}
+.pw-wrap .form-input{padding-right:38px}
+.pw-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center;justify-content:center}
+.pw-toggle:hover{color:var(--text)}
+.pw-toggle svg{width:18px;height:18px}
 .form-textarea{min-height:84px;resize:vertical;line-height:1.5}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
 .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px}

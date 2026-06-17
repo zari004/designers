@@ -626,8 +626,8 @@ function openDesignerModal(id=null){
       <input type="hidden" id="f-cat" value="${d?.category||firstCat()}"/>
     </div>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Telefon raqami</label><input class="form-input" id="f-phone" value="${esc(d?.phone||'')}" placeholder="+998 90 123 45 67"/></div>
-      <div class="form-group"><label class="form-label">Karta raqami</label><input class="form-input" id="f-card" value="${esc(d?.cardNumber||'')}" placeholder="8600 1234 5678 9012" maxlength="19" oninput="formatCard(this)"/></div>
+      <div class="form-group"><label class="form-label">Telefon raqami</label><input class="form-input" id="f-phone" type="tel" value="${esc(d?.phone||'')}" placeholder="+998 90 123 45 67"/></div>
+      <div class="form-group"><label class="form-label">Karta raqami</label><input class="form-input" id="f-card" inputmode="numeric" value="${esc(d?.cardNumber||'')}" placeholder="8600 1234 5678 9012" maxlength="19" oninput="formatCard(this)"/></div>
     </div>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Telegram</label><input class="form-input" id="f-tg" value="${esc(d?.telegram||'')}" placeholder="@username"/></div>
@@ -645,6 +645,7 @@ function openDesignerModal(id=null){
       <button class="btn btn-primary" onclick="saveDesigner(${d?.id||'null'})">Saqlash</button>
     </div>`;
   document.getElementById('modal').style.display='flex';
+  setTimeout(()=>document.getElementById('f-name')?.focus(),100);
 }
 
 function handlePhoto(e){
@@ -883,8 +884,6 @@ function renderUsers(){
   // Foydalanuvchilar endi panel-users ichidagi fb-users-list'da ko'rsatiladi
   if(typeof renderFbUsersAdmin === 'function') renderFbUsersAdmin();
 }
-function openUserModal(){} // Firebase'da kerak emas (foydalanuvchilar o'zlari ro'yxatdan o'tadi)
-function saveUser(){}
 
 // ═══════════════ SOZLAMALAR ═══════════════
 function renderSettingsPage(){
