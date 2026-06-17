@@ -650,22 +650,30 @@ QOIDALAR:
 
 function dismissAiFab(){
   const fab=document.getElementById('ai-chat-fab');
-  if(fab){fab.classList.add('hide');sessionStorage.setItem('exon_ai_hidden','1');}
+  const panel=document.getElementById('ai-chat-panel');
+  if(panel) panel.classList.remove('open');
+  if(fab){fab.classList.remove('show-dismiss');fab.classList.add('hide');}
+  sessionStorage.setItem('exon_ai_hidden','1');
 }
 
 function _ensureAiChat(){
   if(_aiChatReady) return;
-  if(sessionStorage.getItem('exon_ai_hidden')==='1') return;
   _aiChatReady=true;
+  if(sessionStorage.getItem('exon_ai_hidden')==='1') return;
   const fab=document.createElement('button');
-  fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi';
+  fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi — bosib turing o\'chirish uchun';
   fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line class="ai-eye" x1="8" y1="11" x2="12" y2="11"/><line class="ai-eye ai-eye-r" x1="16" y1="11" x2="20" y2="11"/><path class="ai-m ai-m1" d="M9 19Q14 23 19 19"/><line class="ai-m ai-m2" x1="10" y1="20" x2="18" y2="20"/><path class="ai-m ai-m3" d="M9 21Q14 18 19 21"/></svg><span class="ai-fab-dismiss" onclick="event.stopPropagation();dismissAiFab()">✕</span>`;
-  let _lp=0;
-  fab.onpointerdown=()=>{_lp=setTimeout(()=>{fab.classList.add('show-dismiss');},500);};
-  fab.onpointerup=fab.onpointerleave=()=>{clearTimeout(_lp);};
-  fab.onclick=e=>{if(fab.classList.contains('show-dismiss')){fab.classList.remove('show-dismiss');return;}toggleAiChat();};
+  let _lp=0,_lpFired=false;
+  fab.addEventListener('pointerdown',()=>{_lpFired=false;_lp=setTimeout(()=>{_lpFired=true;fab.classList.add('show-dismiss');},500);});
+  fab.addEventListener('pointerup',()=>{clearTimeout(_lp);});
+  fab.addEventListener('pointerleave',()=>{clearTimeout(_lp);});
+  fab.addEventListener('click',e=>{if(_lpFired){_lpFired=false;return;}toggleAiChat();});
+  document.addEventListener('click',e=>{if(!fab.contains(e.target))fab.classList.remove('show-dismiss');});
   document.body.appendChild(fab);
+}
 
+function _buildChatPanel(){
+  if(document.getElementById('ai-chat-panel')) return;
   const p=document.createElement('div');
   p.id='ai-chat-panel';p.className='ai-chat-panel';
   p.innerHTML=`
@@ -694,9 +702,10 @@ function _ensureAiChat(){
 }
 
 function toggleAiChat(){
-  _ensureAiChat();
+  if(!document.getElementById('ai-chat-panel')) _buildChatPanel();
   const panel=document.getElementById('ai-chat-panel');
   const fab=document.getElementById('ai-chat-fab');
+  if(!panel) return;
   const open=panel.classList.toggle('open');
   if(fab) fab.classList.toggle('hide',open);
   if(open) setTimeout(()=>document.getElementById('ai-chat-inp')?.focus(),200);
