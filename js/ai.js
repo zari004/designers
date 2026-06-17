@@ -648,27 +648,63 @@ QOIDALAR:
 - Faqat JSON javob ber, boshqa hech narsa yo'q`;
 }
 
+let _aiFabHidden=false;
+
 function dismissAiFab(){
+  _aiFabHidden=true;
   const fab=document.getElementById('ai-chat-fab');
   const panel=document.getElementById('ai-chat-panel');
+  const trash=document.getElementById('ai-fab-trash');
   if(panel) panel.classList.remove('open');
-  if(fab){fab.classList.remove('show-dismiss');fab.classList.add('hide');}
-  sessionStorage.setItem('exon_ai_hidden','1');
+  if(fab){fab.style.transition='transform .3s,opacity .2s';fab.classList.add('hide');}
+  if(trash) trash.classList.remove('visible','over');
 }
 
 function _ensureAiChat(){
   if(_aiChatReady) return;
   _aiChatReady=true;
-  if(sessionStorage.getItem('exon_ai_hidden')==='1') return;
+  if(_aiFabHidden) return;
+
+  const trash=document.createElement('div');
+  trash.id='ai-fab-trash';trash.className='ai-fab-trash';
+  trash.innerHTML='<svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4h12M5.5 4V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1"/><path d="M3.5 4l.7 9a1 1 0 0 0 1 1h5.6a1 1 0 0 0 1-1l.7-9"/></svg>';
+  document.body.appendChild(trash);
+
   const fab=document.createElement('button');
-  fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi — bosib turing o\'chirish uchun';
-  fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line class="ai-eye" x1="8" y1="11" x2="12" y2="11"/><line class="ai-eye ai-eye-r" x1="16" y1="11" x2="20" y2="11"/><path class="ai-m ai-m1" d="M9 19Q14 23 19 19"/><line class="ai-m ai-m2" x1="10" y1="20" x2="18" y2="20"/><path class="ai-m ai-m3" d="M9 21Q14 18 19 21"/></svg><span class="ai-fab-dismiss" onclick="event.stopPropagation();dismissAiFab()">✕</span>`;
-  let _lp=0,_lpFired=false;
-  fab.addEventListener('pointerdown',()=>{_lpFired=false;_lp=setTimeout(()=>{_lpFired=true;fab.classList.add('show-dismiss');},500);});
-  fab.addEventListener('pointerup',()=>{clearTimeout(_lp);});
-  fab.addEventListener('pointerleave',()=>{clearTimeout(_lp);});
-  fab.addEventListener('click',e=>{if(_lpFired){_lpFired=false;return;}toggleAiChat();});
-  document.addEventListener('click',e=>{if(!fab.contains(e.target))fab.classList.remove('show-dismiss');});
+  fab.id='ai-chat-fab';fab.className='ai-chat-fab';fab.title='AI Yordamchi';
+  fab.innerHTML=`<svg class="ai-fab-face" viewBox="0 0 28 28" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><line class="ai-eye" x1="8" y1="11" x2="12" y2="11"/><line class="ai-eye ai-eye-r" x1="16" y1="11" x2="20" y2="11"/><path class="ai-m ai-m1" d="M9 19Q14 23 19 19"/><line class="ai-m ai-m2" x1="10" y1="20" x2="18" y2="20"/><path class="ai-m ai-m3" d="M9 21Q14 18 19 21"/></svg>`;
+
+  let _startX,_startY,_dragging=false,_origR,_origB;
+  fab.addEventListener('pointerdown',e=>{
+    _startX=e.clientX;_startY=e.clientY;_dragging=false;
+    const r=fab.getBoundingClientRect();
+    _origR=window.innerWidth-r.right;_origB=window.innerHeight-r.bottom;
+    fab.setPointerCapture(e.pointerId);
+    fab.style.transition='none';
+  });
+  fab.addEventListener('pointermove',e=>{
+    const dx=e.clientX-_startX,dy=e.clientY-_startY;
+    if(!_dragging&&Math.abs(dx)+Math.abs(dy)<8) return;
+    _dragging=true;
+    fab.style.right=(_origR-dx)+'px';
+    fab.style.bottom=(_origB-dy)+'px';
+    trash.classList.add('visible');
+    const tR=trash.getBoundingClientRect(),fR=fab.getBoundingClientRect();
+    const hit=fR.left<tR.right&&fR.right>tR.left&&fR.top<tR.bottom&&fR.bottom>tR.top;
+    trash.classList.toggle('over',hit);
+  });
+  const endDrag=e=>{
+    fab.releasePointerCapture(e.pointerId);
+    if(!_dragging){fab.style.transition='';return;}
+    const tR=trash.getBoundingClientRect(),fR=fab.getBoundingClientRect();
+    const hit=fR.left<tR.right&&fR.right>tR.left&&fR.top<tR.bottom&&fR.bottom>tR.top;
+    if(hit){dismissAiFab();}
+    else{fab.style.transition='right .3s,bottom .3s';fab.style.right='';fab.style.bottom='';trash.classList.remove('visible','over');}
+    _dragging=false;
+  };
+  fab.addEventListener('pointerup',endDrag);
+  fab.addEventListener('pointercancel',endDrag);
+  fab.addEventListener('click',e=>{if(_dragging)return;toggleAiChat();});
   document.body.appendChild(fab);
 }
 

@@ -609,12 +609,14 @@ select.prop-input{cursor:pointer}
 @keyframes ai-blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* ── AI CHAT PANEL ── */
-.ai-chat-fab{position:fixed;bottom:28px;right:28px;z-index:900;width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);color:#fff;box-shadow:0 4px 18px rgba(22,163,74,.3);display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s,box-shadow .3s}
-.ai-chat-fab:hover{transform:scale(1.08);box-shadow:0 6px 24px rgba(22,163,74,.4)}
+.ai-chat-fab{position:fixed;bottom:28px;right:28px;z-index:900;width:72px;height:72px;border-radius:50%;border:none;cursor:grab;background:linear-gradient(135deg,#22c55e 0%,#16a34a 100%);color:#fff;box-shadow:0 4px 18px rgba(22,163,74,.3);display:flex;align-items:center;justify-content:center;transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s,box-shadow .3s;touch-action:none;user-select:none}
+.ai-chat-fab:hover{box-shadow:0 6px 24px rgba(22,163,74,.4)}
+.ai-chat-fab:active{cursor:grabbing}
 .ai-chat-fab.hide{transform:scale(0);opacity:0;pointer-events:none}
-.ai-fab-face{width:36px;height:36px}
-.ai-fab-dismiss{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:var(--error,#ef4444);color:#fff;font-size:14px;line-height:1;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.2);z-index:1}
-.ai-chat-fab.show-dismiss .ai-fab-dismiss{display:flex}
+.ai-fab-face{width:36px;height:36px;pointer-events:none}
+.ai-fab-trash{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) scale(.7);z-index:899;width:56px;height:56px;border-radius:50%;background:rgba(239,68,68,.15);border:2px dashed var(--error,#ef4444);color:var(--error,#ef4444);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:transform .25s,opacity .2s,background .15s}
+.ai-fab-trash.visible{opacity:1;transform:translateX(-50%) scale(1)}
+.ai-fab-trash.over{background:rgba(239,68,68,.35);transform:translateX(-50%) scale(1.15)}
 .ai-eye{transform-box:fill-box;transform-origin:center;animation:aiBlink 4s ease-in-out infinite}
 .ai-eye-r{animation-delay:.1s}
 @keyframes aiBlink{0%,88%,100%{transform:scaleY(1)}92%,96%{transform:scaleY(0)}}
@@ -649,7 +651,7 @@ select.prop-input{cursor:pointer}
 .ai-chat-inp:focus{border-color:var(--success)}
 .ai-chat-send{width:36px;height:36px;border-radius:50%;border:none;background:var(--success);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity .15s}
 .ai-chat-send:hover{opacity:.85}
-@media(max-width:880px){.ai-chat-fab{bottom:80px;right:16px;width:64px;height:64px}.ai-fab-face{width:32px;height:32px}.ai-chat-panel{bottom:0;right:0;width:100vw;height:100vh;max-height:100vh;max-width:100vw;border-radius:0}}
+@media(max-width:880px){.ai-chat-fab{bottom:80px;right:16px;width:64px;height:64px}.ai-fab-face{width:32px;height:32px}.ai-fab-trash{bottom:80px}.ai-chat-panel{bottom:0;right:0;width:100vw;height:100vh;max-height:100vh;max-width:100vw;border-radius:0}}
 @media print{.ai-chat-fab,.ai-chat-panel{display:none!important}}
 
 /* ── PRINT ── */
