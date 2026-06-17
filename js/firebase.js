@@ -93,9 +93,11 @@ async function fbLoad(){
   if(!isFbReady()) return;
   setSyncStatus('load', "Yuklanmoqda...");
   try{
-    const snap = await _db.collection('exon').doc('data').get();
+    const snap = await Promise.race([
+      _db.collection('exon').doc('data').get(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('Serverga ulanib bo\'lmadi (timeout)')),10000))
+    ]);
     if(!snap.exists){
-      // Bo'sh baza — lokal ma'lumotlarni ko'chirib yoz
       if(designers.length || projects.length){
         await fbSave();
         setSyncStatus('ok', "Lokal ma'lumotlar Firebase'ga ko'chirildi");

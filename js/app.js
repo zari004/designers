@@ -318,19 +318,27 @@ setTimeout(drawFavicon, 2500);
 
   // Firebase konfiguratsiyasi bor bo'lsa — Firebase bilan ishlash
   if(typeof hasFbConfig === 'function' && hasFbConfig()){
-    const ok = await initFirebase();
+    setSyncStatus('load', "Firebase ulanmoqda...");
+    let ok = false;
+    try {
+      ok = await Promise.race([
+        initFirebase(),
+        new Promise(resolve => setTimeout(() => resolve(false), 10000))
+      ]);
+    } catch(e) {
+      console.error('Firebase init xato:', e);
+    }
     if(!ok){
-      // Konfiguratsiya noto'g'ri — sozlash ekranini ko'rsat
+      setSyncStatus('err', "Firebase ulanmadi — qayta urining");
       showFbSetup();
       return;
     }
-    // Firebase Auth holati kuzatuvchi
+    setSyncStatus('load', "Kirish tekshirilmoqda...");
     setupAuthListener(
-      user => initApp(user),   // kirgan foydalanuvchi
-      ()   => showAppLogin()   // chiqish yoki kirilmagan
+      user => initApp(user),
+      ()   => showAppLogin()
     );
   } else {
-    // Firebase sozlanmagan — sozlash ekranini ko'rsat
     showFbSetup();
   }
 })();

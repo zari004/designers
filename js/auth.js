@@ -8,11 +8,15 @@ const PERM_LABELS = {
 };
 
 // Default role definitions
-let ROLE_DEFS = JSON.parse(localStorage.getItem('exon_role_defs') || JSON.stringify({
+const _DEFAULT_ROLES = {
   admin:   { label:'Admin', perms:{designers:true, projects:true, payments:true, reports:true, users:true, settings:true} },
   manager: { label:'Menejer', perms:{designers:true, projects:true, payments:true, reports:true, users:false, settings:false} },
-  viewer:  { label:'Ko\'ruvchi', perms:{designers:true, projects:true, payments:false, reports:true, users:false, settings:false} }
-}));
+  viewer:  { label:"Ko'ruvchi", perms:{designers:true, projects:true, payments:false, reports:true, users:false, settings:false} }
+};
+let ROLE_DEFS;
+try {
+  ROLE_DEFS = JSON.parse(localStorage.getItem('exon_role_defs')) || _DEFAULT_ROLES;
+} catch { ROLE_DEFS = _DEFAULT_ROLES; }
 
 let _currentUser = null; // { uid, email, displayName, role, permissions }
 let _fbUsersCache = [];  // Firestore users ro'yxati (admin panel uchun)
@@ -28,19 +32,40 @@ function hasPermission(key){
   return !!(u.permissions && u.permissions[key]);
 }
 
+// Firestore so'roviga timeout qo'yish
+function _fbQueryWithTimeout(promise, ms){
+  return Promise.race([
+    promise,
+    new Promise((_,rej) => setTimeout(() => rej(new Error('timeout')), ms))
+  ]);
+}
+
 // ── AUTH STATE KUZATUVCHI (app.js dan bitta marta chaqiriladi) ──
 function setupAuthListener(onLogin, onLogout){
   const auth = getFbAuth();
   if(!auth){ onLogout(); return; }
   auth.onAuthStateChanged(async fbUser => {
     if(fbUser){
-      let profile = await getFbUserProfile(fbUser.uid);
-      // Tizimda admin bormi?
-      const db = getDb();
-      const adminSnap = db ? await db.collection('users').where('role','==','admin').limit(1).get() : null;
-      const hasAdmin = !!(adminSnap && adminSnap.size > 0);
+      setSyncStatus('load', "Profil yuklanmoqda...");
+      let profile = null;
+      try {
+        profile = await _fbQueryWithTimeout(getFbUserProfile(fbUser.uid), 8000);
+      } catch(e) {
+        console.warn('Profil yuklash:', e.message);
+      }
+      let hasAdmin = false;
+      try {
+        const db = getDb();
+        if(db){
+          const adminSnap = await _fbQueryWithTimeout(
+            db.collection('users').where('role','==','admin').limit(1).get(), 8000
+          );
+          hasAdmin = !!(adminSnap && adminSnap.size > 0);
+        }
+      } catch(e) {
+        console.warn('Admin tekshirish:', e.message);
+      }
       if(!profile){
-        // Firestore profili yo'q — birinchi foydalanuvchimikan?
         const role = hasAdmin ? 'viewer' : 'admin';
         const perms = ROLE_DEFS[role]?.perms || { designers:true, projects:true, payments:false, reports:true, users:false, settings:false };
         profile = {
@@ -49,17 +74,15 @@ function setupAuthListener(onLogin, onLogout){
           role, permissions: perms,
           createdAt: new Date().toISOString(),
         };
-        await saveFbUserProfile(fbUser.uid, profile);
+        try { await _fbQueryWithTimeout(saveFbUserProfile(fbUser.uid, profile), 5000); } catch {}
       } else if(!hasAdmin && profile.role !== 'admin'){
-        // Tizimda admin yo'q — bu foydalanuvchini admin qil
         profile.role = 'admin';
         profile.permissions = ROLE_DEFS['admin']?.perms || { designers:true, projects:true, payments:true, reports:true, users:true, settings:true };
-        await saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions });
+        try { await _fbQueryWithTimeout(saveFbUserProfile(fbUser.uid, { role:'admin', permissions: profile.permissions }), 5000); } catch {}
       }
       _currentUser = profile;
-      // Foydalanuvchilar ro'yxatini yangilash
       if(profile.role === 'admin'){
-        _fbUsersCache = await getAllFbUsers();
+        try { _fbUsersCache = await _fbQueryWithTimeout(getAllFbUsers(), 8000); } catch { _fbUsersCache = []; }
       }
       onLogin(profile);
     } else {
