@@ -68,6 +68,17 @@ function priorityBadge(pr){
   return map[pr]||'';
 }
 
+const _COPY_IC=`<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v1"/></svg>`;
+
+function copyField(btn){
+  const text=btn?.dataset?.copy||''; if(!text||text==='—') return;
+  const done=()=>{ btn.classList.add('copy-ok'); setTimeout(()=>btn.classList.remove('copy-ok'),1200); toast('Nusxalandi ✓'); };
+  if(navigator.clipboard){ navigator.clipboard.writeText(text).then(done).catch(()=>_clipFallback(text,done)); }
+  else _clipFallback(text,done);
+}
+function _clipFallback(t,cb){ const a=document.createElement('textarea'); a.value=t; a.style.cssText='position:fixed;opacity:0'; document.body.appendChild(a); a.select(); try{document.execCommand('copy');cb();}catch(e){} document.body.removeChild(a); }
+function _cpBtn(val){ return `<button class="copy-btn" data-copy="${esc(val)}" onclick="event.stopPropagation();copyField(this)" title="Nusxalash">${_COPY_IC}</button>`; }
+
 function maskCard(c){ if(!c) return '—'; return c.replace(/(\d{4})\s?(\d{4})\s?(\d{4})\s?(\d{4})/,'$1 •••• •••• $4'); }
 
 // Faol panelni qayta chizish
@@ -139,7 +150,7 @@ function renderDashboard(){
     dashAlerts.innerHTML = overdue.length ? `<div class="card" style="border-color:color-mix(in srgb,var(--error) 35%,transparent);padding:14px 18px;margin-bottom:16px">
       <div style="font-size:12.5px;font-weight:700;color:var(--error);margin-bottom:8px">Diqqat — ${overdue.length} ta loyiha muddati yaqin yoki o'tgan</div>
       ${overdue.map(p=>{const d=designers.find(x=>x.id===p.designerId);const days=deadlineDays(p.deadline);
-        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;cursor:pointer" onclick="openProjectPeek(${p.id})">
           <span style="font-size:12.5px;font-weight:600;flex:1;min-width:160px">${esc(p.title)}</span>
           <span style="font-size:11.5px;color:var(--muted)">${esc(d?.name||'')}</span>
           ${days<0?`<span class="status s-away">${Math.abs(days)} kun o'tdi</span>`:days===0?`<span class="status s-away">Bugun!</span>`:`<span class="status s-idle">${days} kun qoldi</span>`}
@@ -150,7 +161,7 @@ function renderDashboard(){
   const recent=[...projects].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
   document.getElementById('dash-projects').innerHTML = recent.length ? recent.map(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    return `<div class="table-row" style="grid-template-columns:1fr auto">
+    return `<div class="table-row" style="grid-template-columns:1fr auto;cursor:pointer" onclick="openProjectPeek(${p.id})">
       <div>
         <div style="font-size:12.5px;font-weight:600;margin-bottom:2px">${esc(p.title)}</div>
         <div style="font-size:11.5px;color:var(--muted)">${esc(d?.name||'')} · ${p.date}${p.deadline?' · muddat: '+p.deadline:''}</div>
@@ -214,9 +225,10 @@ function renderDesigners(){
         </div>
       </div>
       <div class="d-card-footer">
-        <div>
-          <div class="d-contact">${esc(d.phone||'—')}</div>
-          <div class="d-contact card-num">${maskCard(d.cardNumber)}</div>
+        <div style="flex:1;min-width:0">
+          <div class="d-contact-row">${esc(d.phone||'—')}${d.phone?_cpBtn(d.phone):''}</div>
+          <div class="d-contact-row"><span class="card-num">${maskCard(d.cardNumber)}</span>${d.cardNumber?_cpBtn(d.cardNumber):''}</div>
+          ${d.telegram?`<div class="d-contact-row">${esc(d.telegram)}${_cpBtn(d.telegram)}</div>`:''}
         </div>
         <div class="d-actions" onclick="event.stopPropagation()">
           <button class="btn btn-ghost btn-xs" onclick="openDesignerModal(${d.id})">Tahrir</button>
@@ -235,11 +247,24 @@ function deleteDesigner(id){
 }
 
 // ═══════════════ DIZAYNER PROFILI ═══════════════
-function openDetail(id){ currentDesignerId=id; showPanel('detail'); }
+let _detailFromPanel = 'designers';
+
+function openDetail(id){
+  _detailFromPanel = document.querySelector('.panel.active')?.id?.replace('panel-','') || 'designers';
+  currentDesignerId=id;
+  showPanel('detail');
+}
+
+function goBackFromDetail(){
+  showPanel(_detailFromPanel || 'designers');
+}
 
 function renderDetail(){
   const d=designers.find(x=>x.id===currentDesignerId);
   if(!d){ showPanel('designers'); return; }
+  const _backLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',reports:'← Hisobotlar',payments:"← To'lovlar"};
+  const backBtn=document.querySelector('#panel-detail .back-btn');
+  if(backBtn) backBtn.textContent=_backLabels[_detailFromPanel]||'← Dizaynerlar';
   const ci=CAT_INFO[d.category];
   const dProjs=projects.filter(p=>p.designerId===d.id);
   const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
@@ -260,9 +285,9 @@ function renderDetail(){
           ${(d.skills||[]).map(s=>`<span class="skill-tag">${esc(s)}</span>`).join('')}
         </div>
         <div class="detail-contacts">
-          <span class="contact-item">Tel: ${esc(d.phone||'—')}</span>
-          <span class="contact-item">Karta: <span class="card-num">${esc(d.cardNumber||'—')}</span></span>
-          <span class="contact-item">Telegram: ${esc(d.telegram||'—')}</span>
+          <span class="contact-item">Tel: ${esc(d.phone||'—')}${d.phone?_cpBtn(d.phone):''}</span>
+          <span class="contact-item">Karta: <span class="card-num">${esc(d.cardNumber||'—')}</span>${d.cardNumber?_cpBtn(d.cardNumber):''}</span>
+          <span class="contact-item">Telegram: ${esc(d.telegram||'—')}${d.telegram?_cpBtn(d.telegram):''}</span>
           <span class="contact-item">Qo'shilgan: ${d.joinedAt||'—'}</span>
         </div>
       </div>
@@ -715,7 +740,7 @@ function renderPayments(){
     const total=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
     const ci=CAT_INFO[d.category];
     return `<div class="card" style="margin-bottom:14px">
-      <div class="card-header">
+      <div class="card-header" style="cursor:pointer" onclick="openDetail(${d.id})">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           ${photoAvatar(d,30)}
           <span style="font-size:13.5px;font-weight:700">${esc(d.name)}</span>
@@ -731,7 +756,7 @@ function renderPayments(){
         const isOverdue=p.deadline&&p.doneDate&&p.doneDate>p.deadline;
         const rowCls=p.paymentPaid?'pay-row-paid':(isOverdue?'pay-row-overdue':'');
         return `<div class="table-row ${rowCls}" style="grid-template-columns:1fr auto auto auto">
-          <div>
+          <div style="cursor:pointer" onclick="openProjectPeek(${p.id})">
             <div style="font-size:12.5px;font-weight:600">${esc(p.title)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">
               ${p.doneDate||p.date}${p.deadline?' · muddat: '+p.deadline:''}${isOverdue?' · <span style="color:var(--error);font-weight:600">kechikkan</span>':''}
@@ -841,7 +866,7 @@ function renderReports(){
       return {...d,doneCount:dp.length,earned:dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0)};
     }).sort((a,b)=>b.earned-a.earned);
     topEl.innerHTML=ranked.length ? ranked.map((d,i)=>`
-      <div class="table-row" style="grid-template-columns:24px 1fr auto auto">
+      <div class="table-row" style="grid-template-columns:24px 1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
         <span style="font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums">${i+1}</span>
         <div style="display:flex;align-items:center;gap:9px">
           ${photoAvatar(d,26)}
@@ -863,6 +888,13 @@ function saveUser(){}
 
 // ═══════════════ SOZLAMALAR ═══════════════
 function renderSettingsPage(){
+  const _sBackLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',projects:'← Loyihalar',payments:"← To'lovlar",reports:'← Hisobotlar',users:'← Foydalanuvchilar'};
+  const sBackBtn=document.getElementById('settings-back-btn');
+  if(sBackBtn){
+    const lbl=_sBackLabels[typeof _settingsReturnPanel!=='undefined'?_settingsReturnPanel:''];
+    sBackBtn.style.display=lbl?'':'none';
+    if(lbl) sBackBtn.textContent=lbl;
+  }
   const gsId=document.getElementById('gs-sheet-id');
   const gsTok=document.getElementById('gs-token');
   if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';
@@ -971,19 +1003,19 @@ function buildNotifications(){
   const list=[];
   projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'od-'+p.id,type:'overdue',title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
+    list.push({id:'od-'+p.id,type:'overdue',projId:p.id,title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
   });
   projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)===0).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'td-'+p.id,type:'today',title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+    list.push({id:'td-'+p.id,type:'today',projId:p.id,title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
   projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)>0&&deadlineDays(p.deadline)<=3).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'soon-'+p.id,type:'soon',title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
+    list.push({id:'soon-'+p.id,type:'soon',projId:p.id,title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
   projects.filter(p=>p.status==='review').forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'rev-'+p.id,type:'review',title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
+    list.push({id:'rev-'+p.id,type:'review',projId:p.id,title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
   });
   const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
   list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
@@ -1000,11 +1032,26 @@ function renderNotifPanel(){
   if(!notifications.length){ el.innerHTML='<div class="notif-item" style="color:var(--muted2);font-size:12.5px">Bildirishnomalar yo\'q</div>'; return; }
   const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)'};
   el.innerHTML=notifications.map(n=>`
-    <div class="notif-item${n.read?'':' unread'}">
+    <div class="notif-item${n.read?'':' unread'}" style="cursor:pointer" onclick="notifClick('${n.id}')">
       <div class="notif-item-title"><span class="notif-dot" style="background:${dotColor[n.type]||'var(--muted)'}"></span>${esc(n.title)}</div>
       ${n.sub?`<div class="notif-item-sub">${esc(n.sub)}</div>`:''}
       <div class="notif-item-time">${n.time||''}</div>
     </div>`).join('');
+}
+
+function notifClick(nid){
+  const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
+  if(!saved.includes(nid)) saved.push(nid);
+  localStorage.setItem('exon_notif_read',JSON.stringify(saved));
+  document.getElementById('notif-panel').classList.remove('open');
+  const n=notifications.find(x=>x.id===nid);
+  if(!n) return;
+  if(n.type==='review'){
+    setProjFilter('review');
+    showPanel('projects');
+  } else if(n.projId){
+    openProjectPeek(n.projId);
+  }
 }
 
 function toggleNotifPanel(){

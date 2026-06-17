@@ -198,8 +198,12 @@ a{color:var(--accent-text)}
 .d-stat-val{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
 .d-stat-lbl{font-size:11px;color:var(--muted);margin-top:1px}
 .d-card-footer{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
-.d-contact{font-size:11.5px;color:var(--muted);margin-bottom:2px}
+.d-contact-row{display:flex;align-items:center;gap:3px;font-size:11.5px;color:var(--muted);margin-bottom:2px}
 .d-actions{display:flex;gap:6px}
+.copy-btn{display:inline-flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;padding:3px;border-radius:4px;color:var(--muted2);opacity:0;transition:opacity .15s,background .15s,color .15s;vertical-align:middle;flex-shrink:0;line-height:1}
+.d-contact-row:hover .copy-btn,.contact-item:hover .copy-btn{opacity:.55}
+.copy-btn:hover{opacity:1!important;background:var(--hover);color:var(--text)}
+.copy-btn.copy-ok{color:var(--success);opacity:1!important}
 
 /* ── DETAIL ── */
 .detail-hero{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px;display:flex;gap:18px;align-items:flex-start;margin-bottom:16px;box-shadow:var(--shadow)}
@@ -209,7 +213,7 @@ a{color:var(--accent-text)}
 .detail-role{font-size:13px;color:var(--muted);margin:2px 0 9px}
 .detail-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
 .detail-contacts{display:flex;gap:16px;flex-wrap:wrap}
-.contact-item{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+.contact-item{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)}
 .detail-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:13px;margin-bottom:20px}
 .det-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 17px;box-shadow:var(--shadow)}
 .det-stat .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums}
@@ -441,6 +445,52 @@ select.prop-input{cursor:pointer}
 .bb-swatches{display:flex;gap:4px;flex-wrap:wrap}
 .bb-swatch{width:23px;height:23px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:transform .1s}
 .bb-swatch:hover{transform:scale(1.12);border-color:var(--border2)}
+
+/* ── O'ZBEK TAQVIMI ── */
+.dp-pop{position:fixed;z-index:500;background:var(--panel);border:1px solid var(--border2);border-radius:18px;box-shadow:0 12px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1);width:292px;overflow:hidden;animation:dpFadeIn .15s ease}
+[data-theme="dark"] .dp-pop{box-shadow:0 12px 40px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3)}
+@keyframes dpFadeIn{from{opacity:0;transform:translateY(-8px) scale(.97)}to{opacity:1;transform:none}}
+.dp-quick{display:flex;gap:4px;padding:12px 10px 10px;border-bottom:1px solid var(--border)}
+.dp-qbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:52px;border:none;border-radius:11px;background:var(--hover);cursor:pointer;color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.2px;transition:background .12s,color .12s;padding:0}
+.dp-qbtn:hover{background:var(--accent-soft);color:var(--accent-text)}
+.dp-qbtn svg{opacity:.7;transition:opacity .12s}
+.dp-qbtn:hover svg{opacity:1}
+.dp-nav{display:flex;align-items:center;padding:10px 12px 4px}
+.dp-nbtn{width:30px;height:30px;border:none;background:none;border-radius:8px;cursor:pointer;color:var(--muted);font-size:19px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .1s,color .1s}
+.dp-nbtn:hover{background:var(--hover);color:var(--text)}
+.dp-ntitle{flex:1;text-align:center;font-size:14px;font-weight:700;color:var(--text)}
+.dp-nyear{font-size:12px;font-weight:400;color:var(--muted);margin-left:5px}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;padding:2px 10px 8px}
+.dp-dow{text-align:center;font-size:10.5px;font-weight:700;color:var(--muted2);padding:5px 0 6px;letter-spacing:.3px}
+.dp-day{text-align:center;font-size:13px;height:33px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text);font-weight:500;transition:background .1s,color .1s}
+.dp-day:hover:not(.dp-other){background:var(--hover)}
+.dp-other{color:var(--muted2);opacity:.35;cursor:pointer}
+.dp-other:hover{opacity:.6;background:var(--hover)}
+.dp-wknd{color:var(--muted)}
+.dp-today{color:var(--accent-text);font-weight:700;position:relative}
+.dp-today::after{content:'';position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--accent)}
+.dp-today:hover{background:var(--accent-soft)}
+.dp-sel{background:var(--accent)!important;color:#fff!important;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,.2)}
+.dp-sel::after{display:none}
+.dp-foot{display:flex;gap:8px;padding:4px 10px 12px}
+.dp-ok{flex:1;height:38px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s;letter-spacing:.2px}
+.dp-ok:hover{opacity:.88}
+.dp-clr{height:38px;padding:0 16px;background:var(--hover);color:var(--muted);border:none;border-radius:11px;font-size:13px;font-weight:500;cursor:pointer;transition:background .12s,color .12s}
+.dp-clr:hover{background:var(--border2);color:var(--text)}
+.dp-input{cursor:pointer!important;caret-color:transparent}
+
+/* Belgilangan matn tarjima popupi */
+.rte-tr-pop{position:fixed;z-index:310;background:var(--panel);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);width:300px;display:none}
+.rte-tr-pop.open{display:block}
+.rte-tr-pop-head{display:flex;align-items:center;gap:6px;padding:8px 10px 7px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.rte-tr-pop-close{background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1;padding:0 2px;border-radius:4px;display:flex;align-items:center}
+.rte-tr-pop-close:hover{background:var(--hover);color:var(--text)}
+.rte-tr-act{background:none;border:none;cursor:pointer;color:var(--muted);width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;padding:0;transition:background .1s,color .1s}
+.rte-tr-act:hover{background:var(--hover);color:var(--text)}
+.rte-tr-pop-body{padding:10px 12px 12px;font-size:13px;line-height:1.6;color:var(--text);max-height:280px;overflow-y:auto}
+.rte-tr-check{padding:6px 12px 9px;border-top:1px solid var(--border);font-size:11px;display:none;align-items:center;gap:5px;line-height:1.4}
+.tr-check-ok{display:flex;align-items:center;gap:5px;color:var(--accent-text);font-weight:600}
+.tr-check-warn{display:flex;align-items:center;gap:5px;color:#d97706;font-weight:500}
 
 /* "/" buyruq menyusi */
 .rte-slash{position:fixed;z-index:300;display:none;width:262px;max-height:300px;overflow-y:auto;background:var(--panel);border:1px solid var(--border2);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px}

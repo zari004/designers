@@ -125,6 +125,11 @@ function openProjectPeek(id = null, preDesignerId = null){
       ${propRow('Dizayner','user',`<select class="prop-input" id="pk-did" onchange="peekDesignerChange()">${
         designers.map(d=>`<option value="${d.id}"${defDId==d.id?' selected':''}>${esc(d.name)} (${esc(d.category)})</option>`).join('')
       }</select>`)}
+      ${propRow('Holat','flag',`<select class="prop-input" id="pk-status">
+        <option value="wip"${(p?.status||'wip')==='wip'?' selected':''}>Jarayonda</option>
+        <option value="review"${p?.status==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
+        <option value="done"${p?.status==='done'?' selected':''}>Bajarildi</option>
+      </select>`)}
       ${propRow('Muhimlik','flag',`<select class="prop-input" id="pk-priority">
         <option value="low"${p?.priority==='low'?' selected':''}>Past</option>
         <option value="medium"${(p?.priority||'medium')==='medium'?' selected':''}>O'rta</option>
@@ -136,8 +141,7 @@ function openProjectPeek(id = null, preDesignerId = null){
           catKeys().map(c=>`<option value="${esc(c)}"${defCat===c?' selected':''}>${esc(CAT_INFO[c].label||c)}</option>`).join('')
         }</select>`;
       })())}
-      ${propRow('Boshlangan','cal',`<input type="date" class="prop-input" id="pk-date" value="${p?.date||today}"/>`)}
-      ${propRow('Muddat','clock',`<input type="date" class="prop-input" id="pk-deadline" value="${p?.deadline||''}"/>`)}
+      ${propRow('Muddat','clock',`<input type="text" class="prop-input dp-input" id="pk-deadline" readonly data-iso-date="${p?.deadline||''}" value="${dpFmt(p?.deadline||'')||''}" onclick="dpOpen(this)" placeholder="Sana tanlang…"/>`)}
       ${propRow('Birlik soni','hash',`<input type="text" class="prop-input" id="pk-units" value="${p?.units||1}" oninput="calcPeekTotal()" onkeydown="if(event.key==='Enter'){evalMathInput(this);event.preventDefault()}" onblur="evalMathInput(this)"/>`)}
       ${propRow("Narx (so'm)",'coin',`<input type="number" min="0" class="prop-input" id="pk-price" value="${defPrice}" oninput="calcPeekTotal()"/>`)}
       ${propRow("Jami to'lov",'sum',`<span class="prop-total" id="pk-total">—</span>`)}
@@ -152,8 +156,9 @@ function openProjectPeek(id = null, preDesignerId = null){
       data-placeholder="Bu yerga loyiha tavsifini yozing. Formatlash uchun matnni belgilang. Blok qo'shish uchun yangi qatorda / bosing."
       oninput="rteInput()" onkeydown="rteKeydown(event)" onkeyup="rteSaveSel()" onmouseup="rteSaveSel()"></div>
     <div id="peek-ru-box" style="display:none;margin-top:12px;padding:14px 16px;background:var(--hover);border-radius:10px;border:1px solid var(--border)">
-      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px"><svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Ruscha tarjima</div>
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:5px"><svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Ruscha tarjima<div style="margin-left:auto;display:flex;gap:3px"><button class="rte-tr-act" title="Nusxa ko'chirish" onclick="peekTrCopy()">${_TR_ICON_COPY}</button><button class="rte-tr-act" title="Almashtirish" onclick="peekTrReplace()">${_TR_ICON_REPLACE}</button></div></div>
       <div class="rich" id="peek-ru-content" style="font-size:13px;line-height:1.6;color:var(--text)"></div>
+      <div class="rte-tr-check" id="peek-ru-check" style="margin-top:8px;padding:0"></div>
     </div>
     ${p ? `<div class="section-label" style="display:block;margin:24px 0 2px">Izohlar</div>${commentBoxHtml(p,'peek')}` : ''}
   `;
@@ -196,10 +201,20 @@ function peekTranslate(){
   const html=byId('pk-rte')?.innerHTML||'';
   if(!html.trim()){ toast("Tavsif bo'sh — avval matn yozing"); return; }
   if(btn){ btn.disabled=true; btn.textContent='Tarjima qilinmoqda…'; }
+  // Original plain text — sifat tekshiruvi uchun
+  const uzDiv=document.createElement('div'); uzDiv.innerHTML=html;
+  const uzText=uzDiv.innerText||uzDiv.textContent||'';
+
   if(typeof aiTranslate==='function') aiTranslate(html, (ru)=>{
     const c=byId('peek-ru-content'); if(c) c.innerHTML=ru;
     if(box) box.style.display='block';
     if(btn){ btn.disabled=false; btn.innerHTML='<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0;vertical-align:middle;margin-right:4px"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Yashirish'; }
+    // Sifat tekshiruvi
+    const ruDiv2=document.createElement('div'); ruDiv2.innerHTML=ru;
+    const ruText=ruDiv2.innerText||ruDiv2.textContent||'';
+    _showPeekTrCheck('loading');
+    if(typeof aiCheckTranslation==='function')
+      aiCheckTranslation(uzText, ruText, r=>_showPeekTrCheck(r));
   }, (err)=>{
     if(btn){ btn.disabled=false; btn.textContent='🇷🇺 Ruscha tarjima'; }
     toast('Tarjima xatosi: '+err);
@@ -208,7 +223,7 @@ function peekTranslate(){
 }
 
 function closePeek(){
-  hideBubble(); hideSlash();
+  hideBubble(); hideSlash(); hideBubbleTrPop();
   document.getElementById('varaq-panel')?.remove();
   _varaqStack = []; _activeRteId = 'pk-rte'; savedRange = null;
   byId('peek-overlay').classList.remove('open');
@@ -267,8 +282,6 @@ function collectPeekProject(){
   const ed = byId('pk-rte');
   const plain = ed.innerText.replace(/\s+/g,' ').trim();
   const descHtml = sanitizeHtml(ed.innerHTML);
-  // Holat panel ichida ko'rsatilmaydi — kartadan o'zgartiriladi.
-  // Mavjud loyihaning holatini saqlaymiz, yangisi uchun "wip".
   const status = byId('pk-status')?.value
     || (peekProjId ? (projects.find(p=>p.id===peekProjId)?.status || 'wip') : 'wip');
   return {
@@ -279,8 +292,8 @@ function collectPeekProject(){
     category: byId('pk-cat').value,
     units: parseFloat(byId('pk-units').value)||1,
     pricePerUnit: parseInt(byId('pk-price').value)||0,
-    date: byId('pk-date').value || new Date().toISOString().slice(0,10),
-    deadline: byId('pk-deadline').value || null,
+    date: new Date().toISOString().slice(0,10),
+    deadline: byId('pk-deadline').dataset.isoDate || null,
     status,
     priority: byId('pk-priority').value,
     files: byId('pk-files').value.split(',').map(s=>s.trim()).filter(Boolean),
@@ -447,6 +460,8 @@ function ensureBubble(){
     <button class="bb-btn" title="Belgili ro'yxat" onmousedown="event.preventDefault()" onclick="rte('insertUnorderedList')"><svg viewBox="0 0 16 16" class="bb-ic"><circle cx="2.5" cy="3.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="8" r="1.1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="12.5" r="1.1" fill="currentColor" stroke="none"/><path d="M5.5 3.5h9M5.5 8h9M5.5 12.5h9"/></svg></button>
     <button class="bb-btn" title="Raqamli ro'yxat" onmousedown="event.preventDefault()" onclick="rte('insertOrderedList')"><b style="font-size:11px">1.</b></button>
     ${bn('removeFormat','Formatni tozalash','<span style="font-size:11px">Tx</span>')}
+    <span class="bb-sep"></span>
+    <button class="bb-btn" title="Belgilangan matnni rus tiliga tarjima qilish" onmousedown="event.preventDefault()" onclick="bubbleTranslate()"><svg width="14" height="10" viewBox="0 0 16 11" style="border-radius:1.5px"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg></button>
   `;
   document.body.appendChild(b);
 }
@@ -479,6 +494,182 @@ function hideBubble(){
   if(b){ b.classList.remove('open'); byId('bb-colorpop')?.classList.remove('open'); }
 }
 
+// ── BELGILANGAN MATNNI RUS TILIGA TARJIMA ──
+let _bubbleTrRange = null;
+let _bubbleTrOrigText = '';
+
+function bubbleTranslate(){
+  const s = getSelection();
+  if(!s || s.isCollapsed || !s.rangeCount){ toast('Avval tarjima qilinadigan matnni belgilang'); return; }
+  const range = s.getRangeAt(0);
+  _bubbleTrRange = range.cloneRange(); // almashtirish uchun saqlanadi
+  const rect = range.getBoundingClientRect();
+
+  // Belgilangan matn HTML sifatida olinadi
+  const frag = range.cloneContents();
+  const tmp = document.createElement('div');
+  tmp.appendChild(frag);
+  const selectedHtml = tmp.innerHTML.trim();
+  if(!selectedHtml) return;
+  _bubbleTrOrigText = tmp.innerText || tmp.textContent || '';
+
+  hideBubble();
+  _showBubbleTrPop('<span style="color:var(--muted)">Tarjima qilinmoqda…</span>', rect);
+  _showBubbleTrCheck(null); // reset
+
+  if(typeof aiTranslate !== 'function'){
+    _updateBubbleTrBody('<span style="color:var(--danger)">AI moduli yuklanmagan</span>');
+    return;
+  }
+  aiTranslate(selectedHtml,
+    (ruHtml) => {
+      _updateBubbleTrBody(ruHtml);
+      // Sifat tekshiruvi
+      const ruDiv=document.createElement('div'); ruDiv.innerHTML=ruHtml;
+      const ruText=ruDiv.innerText||ruDiv.textContent||'';
+      _showBubbleTrCheck('loading');
+      if(typeof aiCheckTranslation==='function')
+        aiCheckTranslation(_bubbleTrOrigText, ruText, r=>_showBubbleTrCheck(r));
+    },
+    (err) => { _updateBubbleTrBody('<span style="color:var(--danger)">Xatolik: '+esc(err)+'</span>'); }
+  );
+}
+
+const _TR_ICON_COPY    = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="9" height="10" rx="1.5"/><path d="M11 4V3a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h2"/></svg>';
+const _TR_ICON_REPLACE = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8V5a2 2 0 0 1 2-2h7M10 1l2 2-2 2M13 8v3a2 2 0 0 1-2 2H4M6 15l-2-2 2-2"/></svg>';
+
+function _showBubbleTrPop(html, rect){
+  const RU_SVG = '<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg>';
+  let pop = byId('rte-tr-pop');
+  if(!pop){
+    pop = document.createElement('div');
+    pop.id = 'rte-tr-pop';
+    pop.className = 'rte-tr-pop';
+    pop.innerHTML = `
+      <div class="rte-tr-pop-head">${RU_SVG}Ruscha tarjima
+        <div style="margin-left:auto;display:flex;gap:2px;align-items:center">
+          <button class="rte-tr-act" title="Nusxa ko'chirish" onmousedown="event.preventDefault()" onclick="bubbleTrCopy()">${_TR_ICON_COPY}</button>
+          <button class="rte-tr-act" title="Almashtirish" onmousedown="event.preventDefault()" onclick="bubbleTrReplace()">${_TR_ICON_REPLACE}</button>
+          <button class="rte-tr-pop-close" onmousedown="event.preventDefault()" onclick="hideBubbleTrPop()">×</button>
+        </div>
+      </div>
+      <div class="rte-tr-pop-body rich"></div>
+      <div class="rte-tr-check" id="rte-tr-check"></div>`;
+    document.body.appendChild(pop);
+  }
+  _updateBubbleTrBody(html);
+  pop.classList.add('open');
+
+  // Joylashtirish: belgilangan matn ostida
+  requestAnimationFrame(()=>{
+    const pw = pop.offsetWidth || 300;
+    const ph = pop.offsetHeight || 120;
+    let left = rect.left + rect.width/2 - pw/2;
+    left = Math.max(10, Math.min(window.innerWidth - pw - 10, left));
+    let top = rect.bottom + 8;
+    if(top + ph > window.innerHeight - 10) top = Math.max(10, rect.top - ph - 8);
+    pop.style.left = left + 'px';
+    pop.style.top  = top  + 'px';
+  });
+
+  setTimeout(()=>{ document.addEventListener('mousedown', _trPopOutClick); }, 80);
+}
+
+function _updateBubbleTrBody(html){
+  const body = document.querySelector('#rte-tr-pop .rte-tr-pop-body');
+  if(body) body.innerHTML = html;
+}
+
+function hideBubbleTrPop(){
+  const pop = byId('rte-tr-pop');
+  if(pop) pop.classList.remove('open');
+  document.removeEventListener('mousedown', _trPopOutClick);
+}
+
+function _trPopOutClick(e){
+  const pop = byId('rte-tr-pop');
+  if(!pop || !pop.contains(e.target)) hideBubbleTrPop();
+}
+
+const _CHK_IC_OK   = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l4 4 6-7"/></svg>';
+const _CHK_IC_WARN = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 5v4M8 12v.5"/><path d="M2 14L8 2l6 12H2z"/></svg>';
+
+function _renderCheckHtml(result){
+  if(!result) return '';
+  if(result === 'loading') return '<span style="color:var(--muted)">· Sifat tekshirilmoqda…</span>';
+  if(result.ok)  return `<span class="tr-check-ok">${_CHK_IC_OK} Ma'no to'g'ri uzatildi</span>`;
+  return `<span class="tr-check-warn">${_CHK_IC_WARN} ${esc(result.note||"Ma'no to'liq uzatilmagan bo'lishi mumkin")}</span>`;
+}
+
+function _showBubbleTrCheck(result){
+  const el = byId('rte-tr-check'); if(!el) return;
+  if(!result){ el.style.display='none'; el.innerHTML=''; return; }
+  el.innerHTML = _renderCheckHtml(result);
+  el.style.display = 'flex';
+}
+
+function _showPeekTrCheck(result){
+  const el = byId('peek-ru-check'); if(!el) return;
+  if(!result){ el.style.display='none'; el.innerHTML=''; return; }
+  el.innerHTML = _renderCheckHtml(result);
+  el.style.display = 'flex';
+}
+
+function bubbleTrCopy(){
+  const body = document.querySelector('#rte-tr-pop .rte-tr-pop-body');
+  if(!body) return;
+  const text = body.innerText || body.textContent || '';
+  if(!text.trim()){ toast("Hali tarjima tayyor emas"); return; }
+  (navigator.clipboard?.writeText(text)||Promise.reject()).then(()=>toast('Nusxalandi ✓')).catch(()=>{
+    const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Nusxalandi ✓');
+  });
+}
+
+function bubbleTrReplace(){
+  const body = document.querySelector('#rte-tr-pop .rte-tr-pop-body');
+  if(!body || !_bubbleTrRange){ toast("Tarjima yoki belgilash topilmadi"); return; }
+  const ruHtml = body.innerHTML;
+  if(!ruHtml || body.textContent.includes('Tarjima qilinmoqda')){ toast("Hali tarjima tayyor emas"); return; }
+  try{
+    _bubbleTrRange.deleteContents();
+    const frag = document.createRange().createContextualFragment(ruHtml);
+    _bubbleTrRange.insertNode(frag);
+    _bubbleTrRange.collapse(false);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(_bubbleTrRange);
+  }catch(e){ toast("Almashtirish xatosi: "+e.message); return; }
+  hideBubbleTrPop();
+  _bubbleTrRange = null;
+  toast("Matn almashtirildi ✓");
+}
+
+// ── PEEK TAVSIF TARJIMASI — NUSXA / ALMASHTIRISH ──
+function peekTrCopy(){
+  const c = byId('peek-ru-content');
+  if(!c) return;
+  const text = c.innerText || c.textContent || '';
+  if(!text.trim()){ toast("Hali tarjima tayyor emas"); return; }
+  (navigator.clipboard?.writeText(text)||Promise.reject()).then(()=>toast('Nusxalandi ✓')).catch(()=>{
+    const ta=document.createElement('textarea'); ta.value=text; ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); toast('Nusxalandi ✓');
+  });
+}
+
+function peekTrReplace(){
+  const c = byId('peek-ru-content');
+  const rte = byId('pk-rte');
+  if(!c || !rte) return;
+  const html = c.innerHTML;
+  if(!html || !html.trim()){ toast("Hali tarjima tayyor emas"); return; }
+  rte.innerHTML = html;
+  typeof rteInput === 'function' && rteInput();
+  // tarjima qutisini yopish
+  const box = byId('peek-ru-box'); if(box) box.style.display='none';
+  const btn = byId('peek-ru-btn');
+  if(btn) btn.innerHTML='<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0;vertical-align:middle;margin-right:4px"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Ruscha tarjima';
+  toast("Matn almashtirildi ✓");
+}
+
 document.addEventListener('selectionchange', ()=>{
   if(byId('peek')?.classList.contains('open')) scheduleBubble();
 });
@@ -503,7 +694,7 @@ const SLASH_ITEMS = [
     const vid='v'+Date.now();
     rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
     peekVaraqs[vid]={title:'Yangi sahifa',descHtml:''};
-    syncPeekVaraqs();
+    if(_activeRteId==='varaq-rte') saveVaraqNow(); else syncPeekVaraqs();
   }},
 ];
 

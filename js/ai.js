@@ -17,10 +17,16 @@ function getAiInstructions(){ return localStorage.getItem(AI_INSTR_STORE)||''; }
 const RU_FLAG='<svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;vertical-align:middle;margin-right:4px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg>';
 
 // ── MODAL OCHISH ──
-function openAiAssistant(){
+async function openAiAssistant(){
   if(!getAiKey()){
-    if(confirm("AI yordamchi uchun OpenAI API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
-      showPanel('settings');
+    // Avval Firestore'dan yuklashga urinib ko'ramiz
+    if(typeof syncSettingsFromFirestore==='function') await syncSettingsFromFirestore();
+  }
+  if(!getAiKey()){
+    if(confirm("AI yordamchi uchun Groq API kaliti kerak.\nSozlamalar sahifasiga o'tish?")){
+      const _src=document.querySelector('.panel.active')?.id?.replace('panel-','')||'projects';
+      if(typeof closePeek==='function') closePeek();
+      goToSettingsFrom(_src);
       setTimeout(()=>{
         const el=document.getElementById('ai-key-inp');
         if(el){ el.focus(); el.scrollIntoView({behavior:'smooth',block:'center'}); }
@@ -514,7 +520,7 @@ async function aiTranslate(html, onDone, onError){
       body:JSON.stringify({
         model:AI_CHAT_MODEL,
         messages:[
-          {role:'system',content:"Siz HTML tarjimon agentisiz. Foydalanuvchi o'zbek tilida HTML yuboradi. Siz HTML tuzilmasini (barcha teglar va atributlar) TO'LIQ SAQLAGAN HOLDA faqat matn mazmunini o'zbek tilidan rus tiliga tarjima qilasiz. Faqat tarjima qilingan HTML qaytaring, hech qanday izoh, kod bloki (```) yoki qo'shimcha matn yozmang."},
+          {role:'system',content:"You are a professional Uzbek-to-Russian translator working with HTML content.\n\nYour STRICT rules:\n1. Translate EVERY word from Uzbek to Russian - leave nothing in Uzbek\n2. Write Russian text ONLY in Cyrillic script: А Б В Г Д Е Ё Ж З И Й К Л М Н О П Р С Т У Ф Х Ц Ч Ш Щ Ъ Ы Ь Э Ю Я\n3. NEVER use Latin letters for Russian words (wrong: 'Beliy', correct: 'Белый')\n4. Keep all HTML tags and attributes exactly as-is, only translate text inside tags\n5. Return ONLY the translated HTML - no explanations, no code fences (```), no extra text\n\nTranslation examples:\n- 'Asosiy rang: Oq' → 'Основной цвет: Белый'\n- 'Mahsulot nomi' → 'Название товара'\n- 'Loyiha tavsifi' → 'Описание проекта'\n- 'Dizayn' → 'Дизайн'\n- 'Sahifa' → 'Страница'\n- 'Fon' → 'Фон'\n- 'Sarlavha' → 'Заголовок'"},
           {role:'user',content:html}
         ],
         temperature:0.3,
@@ -533,6 +539,34 @@ async function aiTranslate(html, onDone, onError){
   }catch(e){ if(onError) onError(e.message); else toast('Tarjima xatosi: '+e.message); }
 }
 
+// Tarjima sifatini tekshirish — qisqa tekstlarda (<25 harf) o'tkazib yuboriladi
+async function aiCheckTranslation(uzText, ruText, onResult){
+  if(!uzText || uzText.replace(/\s+/g,'').length < 25){ onResult(null); return; }
+  const key=getAiKey(); if(!key){ onResult(null); return; }
+  try{
+    const resp=await fetch(AI_CHAT_URL,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body:JSON.stringify({
+        model:AI_CHAT_MODEL,
+        messages:[
+          {role:'system',content:"You are a translation quality evaluator for Uzbek→Russian translations. Check if the Russian translation accurately and completely conveys the meaning of the Uzbek original. Consider semantic accuracy, completeness, and naturalness. Respond ONLY with valid JSON (no other text): {\"ok\":true,\"note\":\"\"} if accurate, or {\"ok\":false,\"note\":\"<1 sentence in Uzbek explaining the issue, max 70 chars>\"} if there are problems."},
+          {role:'user',content:`Uzbek:\n${uzText.slice(0,600)}\n\nRussian:\n${ruText.slice(0,600)}`}
+        ],
+        temperature:0.1,
+        max_tokens:120,
+        response_format:{type:'json_object'}
+      })
+    });
+    if(!resp.ok){ onResult(null); return; }
+    const data=await resp.json();
+    const raw=(data.choices?.[0]?.message?.content||'').trim();
+    const m=raw.match(/\{[\s\S]*?\}/);
+    if(!m){ onResult(null); return; }
+    onResult(JSON.parse(m[0]));
+  }catch(e){ onResult(null); }
+}
+
 // ── TASDIQLASH ──
 function aiApply(){
   const p=_aiLastResult;
@@ -541,7 +575,7 @@ function aiApply(){
     if(p.title){ const el=byId('pk-title'); if(el) el.value=p.title; }
     if(p.descHtml){ const rte=byId('pk-rte'); if(rte){ rte.innerHTML=p.descHtml; typeof rteInput==='function'&&rteInput(); } }
     if(p.priority){ const el=byId('pk-priority'); if(el) el.value=p.priority; }
-    if(p.deadline){ const el=byId('pk-deadline'); if(el) el.value=p.deadline; }
+    if(p.deadline){ const el=byId('pk-deadline'); if(el){ el.dataset.isoDate=p.deadline; el.value=typeof dpFmt==='function'?dpFmt(p.deadline):p.deadline; } }
     if(p.category&&typeof CAT_INFO!=='undefined'&&CAT_INFO[p.category]){
       const el=byId('pk-cat'); if(el){ el.value=p.category; typeof peekCatChange==='function'&&peekCatChange(); }
     }
