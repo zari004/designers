@@ -827,3 +827,6 @@ window.addEventListener('exon-ready',()=>{
   if(new URLSearchParams(location.search).get('share')) return;
   _ensureAiChat();
 });
+if(document.readyState==='complete'||document.readyState==='interactive'){
+  setTimeout(()=>{if(!_aiChatReady&&!new URLSearchParams(location.search).get('share'))_ensureAiChat();},2000);
+}
