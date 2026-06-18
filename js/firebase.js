@@ -82,10 +82,23 @@ async function fbSave(){
   }
 }
 
+// Render'ni xavfsiz chaqirish — xato bo'lsa MATNINI qaytaradi (yutib yubormaydi)
+function _safeRender(){
+  try{
+    if(typeof renderDashboard === 'function') renderDashboard();
+    if(typeof rerenderActive === 'function') rerenderActive();
+    if(typeof updateCounts === 'function') updateCounts();
+    return '';
+  }catch(e){
+    console.error('render xato:', e);
+    return (e && e.message) ? e.message : String(e);
+  }
+}
+
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v71)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v71)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v72)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v72)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
@@ -103,20 +116,22 @@ async function fbLoad(){
     const data = snap.data();
     const dLen = Array.isArray(data.designers) ? data.designers.length : '—';
     const pLen = Array.isArray(data.projects) ? data.projects.length : '—';
-    // Boshlang'ich yuklash: SERVER — haqiqat manbai.
-    // Faqat saqlanmagan lokal o'zgarishlar (isDirty) bo'lsa serverni qo'llamaymiz.
-    // Boot paytida isDirty=false, shuning uchun server har doim qo'llanadi.
+    // Boshlang'ich yuklash: SERVER — haqiqat manbai (boot'da isDirty=false).
+    // Saqlanmagan lokal o'zgarish bo'lsa (isDirty) — serverni qo'llamaymiz,
+    // lekin baribir xotiradagi holatni ekranga chizamiz.
     if(!isDirty){
       applyData(data);
       saveLocal();
-      // Faqat faol panelga emas — dashboard'ni ham aniq qayta chizamiz
-      if(typeof renderDashboard === 'function') renderDashboard();
-      if(typeof rerenderActive === 'function') rerenderActive();
-      if(typeof updateCounts === 'function') updateCounts();
     }
+    const renderErr = _safeRender();
     dataSavedAt = data.savedAt || dataSavedAt;
-    // Status: server soni → ekrandagi (global) soni — tashxis uchun
-    setSyncStatus('ok', "Yuklandi: " + dLen + "d/" + pLen + "p → ekran " + designers.length + "/" + projects.length + " · " + new Date().toLocaleTimeString('uz'));
+    // TASHXIS: render xatosini va DOM'dagi haqiqiy qiymatni ko'rsatamiz
+    const domT = document.getElementById('st-total')?.textContent ?? '?';
+    if(renderErr){
+      setSyncStatus('err', "RENDER xato: " + renderErr);
+    } else {
+      setSyncStatus('ok', "ekran " + designers.length + "/" + projects.length + " · DOM:" + domT + " dirty:" + (isDirty?1:0) + " · " + new Date().toLocaleTimeString('uz'));
+    }
   }catch(e){
     setSyncStatus('err', "Yuklash xatosi: " + e.message);
     console.error('fbLoad:', e);
@@ -136,11 +151,13 @@ function fbSetupRealtimeSync(){
     if(dataSavedAt && data.savedAt && data.savedAt <= dataSavedAt) return;
     applyData(data);
     saveLocal();
-    if(typeof renderDashboard === 'function') renderDashboard();
-    if(typeof rerenderActive === 'function') rerenderActive();
-    if(typeof updateCounts === 'function') updateCounts();
+    const re = _safeRender();
     dataSavedAt = data.savedAt;
-    setSyncStatus('ok', "↻ Yangilandi · " + new Date().toLocaleTimeString('uz'));
+    if(re){
+      setSyncStatus('err', "↻ RENDER xato: " + re);
+    } else {
+      setSyncStatus('ok', "↻ Yangilandi · " + new Date().toLocaleTimeString('uz'));
+    }
   }, err => {
     console.error('onSnapshot xato:', err);
     setSyncStatus('err', "Ulanish uzildi — internet tekshiring");
