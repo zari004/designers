@@ -97,8 +97,8 @@ function _safeRender(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v72)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v72)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v73)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v73)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
