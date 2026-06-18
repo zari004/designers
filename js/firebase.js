@@ -84,8 +84,8 @@ async function fbSave(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v66)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v66)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v67)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v67)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
@@ -101,13 +101,15 @@ async function fbLoad(){
       return;
     }
     const data = snap.data();
+    const dLen = Array.isArray(data.designers) ? data.designers.length : '—';
+    const pLen = Array.isArray(data.projects) ? data.projects.length : '—';
     if(!dataSavedAt || !data.savedAt || data.savedAt > dataSavedAt){
       applyData(data);
       saveLocal();
       rerenderActive();
     }
     dataSavedAt = data.savedAt || dataSavedAt;
-    setSyncStatus('ok', "Yuklandi · " + new Date().toLocaleTimeString('uz'));
+    setSyncStatus('ok', "Yuklandi: " + dLen + "d/" + pLen + "p · " + new Date().toLocaleTimeString('uz'));
   }catch(e){
     setSyncStatus('err', "Yuklash xatosi: " + e.message);
     console.error('fbLoad:', e);
