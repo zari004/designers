@@ -84,8 +84,8 @@ async function fbSave(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v68)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v68)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v69)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v69)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
@@ -109,7 +109,8 @@ async function fbLoad(){
     if(!isDirty || !dataSavedAt || !data.savedAt || data.savedAt > dataSavedAt){
       applyData(data);
       saveLocal();
-      rerenderActive();
+      if(typeof rerenderActive === 'function') rerenderActive();
+      if(typeof updateCounts === 'function') updateCounts();
     }
     dataSavedAt = data.savedAt || dataSavedAt;
     setSyncStatus('ok', "Yuklandi: " + dLen + "d/" + pLen + "p · " + new Date().toLocaleTimeString('uz'));
@@ -132,7 +133,8 @@ function fbSetupRealtimeSync(){
     if(dataSavedAt && data.savedAt && data.savedAt <= dataSavedAt) return;
     applyData(data);
     saveLocal();
-    rerenderActive();
+    if(typeof rerenderActive === 'function') rerenderActive();
+    if(typeof updateCounts === 'function') updateCounts();
     dataSavedAt = data.savedAt;
     setSyncStatus('ok', "↻ Yangilandi · " + new Date().toLocaleTimeString('uz'));
   }, err => {
