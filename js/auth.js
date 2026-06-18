@@ -235,9 +235,7 @@ async function renderFbUsersAdmin(){
           <div style="font-size:11.5px;color:var(--muted)">${esc(u.email)}</div>
         </div>
         <select class="mini-select" onchange="fbChangeRole('${u.uid}',this.value)" ${u.uid===_currentUser?.uid?'disabled title="O\'z rolini o\'zgartirish mumkin emas"':''}>
-          <option value="admin"  ${u.role==='admin'  ?'selected':''}>Admin</option>
-          <option value="manager"${u.role==='manager'?'selected':''}>Menejer</option>
-          <option value="viewer" ${u.role==='viewer' ?'selected':''}>Ko'ruvchi</option>
+          ${Object.entries(ROLE_DEFS).map(([rk,rd])=>`<option value="${esc(rk)}" ${u.role===rk?'selected':''}>${esc(rd.label)}</option>`).join('')}
         </select>
         ${u.uid!==_currentUser?.uid?`<button class="btn btn-danger btn-xs" onclick="fbDeleteUser('${u.uid}','${esc(u.displayName||u.email)}')">×</button>`:''}
       </div>`).join('');
@@ -249,8 +247,14 @@ async function renderFbUsersAdmin(){
 async function fbChangeRole(uid, role){
   try{
     await updateFbUserRole(uid, role);
+    // Rolning ruxsatlarini ham foydalanuvchiga yozish — shunda rol haqiqatan kuchga kiradi
+    const perms = ROLE_DEFS[role]?.perms;
+    if(perms && typeof updateFbUserPermissions === 'function'){
+      await updateFbUserPermissions(uid, perms);
+    }
     toast("Rol o'zgartirildi");
     _fbUsersCache = await getAllFbUsers();
+    renderFbUsersAdmin();
   }catch(e){ toast("Xato: " + e.message); }
 }
 
@@ -264,8 +268,15 @@ async function fbDeleteUser(uid, name){
 }
 
 // ── ROL BOSHQARISH ──
+// Asosiy (o'chirib bo'lmaydigan) rollar
+const _BUILTIN_ROLES = ['admin','manager','viewer'];
+
 function saveRoleDefs(){
   localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
+  // Boshqa qurilmalarga ham tarqatish (Firestore sozlamalar hujjati orqali)
+  if(typeof saveSettingToFirestore === 'function'){
+    saveSettingToFirestore('roleDefs', JSON.stringify(ROLE_DEFS));
+  }
 }
 
 function updateRolePerms(roleName, perms){
@@ -286,22 +297,80 @@ function toggleRolePerm(roleName, permKey, checked){
   toast(`${esc(PERM_LABELS[permKey])} — ${checked?'Ruxsat berildi':'Ruxsat o\'chirildi'}`);
 }
 
+// Yangi rol qo'shish
+function addRole(){
+  const keyInp = document.getElementById('new-role-key');
+  const labelInp = document.getElementById('new-role-label');
+  let key = (keyInp?.value || '').trim().toLowerCase().replace(/[^a-z0-9_]/g,'');
+  const label = (labelInp?.value || '').trim();
+  if(!key){ toast("Rol kalitini kiriting (masalan: buxgalter)"); return; }
+  if(ROLE_DEFS[key]){ toast("Bunday rol allaqachon mavjud"); return; }
+  ROLE_DEFS[key] = {
+    label: label || key,
+    perms: { designers:false, projects:false, payments:false, reports:false, users:false, settings:false }
+  };
+  saveRoleDefs();
+  if(keyInp) keyInp.value='';
+  if(labelInp) labelInp.value='';
+  renderRoleManager();
+  toast(`"${esc(label||key)}" roli qo'shildi`);
+}
+
+// Rol nomini (ko'rinadigan label) tahrirlash
+function renameRoleLabel(roleName, label){
+  if(!ROLE_DEFS[roleName]) return;
+  ROLE_DEFS[roleName].label = (label || '').trim() || roleName;
+  saveRoleDefs();
+}
+
+// Rolni o'chirish
+function deleteRole(roleName){
+  if(_BUILTIN_ROLES.includes(roleName)){ toast("Asosiy rollarni o'chirib bo'lmaydi"); return; }
+  if(!ROLE_DEFS[roleName]) return;
+  const inUse = (getUsers() || []).some(u => u.role === roleName);
+  if(inUse){ toast("Bu rol foydalanuvchilarga biriktirilgan — avval ularning rolini o'zgartiring"); return; }
+  if(!confirm(`"${ROLE_DEFS[roleName].label || roleName}" rolini o'chirasizmi?`)) return;
+  delete ROLE_DEFS[roleName];
+  saveRoleDefs();
+  renderRoleManager();
+  toast("Rol o'chirildi");
+}
+
 function renderRoleManager(){
   const el = document.getElementById('role-mgr-content');
   if(!el) return;
   let html = '';
   for(const [rName, rDef] of Object.entries(ROLE_DEFS)){
+    const isBuiltin = _BUILTIN_ROLES.includes(rName);
     html += `<div class="role-item" style="border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
-      <div style="font-weight:600;margin-bottom:8px">${esc(rDef.label)} (${esc(rName)})</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:8px">`;
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input class="form-input" style="font-weight:600;flex:1" value="${esc(rDef.label)}" onchange="renameRoleLabel('${rName}',this.value)" title="Rol nomi"/>
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">${esc(rName)}</span>
+        ${isBuiltin ? '' : `<button class="btn btn-danger btn-xs" title="Rolni o'chirish" onclick="deleteRole('${rName}')">×</button>`}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px">`;
     for(const [pKey, pLabel] of Object.entries(PERM_LABELS)){
       const checked = rDef.perms[pKey] ? 'checked' : '';
+      // Admin har doim hamma narsaga ega — uni o'zgartirib bo'lmaydi
+      const disabled = rName === 'admin' ? 'disabled' : '';
       html += `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-        <input type="checkbox" ${checked} onchange="toggleRolePerm('${rName}','${pKey}',this.checked)"/>
+        <input type="checkbox" ${checked} ${disabled} onchange="toggleRolePerm('${rName}','${pKey}',this.checked)"/>
         ${esc(pLabel)}
       </label>`;
     }
     html += `</div></div>`;
   }
+  // ── Yangi rol qo'shish formasi ──
+  html += `<div style="border:1px dashed var(--border);border-radius:8px;padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+    <div style="flex:1;min-width:130px">
+      <label class="form-label" style="font-size:11px;margin-bottom:4px">Rol kaliti (lotin harflari)</label>
+      <input class="form-input" id="new-role-key" placeholder="masalan: buxgalter"/>
+    </div>
+    <div style="flex:1;min-width:130px">
+      <label class="form-label" style="font-size:11px;margin-bottom:4px">Ko'rinadigan nomi</label>
+      <input class="form-input" id="new-role-label" placeholder="masalan: Buxgalter"/>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="addRole()">+ Rol qo'shish</button>
+  </div>`;
   el.innerHTML = html;
 }

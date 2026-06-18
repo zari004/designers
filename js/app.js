@@ -195,6 +195,7 @@ const SETTINGS_FIELDS = {
   notionParent:   'notion_parent',
   notionProxy:    'notion_proxy',
   aiInstructions: 'exon_ai_instructions',
+  roleDefs:       'exon_role_defs',
 };
 
 // Bitta sozlamani Firestore'ga yozish (barcha qurilmalarga tarqatadi)
@@ -228,6 +229,14 @@ async function syncSettingsFromFirestore(){
     if(Object.keys(toUpload).length){
       await getDb().collection('exon').doc('settings').set(toUpload,{merge:true});
     }
+    // Rollar boshqa qurilmada o'zgargan bo'lsa — xotiradagi ROLE_DEFS'ni yangilash
+    try{
+      const rd = JSON.parse(localStorage.getItem('exon_role_defs')||'null');
+      if(rd && typeof ROLE_DEFS !== 'undefined'){
+        Object.keys(ROLE_DEFS).forEach(k=>delete ROLE_DEFS[k]);
+        Object.assign(ROLE_DEFS, rd);
+      }
+    }catch(e){ /* noto'g'ri JSON — e'tiborsiz */ }
     // Sozlamalar sahifasi ochiq bo'lsa — maydonlar va belgilarni yangilash
     const sp=document.getElementById('panel-settings');
     if(sp && sp.classList.contains('active') && typeof renderSettingsPage==='function'){
@@ -306,7 +315,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v74';
+const APP_VER = 'v75';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){
