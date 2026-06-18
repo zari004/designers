@@ -84,8 +84,8 @@ async function fbSave(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v67)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v67)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v68)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v68)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
@@ -103,7 +103,10 @@ async function fbLoad(){
     const data = snap.data();
     const dLen = Array.isArray(data.designers) ? data.designers.length : '—';
     const pLen = Array.isArray(data.projects) ? data.projects.length : '—';
-    if(!dataSavedAt || !data.savedAt || data.savedAt > dataSavedAt){
+    // Boshlang'ich yuklashda SERVER — haqiqat manbai.
+    // Lokal kesh faqat tezkor ko'rsatish uchun. Faqat saqlanmagan lokal
+    // o'zgarishlar bo'lsa (isDirty) serverni qo'llamaymiz.
+    if(!isDirty || !dataSavedAt || !data.savedAt || data.savedAt > dataSavedAt){
       applyData(data);
       saveLocal();
       rerenderActive();
