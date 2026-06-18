@@ -1,6 +1,6 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v70';
+const CACHE_VER  = 'exon-v71';
 
 // Sahifadan "yangilansin" xabar kelsa — darhol faollashuv
 self.addEventListener('message', e => {
@@ -73,23 +73,26 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // HTML sahifalar: tarmoq birinchi, oflayn bo'lsa → keshdan
+  // HTML sahifalar: tarmoq birinchi (HTTP keshni CHETLAB O'TIB), oflayn bo'lsa → keshdan
+  // {cache:'no-store'} — brauzerning HTTP keshi eski index.html bermasligi uchun.
+  // Bu — foydalanuvchi eski versiyada qotib qolishining ASOSIY sababini bartaraf etadi.
   if (req.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: 'no-store' }).then(res => {
         const clone = res.clone();
         caches.open(CACHE_VER).then(c => c.put(req, clone));
         return res;
-      }).catch(() => caches.match('/index.html'))
+      }).catch(() => caches.match(req).then(r => r || caches.match('/index.html')))
     );
     return;
   }
 
-  // JS / CSS: tarmoq birinchi (har doim eng yangi kod), oflayn bo'lsa → keshdan
-  // Shu tufayli foydalanuvchi hech qachon eski versiyada qolib ketmaydi
+  // JS / CSS: tarmoq birinchi, HTTP keshni CHETLAB O'TIB (har doim eng yangi kod)
+  // {cache:'no-store'} bo'lmasa, brauzer HTTP keshi eski faylni qaytarib,
+  // foydalanuvchi eski versiyada qolib ketadi.
   if (/\.(js|css)(\?|$)/i.test(url.pathname) || url.pathname === '/manifest.json') {
     e.respondWith(
-      fetch(req).then(res => {
+      fetch(req, { cache: 'no-store' }).then(res => {
         if (res && res.status === 200 && res.type !== 'opaque') {
           const clone = res.clone();
           caches.open(CACHE_VER).then(c => c.put(req, clone));

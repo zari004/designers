@@ -84,8 +84,8 @@ async function fbSave(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v70)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v70)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v71)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v71)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),

@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css"/>
-<link rel="stylesheet" href="css/style.css?v=70"/>
+<link rel="stylesheet" href="css/style.css?v=71"/>
 <!-- Firebase SDK (compat v10) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -656,32 +656,43 @@
   </div>
 </div>
 
-<script src="js/firebase.js?v=70"></script>
-<script src="js/data.js?v=70"></script>
-<script src="js/auth.js?v=70"></script>
-<script src="js/ui.js?v=70"></script>
-<script src="js/datepicker.js?v=70"></script>
-<script src="js/editor.js?v=70"></script>
-<script src="js/notion.js?v=70"></script>
-<script src="js/sheets.js?v=70"></script>
-<script src="js/ai.js?v=70"></script>
-<script src="js/app.js?v=70"></script>
+<script src="js/firebase.js?v=71"></script>
+<script src="js/data.js?v=71"></script>
+<script src="js/auth.js?v=71"></script>
+<script src="js/ui.js?v=71"></script>
+<script src="js/datepicker.js?v=71"></script>
+<script src="js/editor.js?v=71"></script>
+<script src="js/notion.js?v=71"></script>
+<script src="js/sheets.js?v=71"></script>
+<script src="js/ai.js?v=71"></script>
+<script src="js/app.js?v=71"></script>
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
+// Yangi SW faollashganda — sahifa BIR MARTA qayta yuklanadi (cheksiz aylanma yo'q).
 if ('serviceWorker' in navigator) {
+  let _reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (_reloaded) return;
+    _reloaded = true;
+    location.reload();
+  });
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
       .then(reg => {
         reg.update().catch(()=>{});
+        // Kutib turgan SW bo'lsa — darhol faollashtirish
+        if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         reg.addEventListener('updatefound', () => {
           const nw = reg.installing;
+          if (!nw) return;
           nw.addEventListener('statechange', () => {
             if (nw.state === 'installed' && navigator.serviceWorker.controller) {
               nw.postMessage({ type: 'SKIP_WAITING' });
-              setTimeout(() => location.reload(), 500);
             }
           });
         });
+        // Yangilanishni davriy tekshirib turish
+        setInterval(() => reg.update().catch(()=>{}), 60000);
       })
       .catch(err => console.warn('SW xatosi:', err));
   });

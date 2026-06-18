@@ -306,7 +306,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v70';
+const APP_VER = 'v71';
 
 // Doimiy versiya belgisi + global xatolarni status barda ko'rsatish (tashxis uchun)
 function _showFatal(msg){
