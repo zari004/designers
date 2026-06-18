@@ -140,7 +140,7 @@ function renderDashboard(){
           <div style="font-size:11.5px;color:var(--muted)">${esc(d.role)}</div>
         </div>
       </div>
-      <span class="d-cat-badge ${CAT_INFO[d.category].cls}">${d.category}</span>
+      <span class="d-cat-badge ${catOf(d.category).cls}">${d.category}</span>
       ${statusBadge(d.status)}
     </div>`).join('') : '<div class="empty">Hali dizayner qo\'shilmagan</div>';
 
@@ -203,7 +203,7 @@ function renderDesigners(){
     const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
     const doneLastMonth=projects.filter(p=>p.designerId===d.id&&p.status==='done'&&new Date(p.doneDate||p.date)>=lastMonth).length;
     const wipNow=projects.filter(p=>p.designerId===d.id&&p.status==='wip').length;
-    const ci=CAT_INFO[d.category];
+    const ci=catOf(d.category);
     return `<div class="d-card" onclick="openDetail(${d.id})">
       <div class="d-card-top">
         ${photoAvatar(d,64)}
@@ -265,7 +265,7 @@ function renderDetail(){
   const _backLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',reports:'← Hisobotlar',payments:"← To'lovlar"};
   const backBtn=document.querySelector('#panel-detail .back-btn');
   if(backBtn) backBtn.textContent=_backLabels[_detailFromPanel]||'← Dizaynerlar';
-  const ci=CAT_INFO[d.category];
+  const ci=catOf(d.category);
   const dProjs=projects.filter(p=>p.designerId===d.id);
   const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
   const doneLastMonth=dProjs.filter(p=>p.status==='done'&&new Date(p.doneDate||p.date)>=lastMonth).length;
@@ -739,7 +739,7 @@ function renderPayments(){
     const dp=doneProjs.filter(p=>p.designerId===d.id).sort((a,b)=>(b.doneDate||b.date||'').localeCompare(a.doneDate||a.date||''));
     if(!dp.length) return '';
     const total=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
-    const ci=CAT_INFO[d.category];
+    const ci=catOf(d.category);
     return `<div class="card" style="margin-bottom:14px">
       <div class="card-header" style="cursor:pointer" onclick="openDetail(${d.id})">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -816,7 +816,7 @@ function renderReports(){
         const dDone=projects.filter(p=>p.designerId===d.id&&p.status==='done');
         const dOverdue=dWip.filter(p=>p.deadline&&deadlineDays(p.deadline)<0);
         const pct=Math.round(dWip.length/maxWip*100);
-        const ci=CAT_INFO[d.category];
+        const ci=catOf(d.category);
         return `<div style="display:grid;grid-template-columns:180px 1fr auto;gap:14px;align-items:center;margin-bottom:13px">
           <div style="display:flex;align-items:center;gap:9px">
             ${photoAvatar(d,26)}

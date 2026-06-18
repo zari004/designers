@@ -14,6 +14,11 @@ const CAT_INFO = {
 };
 
 function catKeys(){ return Object.keys(CAT_INFO); }
+// Kategoriyani xavfsiz olish — yo'q bo'lsa standart qaytaradi.
+// Render paytida noma'lum kategoriya butun sahifani qulatib yubormasligi uchun.
+function catOf(key){
+  return CAT_INFO[key] || {label:String(key||'?'),desc:'',priceRange:[10000,15000],color:'#6b7280',cls:'cat-unknown'};
+}
 function catSlug(k){ const s=String(k).toLowerCase().replace(/[^a-z0-9]/g,''); return 'cat'+(s||Math.random().toString(36).slice(2,6)); }
 function firstCat(){ return catKeys()[0]||'A'; }
 

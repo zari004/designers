@@ -84,8 +84,8 @@ async function fbSave(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v69)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v69)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v70)"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v70)");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
@@ -103,17 +103,20 @@ async function fbLoad(){
     const data = snap.data();
     const dLen = Array.isArray(data.designers) ? data.designers.length : '—';
     const pLen = Array.isArray(data.projects) ? data.projects.length : '—';
-    // Boshlang'ich yuklashda SERVER — haqiqat manbai.
-    // Lokal kesh faqat tezkor ko'rsatish uchun. Faqat saqlanmagan lokal
-    // o'zgarishlar bo'lsa (isDirty) serverni qo'llamaymiz.
-    if(!isDirty || !dataSavedAt || !data.savedAt || data.savedAt > dataSavedAt){
+    // Boshlang'ich yuklash: SERVER — haqiqat manbai.
+    // Faqat saqlanmagan lokal o'zgarishlar (isDirty) bo'lsa serverni qo'llamaymiz.
+    // Boot paytida isDirty=false, shuning uchun server har doim qo'llanadi.
+    if(!isDirty){
       applyData(data);
       saveLocal();
+      // Faqat faol panelga emas — dashboard'ni ham aniq qayta chizamiz
+      if(typeof renderDashboard === 'function') renderDashboard();
       if(typeof rerenderActive === 'function') rerenderActive();
       if(typeof updateCounts === 'function') updateCounts();
     }
     dataSavedAt = data.savedAt || dataSavedAt;
-    setSyncStatus('ok', "Yuklandi: " + dLen + "d/" + pLen + "p · " + new Date().toLocaleTimeString('uz'));
+    // Status: server soni → ekrandagi (global) soni — tashxis uchun
+    setSyncStatus('ok', "Yuklandi: " + dLen + "d/" + pLen + "p → ekran " + designers.length + "/" + projects.length + " · " + new Date().toLocaleTimeString('uz'));
   }catch(e){
     setSyncStatus('err', "Yuklash xatosi: " + e.message);
     console.error('fbLoad:', e);
@@ -133,6 +136,7 @@ function fbSetupRealtimeSync(){
     if(dataSavedAt && data.savedAt && data.savedAt <= dataSavedAt) return;
     applyData(data);
     saveLocal();
+    if(typeof renderDashboard === 'function') renderDashboard();
     if(typeof rerenderActive === 'function') rerenderActive();
     if(typeof updateCounts === 'function') updateCounts();
     dataSavedAt = data.savedAt;
