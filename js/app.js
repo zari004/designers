@@ -262,18 +262,22 @@ function initApp(user){
   const name=user.displayName||user.username||user.email||'?';
   if(sba) sba.textContent=name.slice(0,2).toUpperCase();
 
-  applyNavPermissions(user);
-  if(typeof updateNavVisibility === 'function') updateNavVisibility();
-  updateCounts();
-  renderDashboard();
-  renderNotifPanel();
+  // UI render qismi — xato bo'lsa ham Firebase yuklash to'xtamasin
+  try{
+    applyNavPermissions(user);
+    if(typeof updateNavVisibility === 'function') updateNavVisibility();
+    updateCounts();
+    renderDashboard();
+    renderNotifPanel();
+  }catch(e){
+    console.error('initApp UI render xato:', e);
+    _showFatal('UI: '+e.message);
+  }
 
-  // Firebase real-vaqt sinxronizatsiya
-  if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync();
-  if(typeof fbLoad === 'function') fbLoad();
-  // Barcha integratsiya sozlamalarini Firestore'dan yuklash
-  // (boshqa qurilmada kiritilgan bo'lsa — avtomatik ishlaydi)
-  if(typeof syncSettingsFromFirestore === 'function') syncSettingsFromFirestore();
+  // Firebase real-vaqt sinxronizatsiya — UI xatosidan mustaqil ishga tushadi
+  try{ if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync(); }catch(e){ console.error('realtime:', e); }
+  try{ if(typeof fbLoad === 'function') fbLoad(); }catch(e){ console.error('fbLoad:', e); _showFatal('fbLoad: '+e.message); }
+  try{ if(typeof syncSettingsFromFirestore === 'function') syncSettingsFromFirestore(); }catch(e){ console.error('settings:', e); }
 
   // PWA shortcut uchun signal
   window.dispatchEvent(new Event('exon-ready'));
@@ -302,6 +306,32 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
+const APP_VER = 'v66';
+
+// Doimiy versiya belgisi + global xatolarni status barda ko'rsatish (tashxis uchun)
+function _showFatal(msg){
+  const txt=document.getElementById('sync-msg');
+  const dot=document.getElementById('sync-dot');
+  if(txt) txt.textContent='⚠ '+APP_VER+': '+msg;
+  if(dot) dot.className='sync-dot err';
+}
+window.addEventListener('error', e=>{
+  _showFatal((e.message||'xato')+' @'+(e.filename||'').split('/').pop()+':'+(e.lineno||'?'));
+});
+window.addEventListener('unhandledrejection', e=>{
+  const r=e.reason; _showFatal('promise: '+(r?.message||r||'noma\'lum'));
+});
+
+// Doimiy versiya belgisi — qaysi kod ishlayotganini har doim ko'rsatadi
+window.addEventListener('load', ()=>{
+  if(document.getElementById('app-ver-badge')) return;
+  const b=document.createElement('div');
+  b.id='app-ver-badge';
+  b.textContent=APP_VER;
+  b.style.cssText='position:fixed;bottom:4px;right:6px;z-index:99999;font:600 10px monospace;color:#16a34a;opacity:.55;pointer-events:none';
+  document.body.appendChild(b);
+});
+
 loadLocal();
 applyCategoryStyles();
 updateThemeBtn();
@@ -318,7 +348,7 @@ setTimeout(drawFavicon, 2500);
 
   // Firebase konfiguratsiyasi bor bo'lsa — Firebase bilan ishlash
   if(typeof hasFbConfig === 'function' && hasFbConfig()){
-    setSyncStatus('load', "Firebase ulanmoqda… (v65)");
+    setSyncStatus('load', "Firebase ulanmoqda… ("+APP_VER+")");
     let ok = false;
     try {
       ok = await Promise.race([
