@@ -886,6 +886,46 @@ function renderUsers(){
 }
 
 // ═══════════════ SOZLAMALAR ═══════════════
+let _stgActiveTab = 'general';
+
+function stgTab(tab){
+  _stgActiveTab = tab;
+  document.querySelectorAll('.stg-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.stg-nav-item').forEach(b => b.classList.remove('active'));
+  const sec = document.getElementById('stg-'+tab);
+  if(sec) sec.classList.add('active');
+  const btns = document.querySelectorAll('.stg-nav-item');
+  btns.forEach(b => { if(b.getAttribute('onclick')?.includes("'"+tab+"'")) b.classList.add('active'); });
+  renderSettingsPage();
+}
+
+function _stgUpdateBadges(){
+  const fb = document.getElementById('stg-fb-badge');
+  const gs = document.getElementById('stg-gs-badge');
+  const nt = document.getElementById('stg-nt-badge');
+  const ai = document.getElementById('stg-ai-badge');
+  if(fb){
+    const on = typeof isFbReady === 'function' && isFbReady();
+    fb.textContent = on ? 'ON' : 'OFF';
+    fb.className = 'stg-nav-badge ' + (on ? 'on' : 'off');
+  }
+  if(gs){
+    const on = !!(localStorage.getItem('gs_sheet_id') && localStorage.getItem('gs_token'));
+    gs.textContent = on ? 'ON' : 'OFF';
+    gs.className = 'stg-nav-badge ' + (on ? 'on' : 'off');
+  }
+  if(nt){
+    const on = !!localStorage.getItem('notion_token');
+    nt.textContent = on ? 'ON' : 'OFF';
+    nt.className = 'stg-nav-badge ' + (on ? 'on' : 'off');
+  }
+  if(ai){
+    const on = !!(localStorage.getItem('exon_groq_key') || localStorage.getItem('exon_ai_key'));
+    ai.textContent = on ? 'ON' : 'OFF';
+    ai.className = 'stg-nav-badge ' + (on ? 'on' : 'off');
+  }
+}
+
 function renderSettingsPage(){
   const _sBackLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',projects:'← Loyihalar',payments:"← To'lovlar",reports:'← Hisobotlar',users:'← Foydalanuvchilar'};
   const sBackBtn=document.getElementById('settings-back-btn');
@@ -894,6 +934,11 @@ function renderSettingsPage(){
     sBackBtn.style.display=lbl?'':'none';
     if(lbl) sBackBtn.textContent=lbl;
   }
+
+  // App version
+  const verEl = document.getElementById('stg-app-ver');
+  if(verEl) verEl.textContent = typeof APP_VER !== 'undefined' ? APP_VER : '—';
+
   const gsId=document.getElementById('gs-sheet-id');
   const gsTok=document.getElementById('gs-token');
   if(gsId) gsId.value=localStorage.getItem('gs_sheet_id')||'';
@@ -915,11 +960,10 @@ function renderSettingsPage(){
     setConnBadge('fb-status-badge', ready);
   }
 
-  // Admin tomonidan: foydalanuvchilar kartasini ko'rsatish
-  const cur=getCurrentUser();
-  const adminCard=document.getElementById('admin-creds-card');
-  if(adminCard) adminCard.style.display='none'; // Firebase'da eski karta yo'q
+  // Sidebar badge'larini yangilash
+  _stgUpdateBadges();
 
+  const cur=getCurrentUser();
   renderCatManager();
   if(cur?.role === 'admin' && typeof renderRoleManager === 'function') renderRoleManager();
   if(typeof loadAiSettings==='function') loadAiSettings();

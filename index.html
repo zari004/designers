@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css"/>
-<link rel="stylesheet" href="css/style.css?v=75"/>
+<link rel="stylesheet" href="css/style.css?v=76"/>
 <!-- Firebase SDK (compat v10) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -448,16 +448,104 @@
       <div class="page-title">Sozlamalar</div>
       <div class="page-sub">Tizim va sinxronizatsiya</div>
     </div>
-    <div style="max-width:560px">
 
-      <!-- AI YORDAMCHI -->
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header">
-          <span class="card-title">AI Yordamchi</span>
-          <span id="ai-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
+    <div class="stg-layout">
+      <!-- ── SIDEBAR ── -->
+      <div class="stg-sidebar">
+        <div class="stg-sidebar-title">Asosiy</div>
+        <button class="stg-nav-item active" onclick="stgTab('general')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Umumiy
+        </button>
+        <button class="stg-nav-item" onclick="stgTab('security')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Xavfsizlik
+        </button>
+        <button class="stg-nav-item" onclick="stgTab('roles')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Rollar
+        </button>
+        <button class="stg-nav-item" onclick="stgTab('categories')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          Kategoriyalar
+        </button>
+
+        <div class="stg-sidebar-title" style="margin-top:8px">Integratsiyalar</div>
+        <button class="stg-nav-item" onclick="stgTab('ai')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1z"/></svg>
+          AI Yordamchi
+          <span class="stg-nav-badge" id="stg-ai-badge">—</span>
+        </button>
+        <button class="stg-nav-item" onclick="stgTab('firebase')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          Firebase
+          <span class="stg-nav-badge" id="stg-fb-badge">—</span>
+        </button>
+        <button class="stg-nav-item" onclick="stgTab('sheets')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          Google Sheets
+          <span class="stg-nav-badge" id="stg-gs-badge">—</span>
+        </button>
+        <button class="stg-nav-item" onclick="stgTab('notion')">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>
+          Notion
+          <span class="stg-nav-badge" id="stg-nt-badge">—</span>
+        </button>
+      </div>
+
+      <!-- ── CONTENT ── -->
+      <div class="stg-content">
+
+        <!-- UMUMIY -->
+        <div class="stg-section active" id="stg-general">
+          <div class="stg-content-title">Umumiy sozlamalar</div>
+          <div class="stg-content-sub">Mavzu va interfeys sozlamalari</div>
+          <div class="form-group">
+            <label class="form-label">Mavzu (Theme)</label>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="document.documentElement.dataset.theme='light';localStorage.setItem('exon_theme','light');if(typeof updateThemeBtn==='function')updateThemeBtn()">Yorug'</button>
+              <button class="btn btn-ghost btn-sm" onclick="document.documentElement.dataset.theme='dark';localStorage.setItem('exon_theme','dark');if(typeof updateThemeBtn==='function')updateThemeBtn()">Qorong'i</button>
+            </div>
+          </div>
+          <div class="stg-divider"></div>
+          <div style="font-size:12.5px;color:var(--muted)">
+            <strong>EXON</strong> — Dizaynerlar boshqaruv paneli<br/>
+            Versiya: <span id="stg-app-ver"></span>
+          </div>
         </div>
-        <div style="padding:18px">
-          <!-- Groq — asosiy (matn formatlash) -->
+
+        <!-- XAVFSIZLIK -->
+        <div class="stg-section" id="stg-security">
+          <div class="stg-content-title">Xavfsizlik</div>
+          <div class="stg-content-sub">Parol va hisob sozlamalari</div>
+          <div class="form-group"><label class="form-label">Eski parol</label><div class="pw-wrap"><input class="form-input" id="chpw-old" type="password" placeholder="••••••••"/><button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Parolni ko'rsatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="form-group"><label class="form-label">Yangi parol</label><div class="pw-wrap"><input class="form-input" id="chpw-new" type="password" placeholder="••••••••"/><button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Parolni ko'rsatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <div class="form-group"><label class="form-label">Yangi parolni tasdiqlang</label><div class="pw-wrap"><input class="form-input" id="chpw-new2" type="password" placeholder="••••••••"/><button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Parolni ko'rsatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+          <button class="btn btn-primary btn-sm" onclick="changeOwnPassword()">Parolni o'zgartirish</button>
+        </div>
+
+        <!-- ROLLAR -->
+        <div class="stg-section" id="stg-roles">
+          <div class="stg-content-title">Rollar va Ruxsatlar</div>
+          <div class="stg-content-sub">Har bir rol uchun qaysi bo'limlarni ko'ra olishini belgilang</div>
+          <div class="settings-note" style="margin-bottom:12px">
+            Admin: Barcha bo'limlarni boshqara oladi. Menejer: asosiy ishlar bilan ishlaydi. Ko'ruvchi: faqat ko'ra oladi.
+          </div>
+          <div id="role-mgr-content"></div>
+        </div>
+
+        <!-- KATEGORIYALAR -->
+        <div class="stg-section" id="stg-categories">
+          <div class="stg-content-title">Kategoriyalar</div>
+          <div class="stg-content-sub">Dizayner toifalari va narx diapazonlari</div>
+          <div id="cat-price-editor"></div>
+        </div>
+
+        <!-- AI YORDAMCHI -->
+        <div class="stg-section" id="stg-ai">
+          <div class="stg-content-title">AI Yordamchi</div>
+          <div class="stg-content-sub">Groq LLaMA — bepul va tez AI yordamchi</div>
+          <span id="ai-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
           <div class="settings-note">
             Ovozni o'zbekcha gapiring yoki matn yozing — AI rasmiy loyiha hujjatiga aylantiradi.<br/>
             <strong>Groq LLaMA 3.3 70B</strong> — <strong>bepul, juda tez!</strong><br/>
@@ -474,27 +562,24 @@
             <button class="btn btn-ghost btn-sm" onclick="aiKeyClear()">Kalitni o'chirish</button>
           </div>
 
-          <div style="border-top:1px solid var(--border);margin:16px 0 0;padding-top:16px">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
-              <label class="form-label" style="margin:0">AI qoidalari <small style="color:var(--muted);font-weight:400">(o'qitish dasturi)</small></label>
-              <button class="btn btn-ghost btn-xs" onclick="aiResetInstructions()" title="Standart shablonga qaytarish">Standartga qaytarish</button>
-            </div>
-            <div class="settings-note" style="margin-bottom:10px">
-              AI <strong>faqat shu qoidalarga</strong> amal qiladi — o'zidan hech narsa qo'shmaydi. Quyidagi shablonni o'zingizga moslang: bo'limlar nomini o'zgartiring, yangi qoidalar qo'shing, keraksizlarini o'chiring.
-            </div>
-            <textarea class="form-input" id="ai-instr-inp" rows="12" oninput="aiInstrAutoSave(this.value)" style="resize:vertical;line-height:1.6;font-size:13px;font-family:var(--mono)"></textarea>
-            <div class="form-hint" id="ai-instr-hint">AI faqat shu qoidalarga amal qiladi — har bir tahlilda hisobga oladi</div>
+          <div class="stg-divider"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px">
+            <label class="form-label" style="margin:0">AI qoidalari <small style="color:var(--muted);font-weight:400">(o'qitish dasturi)</small></label>
+            <button class="btn btn-ghost btn-xs" onclick="aiResetInstructions()" title="Standart shablonga qaytarish">Standartga qaytarish</button>
           </div>
+          <div class="settings-note" style="margin-bottom:10px">
+            AI <strong>faqat shu qoidalarga</strong> amal qiladi — o'zidan hech narsa qo'shmaydi.
+          </div>
+          <textarea class="form-input" id="ai-instr-inp" rows="12" oninput="aiInstrAutoSave(this.value)" style="resize:vertical;line-height:1.6;font-size:13px;font-family:var(--mono)"></textarea>
+          <div class="form-hint" id="ai-instr-hint">AI faqat shu qoidalarga amal qiladi — har bir tahlilda hisobga oladi</div>
         </div>
-      </div>
 
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header">
-          <span class="card-title">Firebase ulanishi</span>
+        <!-- FIREBASE -->
+        <div class="stg-section" id="stg-firebase">
+          <div class="stg-content-title">Firebase ulanishi</div>
+          <div class="stg-content-sub">Real-vaqtli sinxronizatsiya va ma'lumotlar bazasi</div>
           <span id="fb-status-badge" class="badge conn-badge">Ulangan</span>
-        </div>
-        <div style="padding:18px">
-          <div class="settings-note">
+          <div class="settings-note" style="margin-top:12px">
             Ma'lumotlar <strong>Firebase Firestore</strong>'da saqlanadi va barcha qurilmalarda
             real-vaqtda sinxronlanadi. Konfiguratsiyani o'zgartirish sahifani qayta yuklaydi.
           </div>
@@ -507,26 +592,13 @@
             <button class="btn btn-primary btn-sm" onclick="saveFbConfigFromSettings()">Yangilash</button>
           </div>
         </div>
-      </div>
 
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><span class="card-title">Rollar va Ruxsatlar</span></div>
-        <div style="padding:18px">
-          <div class="settings-note" style="margin-bottom:12px">
-            Admin: Barcha bo'limlarni boshqara oladi. Menejer: asosiy ishlar bilan ishlaydi. Ko'ruvchi: faqat ko'ra oladi.
-            Har bir rol uchun qaysi bo'limlarni ko'ra olishini belgilang.
-          </div>
-          <div id="role-mgr-content"></div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header">
-          <span class="card-title">Google Sheets ulanish</span>
+        <!-- GOOGLE SHEETS -->
+        <div class="stg-section" id="stg-sheets">
+          <div class="stg-content-title">Google Sheets</div>
+          <div class="stg-content-sub">To'lovlar hisobotini eksport qilish</div>
           <span id="gs-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
-        </div>
-        <div style="padding:18px">
-          <div class="settings-note">
+          <div class="settings-note" style="margin-top:12px">
             To'lovlar hisoboti Google Sheets'ga yoziladi.<br/>
             <strong>1.</strong> <a href="https://sheets.new" target="_blank">sheets.new</a> — yangi jadval oching<br/>
             <strong>2.</strong> URL'dan Sheet ID nusxalang: docs.google.com/spreadsheets/d/<strong>SHEET_ID</strong>/edit<br/>
@@ -546,38 +618,13 @@
           </div>
           <div id="gs-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
         </div>
-      </div>
-      <div class="card" style="margin-bottom:14px">
-        <div class="card-header"><span class="card-title">Parolni o'zgartirish</span></div>
-        <div style="padding:18px">
-          <div class="form-group"><label class="form-label">Eski parol</label><div class="pw-wrap"><input class="form-input" id="chpw-old" type="password" placeholder="••••••••"/><button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Parolni ko'rsatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
-          <div class="form-group"><label class="form-label">Yangi parol</label><div class="pw-wrap"><input class="form-input" id="chpw-new" type="password" placeholder="••••••••"/><button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Parolni ko'rsatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
-          <div class="form-group"><label class="form-label">Yangi parolni tasdiqlang</label><div class="pw-wrap"><input class="form-input" id="chpw-new2" type="password" placeholder="••••••••"/><button type="button" class="pw-toggle" onclick="togglePw(this)" aria-label="Parolni ko'rsatish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
-          <button class="btn btn-primary btn-sm" onclick="changeOwnPassword()">Parolni o'zgartirish</button>
-        </div>
-      </div>
-      <div class="card" id="admin-creds-card" style="margin-bottom:14px;display:none">
-        <div class="card-header">
-          <span class="card-title">Art Direktor login sozlamalari</span>
-          <span class="badge badge-a">Faqat admin</span>
-        </div>
-        <div style="padding:18px">
-          <div class="form-group">
-            <label class="form-label">Login (username)</label>
-            <input class="form-input" id="admin-uname"/>
-          </div>
-          <div class="form-group"><label class="form-label">Yangi parol <small>(bo'sh qoldirsa o'zgarmaydi)</small></label><input class="form-input" id="admin-newpass" type="password" placeholder="••••••••"/></div>
-          <div class="form-group"><label class="form-label">Tasdiqlash uchun joriy parol</label><input class="form-input" id="admin-curpass" type="password" placeholder="••••••••"/></div>
-          <button class="btn btn-primary btn-sm" onclick="saveAdminCreds()">Saqlash</button>
-        </div>
-      </div>
-      <div class="card" id="notion-card" style="margin-bottom:14px">
-        <div class="card-header">
-          <span class="card-title">Notion ulanish</span>
+
+        <!-- NOTION -->
+        <div class="stg-section" id="stg-notion">
+          <div class="stg-content-title">Notion ulanish</div>
+          <div class="stg-content-sub">Loyihalarni Notionga chop etish</div>
           <span id="nt-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
-        </div>
-        <div style="padding:18px">
-          <div class="settings-note">
+          <div class="settings-note" style="margin-top:12px">
             Loyihalarni Notionga bir tugma bilan chop etish.<br/>
             <strong>1.</strong> <a href="https://www.notion.so/my-integrations" target="_blank">notion.so/my-integrations</a> → <em>New integration</em> → <em>Internal</em> yarating, <strong>Internal Integration Secret</strong>'ni nusxalang (ntn_... yoki secret_...)<br/>
             <strong>2.</strong> Notionda loyihalar saqlanadigan sahifani oching → <em>•••</em> → <em>Connections</em> → integratsiyangizni qo'shing<br/>
@@ -601,12 +648,13 @@
           </div>
           <div id="nt-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><span class="card-title">Kategoriyalar</span></div>
-        <div style="padding:18px" id="cat-price-editor"></div>
+
       </div>
     </div>
+
+    <!-- Hidden cards for backwards compat -->
+    <div id="admin-creds-card" style="display:none"></div>
+    <div id="notion-card" style="display:none"></div>
   </div>
 
 </main>
@@ -656,16 +704,16 @@
   </div>
 </div>
 
-<script src="js/firebase.js?v=75"></script>
-<script src="js/data.js?v=75"></script>
-<script src="js/auth.js?v=75"></script>
-<script src="js/ui.js?v=75"></script>
-<script src="js/datepicker.js?v=75"></script>
-<script src="js/editor.js?v=75"></script>
-<script src="js/notion.js?v=75"></script>
-<script src="js/sheets.js?v=75"></script>
-<script src="js/ai.js?v=75"></script>
-<script src="js/app.js?v=75"></script>
+<script src="js/firebase.js?v=76"></script>
+<script src="js/data.js?v=76"></script>
+<script src="js/auth.js?v=76"></script>
+<script src="js/ui.js?v=76"></script>
+<script src="js/datepicker.js?v=76"></script>
+<script src="js/editor.js?v=76"></script>
+<script src="js/notion.js?v=76"></script>
+<script src="js/sheets.js?v=76"></script>
+<script src="js/ai.js?v=76"></script>
+<script src="js/app.js?v=76"></script>
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
 // Yangi SW faollashganda — sahifa BIR MARTA qayta yuklanadi (cheksiz aylanma yo'q).
