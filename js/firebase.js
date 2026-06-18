@@ -97,8 +97,8 @@ function _safeRender(){
 
 // ── FIRESTORE: YUKLASH (birinchi kirish) ──
 async function fbLoad(){
-  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas (v73)"); return; }
-  setSyncStatus('load', "Ma'lumot yuklanmoqda… (v73)");
+  if(!isFbReady()){ setSyncStatus('err', "Firebase tayyor emas"); return; }
+  setSyncStatus('load', "Ma'lumot yuklanmoqda…");
   try{
     const snap = await Promise.race([
       _db.collection('exon').doc('data').get(),
@@ -125,12 +125,10 @@ async function fbLoad(){
     }
     const renderErr = _safeRender();
     dataSavedAt = data.savedAt || dataSavedAt;
-    // TASHXIS: render xatosini va DOM'dagi haqiqiy qiymatni ko'rsatamiz
-    const domT = document.getElementById('st-total')?.textContent ?? '?';
     if(renderErr){
-      setSyncStatus('err', "RENDER xato: " + renderErr);
+      setSyncStatus('err', "Chizishda xato: " + renderErr);
     } else {
-      setSyncStatus('ok', "ekran " + designers.length + "/" + projects.length + " · DOM:" + domT + " dirty:" + (isDirty?1:0) + " · " + new Date().toLocaleTimeString('uz'));
+      setSyncStatus('ok', "Yuklandi: " + dLen + " dizayner · " + pLen + " loyiha · " + new Date().toLocaleTimeString('uz'));
     }
   }catch(e){
     setSyncStatus('err', "Yuklash xatosi: " + e.message);

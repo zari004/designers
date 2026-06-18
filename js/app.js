@@ -306,13 +306,13 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v73';
+const APP_VER = 'v74';
 
-// Doimiy versiya belgisi + global xatolarni status barda ko'rsatish (tashxis uchun)
+// Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){
   const txt=document.getElementById('sync-msg');
   const dot=document.getElementById('sync-dot');
-  if(txt) txt.textContent='⚠ '+APP_VER+': '+msg;
+  if(txt) txt.textContent='⚠ '+msg;
   if(dot) dot.className='sync-dot err';
 }
 window.addEventListener('error', e=>{
@@ -320,16 +320,6 @@ window.addEventListener('error', e=>{
 });
 window.addEventListener('unhandledrejection', e=>{
   const r=e.reason; _showFatal('promise: '+(r?.message||r||'noma\'lum'));
-});
-
-// Doimiy versiya belgisi — qaysi kod ishlayotganini har doim ko'rsatadi
-window.addEventListener('load', ()=>{
-  if(document.getElementById('app-ver-badge')) return;
-  const b=document.createElement('div');
-  b.id='app-ver-badge';
-  b.textContent=APP_VER;
-  b.style.cssText='position:fixed;bottom:4px;right:6px;z-index:99999;font:600 10px monospace;color:#16a34a;opacity:.55;pointer-events:none';
-  document.body.appendChild(b);
 });
 
 loadLocal();
