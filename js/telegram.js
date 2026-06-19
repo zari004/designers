@@ -1069,3 +1069,60 @@ function renderTgChannelMap(){
     </div>`;
   }).join('');
 }
+
+// Bot ko'rgan guruhlarni getUpdates orqali aniqlab, ID larini ko'rsatish
+async function tgDetectGroups(){
+  const box = document.getElementById('tg-detect-result');
+  if(!isTgReady()){ toast("Avval Bot token va Proxy URL ni kiriting"); return; }
+  if(box) box.innerHTML = '<div class="form-hint">Tekshirilmoqda…</div>';
+
+  try{
+    const res = await tgApiFetch('getUpdates', () => ({
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ allowed_updates: [], limit: 100 })
+    }), 1);
+
+    const updates = res?.result || [];
+    const groups = {};
+    updates.forEach(u => {
+      const msg = u.message || u.edited_message || u.channel_post || u.my_chat_member || u.chat_member;
+      const chat = msg?.chat;
+      if(chat && (chat.type === 'group' || chat.type === 'supergroup')){
+        groups[chat.id] = chat.title || '(nomsiz guruh)';
+      }
+    });
+
+    const list = Object.entries(groups);
+    if(!list.length){
+      if(box) box.innerHTML = `<div class="settings-note" style="font-size:12px;color:var(--warning)">
+        Hech qanday guruh topilmadi. Botni guruhga <strong>admin</strong> qiling va guruhda <strong>biror xabar yozing</strong> (yoki botni qayta qo'shing), so'ng yana urinib ko'ring.
+      </div>`;
+      return;
+    }
+
+    if(box) box.innerHTML = `
+      <div class="form-hint" style="margin-bottom:6px">Topilgan guruhlar — ID ni nusxalab, tegishli dizayner maydoniga qo'ying:</div>
+      ${list.map(([id, title]) => `
+        <div class="tg-detect-row">
+          <div class="tg-detect-info">
+            <div class="tg-detect-title">${esc(title)}</div>
+            <code class="tg-detect-id">${esc(id)}</code>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="tgCopyText('${esc(String(id))}')">Nusxa</button>
+        </div>`).join('')}`;
+  }catch(err){
+    console.error('getUpdates xatosi:', err);
+    if(box) box.innerHTML = `<div class="settings-note" style="font-size:12px;color:var(--error)">Xatolik: ${esc(err.message||'')}</div>`;
+  }
+}
+
+function tgCopyText(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('ID nusxalandi')).catch(()=>toast('Nusxalab bo\'lmadi'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); toast('ID nusxalandi'); }catch(e){ toast('Nusxalab bo\'lmadi'); }
+    document.body.removeChild(ta);
+  }
+}

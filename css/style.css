@@ -886,6 +886,12 @@ select.prop-input{cursor:pointer}
 .tg-reject-btn:hover{filter:brightness(.94)}
 .tg-reject-btn:disabled{opacity:.6;cursor:not-allowed}
 
+/* ── GURUH ID ANIQLASH ── */
+.tg-detect-row{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;border:1px solid var(--border);background:var(--bg);margin-bottom:6px}
+.tg-detect-info{flex:1;min-width:0}
+.tg-detect-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-detect-id{font-size:12px;color:var(--accent-text);font-family:monospace}
+
 /* Telegram sozlamalari */
 .tg-ch-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .tg-ch-name{width:140px;flex-shrink:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

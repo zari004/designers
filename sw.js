@@ -1,6 +1,6 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v99';
+const CACHE_VER  = 'exon-v100';
 
 // Sahifadan "yangilansin" xabar kelsa — darhol faollashuv
 self.addEventListener('message', e => {
