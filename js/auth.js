@@ -18,6 +18,10 @@ let ROLE_DEFS;
 try {
   ROLE_DEFS = JSON.parse(localStorage.getItem('exon_role_defs')) || _DEFAULT_ROLES;
 } catch { ROLE_DEFS = _DEFAULT_ROLES; }
+if(!ROLE_DEFS.designer){
+  ROLE_DEFS.designer = _DEFAULT_ROLES.designer;
+  localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
+}
 
 let _currentUser = null; // { uid, email, displayName, role, permissions }
 let _fbUsersCache = [];  // Firestore users ro'yxati (admin panel uchun)
