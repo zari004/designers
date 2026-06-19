@@ -238,6 +238,7 @@ async function syncSettingsFromFirestore(){
         if(!ROLE_DEFS.designer && typeof _DEFAULT_ROLES!=='undefined'){
           ROLE_DEFS.designer = _DEFAULT_ROLES.designer;
           localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
+          saveSettingToFirestore('roleDefs', JSON.stringify(ROLE_DEFS));
         }
       }
     }catch(e){ /* noto'g'ri JSON — e'tiborsiz */ }

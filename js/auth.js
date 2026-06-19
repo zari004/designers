@@ -21,6 +21,7 @@ try {
 if(!ROLE_DEFS.designer){
   ROLE_DEFS.designer = _DEFAULT_ROLES.designer;
   localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
+  setTimeout(()=>{ if(typeof saveSettingToFirestore==='function') saveSettingToFirestore('roleDefs', JSON.stringify(ROLE_DEFS)); }, 3000);
 }
 
 let _currentUser = null; // { uid, email, displayName, role, permissions }
