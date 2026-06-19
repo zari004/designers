@@ -1093,7 +1093,7 @@ function renderTgChannelMap(){
 
 // Guruh ID maydonini tekshirib saqlash — taklif havolasi/noto'g'ri formatni rad etadi
 function tgValidateGroupInput(designerId, inputEl){
-  const val = (inputEl.value||'').trim();
+  let val = (inputEl.value||'').trim();
   inputEl.classList.remove('input-error');
 
   if(!val){ tgSetDesignerChannel(designerId, ''); return; }
@@ -1103,6 +1103,13 @@ function tgValidateGroupInput(designerId, inputEl){
     inputEl.classList.add('input-error');
     toast("Bu havola — raqamli ID kerak. \"Guruh ID sini aniqlash\" tugmasidan foydalaning.");
     return;
+  }
+
+  // Avtomatik tuzatish: "100..." kiritilsa, oldiga "-" qo'shamiz (superguruh manfiy bo'ladi)
+  if(/^100\d{5,}$/.test(val)){
+    val = '-' + val;
+    inputEl.value = val;
+    toast("ID tuzatildi: -100... (superguruh manfiy bo'ladi)");
   }
 
   // To'g'ri format: -100... (superguruh) yoki @username
