@@ -924,6 +924,12 @@ function _stgUpdateBadges(){
     ai.textContent = on ? 'ON' : 'OFF';
     ai.className = 'stg-nav-badge ' + (on ? 'on' : 'off');
   }
+  const tg = document.getElementById('stg-tg-badge');
+  if(tg){
+    const on = typeof isTgReady==='function' && isTgReady();
+    tg.textContent = on ? 'ON' : 'OFF';
+    tg.className = 'stg-nav-badge ' + (on ? 'on' : 'off');
+  }
 }
 
 function renderSettingsPage(){
@@ -959,6 +965,14 @@ function renderSettingsPage(){
     const ready = typeof isFbReady === 'function' && isFbReady();
     setConnBadge('fb-status-badge', ready);
   }
+
+  // Telegram sozlamalari
+  const tgT=document.getElementById('tg-bot-token');
+  const tgP=document.getElementById('tg-proxy-url');
+  if(tgT) tgT.value=localStorage.getItem('tg_bot_token')||'';
+  if(tgP) tgP.value=localStorage.getItem('tg_proxy_url')||'';
+  if(typeof updateTgStatus==='function') updateTgStatus();
+  if(typeof renderTgChannelMap==='function') renderTgChannelMap();
 
   // Sidebar badge'larini yangilash
   _stgUpdateBadges();

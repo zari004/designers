@@ -703,6 +703,62 @@ select.prop-input{cursor:pointer}
 @media(max-width:880px){.ai-chat-fab{bottom:80px;right:16px;width:64px;height:64px}.ai-fab-face{width:56px;height:56px}.ai-fab-trash{bottom:80px}.ai-chat-panel{bottom:0;right:0;width:100vw;height:100vh;max-height:100vh;max-width:100vw;border-radius:0}}
 @media print{.ai-chat-fab,.ai-chat-panel{display:none!important}}
 
+/* ── TELEGRAM DELIVERY (Ishlarni topshirish) ── */
+.tg-delivery-section{margin:24px 0 8px;border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:0;overflow:hidden;background:var(--card)}
+.tg-delivery-section.delivered{border-color:color-mix(in srgb,var(--success) 30%,transparent)}
+.tg-delivery-header{display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 6%,transparent),color-mix(in srgb,var(--accent2) 4%,transparent));border-bottom:1px solid var(--border)}
+.tg-delivery-icon{width:40px;height:40px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent-text);flex-shrink:0}
+.tg-delivery-title{font-size:15px;font-weight:700;color:var(--text)}
+.tg-delivery-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+.tg-upload-zone{margin:16px;border:2px dashed var(--border2);border-radius:var(--radius-lg);transition:all .2s;background:var(--bg);position:relative}
+.tg-upload-zone.dragover{border-color:var(--accent);background:var(--accent-soft);transform:scale(1.01)}
+.tg-upload-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:32px 20px;cursor:pointer;color:var(--muted);transition:color .15s}
+.tg-upload-placeholder:hover{color:var(--accent-text)}
+.tg-upload-placeholder span{font-size:14px;font-weight:600}
+.tg-upload-hint{font-size:12px!important;font-weight:400!important;color:var(--muted2)}
+
+.tg-file-list{padding:0}
+.tg-file-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid color-mix(in srgb,var(--border) 50%,transparent);transition:background .1s}
+.tg-file-item:hover{background:var(--hover)}
+.tg-file-item:last-of-type{border-bottom:none}
+.tg-file-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0}
+.tg-file-icon{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--panel);flex-shrink:0}
+.tg-file-info{flex:1;min-width:0}
+.tg-file-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-file-size{font-size:11.5px;color:var(--muted);margin-top:1px}
+.tg-file-remove{width:28px;height:28px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;transition:all .12s}
+.tg-file-remove:hover{background:color-mix(in srgb,var(--error) 12%,transparent);color:var(--error)}
+.tg-file-add{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;cursor:pointer;color:var(--accent-text);font-size:13px;font-weight:500;transition:background .12s;border-radius:0 0 var(--radius) var(--radius)}
+.tg-file-add:hover{background:var(--accent-soft)}
+
+.tg-figma-row{display:flex;align-items:center;gap:10px;margin:0 16px 12px;color:var(--muted)}
+.tg-figma-row .form-input{font-size:13px}
+
+.tg-send-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 16px;padding:11px;font-size:14px;font-weight:600}
+
+.tg-channel-setup{margin:16px;padding:16px;border-radius:var(--radius);background:color-mix(in srgb,var(--warning) 8%,transparent);border:1px solid color-mix(in srgb,var(--warning) 20%,transparent)}
+.tg-channel-note{font-size:13px;color:var(--text);margin-bottom:10px}
+
+.tg-progress-wrap{margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:var(--bg);border:1px solid var(--border)}
+.tg-progress-text{font-size:12.5px;color:var(--text);font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between}
+.tg-progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.tg-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .3s ease}
+.tg-progress-pct{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+
+.tg-success{display:flex;align-items:center;gap:10px;margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:color-mix(in srgb,var(--success) 10%,transparent);border:1px solid color-mix(in srgb,var(--success) 25%,transparent);color:var(--success);font-size:13px;font-weight:600}
+.tg-error{display:flex;align-items:center;gap:10px;margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:color-mix(in srgb,var(--error) 8%,transparent);border:1px solid color-mix(in srgb,var(--error) 20%,transparent);color:var(--error);font-size:13px;font-weight:500}
+
+/* Telegram sozlamalari */
+.tg-ch-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tg-ch-name{width:140px;flex-shrink:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-ch-input{flex:1;font-size:12.5px}
+@media(max-width:640px){
+  .tg-ch-row{flex-direction:column;align-items:stretch;gap:4px}
+  .tg-ch-name{width:auto}
+  .tg-upload-placeholder{padding:24px 16px}
+}
+
 /* ── PRINT ── */
 @media print{
   .sidebar,.topbar,.sync-bar,.burger,.filter-bar,.btn,.notif-panel,.mini-select,.peek,.peek-overlay,.comment-input-row,.comment-actions{display:none!important}

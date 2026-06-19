@@ -198,6 +198,9 @@ const SETTINGS_FIELDS = {
   notionProxy:    'notion_proxy',
   aiInstructions: 'exon_ai_instructions',
   roleDefs:       'exon_role_defs',
+  tgBotToken:     'tg_bot_token',
+  tgProxyUrl:     'tg_proxy_url',
+  tgChannels:     'tg_channels',
 };
 
 // Bitta sozlamani Firestore'ga yozish (barcha qurilmalarga tarqatadi)

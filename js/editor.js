@@ -161,6 +161,7 @@ function openProjectPeek(id = null, preDesignerId = null){
       <div class="rte-tr-check" id="peek-ru-check" style="margin-top:8px;padding:0"></div>
     </div>
     ${p ? `<div class="section-label" style="display:block;margin:24px 0 2px">Izohlar</div>${commentBoxHtml(p,'peek')}` : ''}
+    ${typeof renderDeliverySection==='function' && p ? renderDeliverySection(p) : ''}
   `;
 
   byId('pk-rte').innerHTML = p ? (p.descHtml || (p.description ? '<p>'+esc(p.description)+'</p>' : '')) : '';
@@ -171,6 +172,8 @@ function openProjectPeek(id = null, preDesignerId = null){
   ensureBubble();
   ensureSlash();
   updateNotionBtnLabel(p);
+  const tgBtn=document.getElementById('peek-tg-btn');
+  if(tgBtn) tgBtn.style.display = (p && p.status==='done') ? '' : 'none';
   setTimeout(setupRteHandlers, 0);
 
   applyPeekWidth();
