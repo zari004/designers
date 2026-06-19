@@ -140,7 +140,7 @@ async function tgSendFile(channelId, file, caption, onProgress){
   });
 }
 
-// ── ASOSIY YUBORISH FUNKSIYASI ──
+// ── ASOSIY YUBORISH FUNKSIYASI (peek paneldan) ──
 async function tgDeliverProject(projectId){
   const p = projects.find(x=>x.id===projectId);
   if(!p) { toast('Loyiha topilmadi'); return; }
@@ -175,11 +175,9 @@ async function tgDeliverProject(projectId){
   try {
     const caption = tgBuildCaption(p, d);
 
-    // 1. Avval loyiha haqida xabar
     if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...');
     await tgSendMessage(channelId, caption);
 
-    // 2. Fayllarni yuborish
     const totalSize = files.reduce((s,f)=>s+f.size, 0);
     let sentSize = 0;
     for(let i = 0; i < files.length; i++){
@@ -203,13 +201,11 @@ async function tgDeliverProject(projectId){
       sentSize += f.size;
     }
 
-    // 3. Figma link yuborish
     if(figmaLink){
       if(statusEl) statusEl.innerHTML = renderTgProgress('Figma link yuborilmoqda...');
       await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`);
     }
 
-    // 4. Muvaffaqiyat — loyihani "Ko'rib chiqilmoqda"ga o'tkazish
     const wasWip = p.status === 'wip';
     if(statusEl) statusEl.innerHTML = `
       <div class="tg-success">
@@ -220,7 +216,6 @@ async function tgDeliverProject(projectId){
     projects = projects.map(pr => {
       if(pr.id!==projectId) return pr;
       const upd = {...pr, tgDelivered: true, tgDeliveredAt: new Date().toISOString()};
-      // Jarayonda → Ko'rib chiqilmoqda (topshirilgandan keyin)
       if(pr.status==='wip') upd.status = 'review';
       return upd;
     });
@@ -228,7 +223,6 @@ async function tgDeliverProject(projectId){
 
     toast('Ishlar Telegram kanalga yuborildi!');
 
-    // Modal orqali ochilgan bo'lsa — yopib, doskani yangilash
     if(document.getElementById('tg-deliver-modal-flag')){
       setTimeout(()=>{ closeModal(); if(typeof rerenderActive==='function') rerenderActive(); }, 1400);
     } else if(typeof rerenderActive==='function'){
@@ -248,13 +242,17 @@ async function tgDeliverProject(projectId){
   }
 }
 
-// ── TOPSHIRISH MODALI (qalqib chiquvchi oyna) ──
+// ── TOPSHIRISH MODALI — BO'LIMLI YUKLASH TIZIMI ──
+let _tgSections = [];
+let _tgDeliveryProjectId = null;
+
 function openDeliveryModal(projectId){
   const p = projects.find(x=>x.id===projectId);
   if(!p){ toast('Loyiha topilmadi'); return; }
   const d = designers.find(x=>x.id===p.designerId);
   const channelId = tgDesignerChannel(p.designerId);
-  _tgZoneFiles.design = []; _tgZoneFiles.material = [];
+  _tgSections = [];
+  _tgDeliveryProjectId = projectId;
 
   const tt = document.getElementById('modal-title-text');
   if(tt) tt.textContent = 'Ishlarni topshirish';
@@ -267,37 +265,27 @@ function openDeliveryModal(projectId){
         <div style="font-size:13.5px;font-weight:600;margin-bottom:6px">${esc(p.title)}</div>
         <div class="tg-channel-note" style="color:var(--warning);font-size:13px">
           Sizning Telegram kanalingiz hali admin tomonidan sozlanmagan.
-          Iltimos, administrator bilan bog'laning.
+          Iltimos, administrator bilan bog‘laning.
         </div>
       </div>`;
     document.getElementById('modal').style.display='flex';
     return;
   }
 
-  const zone = (key, label, sub, accept) => `
-    <div class="tg-zone-block">
-      <div class="tg-zone-label">${label}</div>
-      <div class="tg-upload-zone" id="tg-area-${key}"
-        ondragover="event.preventDefault();this.classList.add('dragover')"
-        ondragleave="this.classList.remove('dragover')"
-        ondrop="tgHandleDrop2(event,'${key}')">
-        <input type="file" id="tg-file-${key}" multiple style="display:none" onchange="tgHandleFiles2(this.files,'${key}')" accept="${accept}"/>
-        <div class="tg-upload-placeholder" id="tg-ph-${key}" onclick="document.getElementById('tg-file-${key}').click()">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <span>${sub}</span>
-        </div>
-        <div class="tg-file-list" id="tg-list-${key}"></div>
-      </div>
-    </div>`;
+  _tgAddSection();
 
   mb.innerHTML = `<div id="tg-deliver-modal-flag" style="display:none"></div>
     <div style="margin-bottom:14px">
       <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${esc(p.title)}</div>
-      <div style="font-size:12px;color:var(--muted)">Dizayn rasmlarini va materiallar/PSD fayllarini alohida yuklang. Ikkalasi ham yuklangach «Topshirish» faollashadi.</div>
+      <div style="font-size:12px;color:var(--muted)">Rasmlarni bo‘limlar bo‘yicha yuklang (rang, o‘lcham, tarkib va h.k.). Har bir bo‘limga fayl yuklang va «Topshirish» tugmasini bosing.</div>
     </div>
 
-    ${zone('design','🎨 Dizayn rasmlari','Tayyor rasmlarni tashlang · PNG, JPG','image/*')}
-    ${zone('material','📦 Materiallar va PSD','PSD, AI, ZIP, fayllarni tashlang','.psd,.ai,.eps,.pdf,.zip,.rar,.fig,.sketch,image/*')}
+    <div id="tg-sections-wrap"></div>
+
+    <button class="tg-add-section-btn" onclick="_tgAddSection();_tgRenderSections()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Bo‘lim qo‘shish
+    </button>
 
     <div class="tg-figma-row">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0 0 8 4 4 0 0 0 4 4 4 4 0 0 0 0-8 4 4 0 0 0-4-4z"/></svg>
@@ -310,49 +298,57 @@ function openDeliveryModal(projectId){
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       Topshirish
     </button>
-    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Ikkala bo'limga ham fayl yuklang</div>`;
+    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Kamida bitta bo‘limga fayl yuklang</div>`;
 
+  _tgRenderSections();
   document.getElementById('modal').style.display='flex';
 }
 
-// ── IKKI ZONALI FAYL BOSHQARUVI ──
-const _tgZoneFiles = { design: [], material: [] };
+// ── BO'LIMLAR BOSHQARUVI ──
 
-function tgHandleDrop2(e, zone){
-  e.preventDefault();
-  e.currentTarget.classList.remove('dragover');
-  tgHandleFiles2(e.dataTransfer.files, zone);
+function _tgAddSection(){
+  _tgSections.push({ name: '', files: [] });
 }
 
-function tgHandleFiles2(fileList, zone){
-  if(!_tgZoneFiles[zone]) _tgZoneFiles[zone] = [];
-  for(const f of fileList){
-    if(!_tgZoneFiles[zone].some(x=>x.name===f.name && x.size===f.size)){
-      _tgZoneFiles[zone].push(f);
-    }
-  }
-  tgRenderZoneList(zone);
+function _tgRemoveSection(idx){
+  if(_tgSections.length <= 1){ toast("Kamida bitta bo'lim bo'lishi kerak"); return; }
+  _tgSections.splice(idx, 1);
+  _tgRenderSections();
   _tgUpdateSubmitState();
 }
 
-function tgRemoveFile2(idx, zone){
-  if(_tgZoneFiles[zone]) _tgZoneFiles[zone].splice(idx, 1);
-  tgRenderZoneList(zone);
-  _tgUpdateSubmitState();
+function _tgRenameSection(idx, name){
+  if(_tgSections[idx]) _tgSections[idx].name = name;
 }
 
-function tgRenderZoneList(zone){
-  const el = document.getElementById('tg-list-'+zone);
-  const files = _tgZoneFiles[zone] || [];
-  if(!el) return;
-  const ph = document.getElementById('tg-ph-'+zone);
-  if(!files.length){
-    el.innerHTML = '';
-    if(ph) ph.style.display = '';
-    return;
-  }
-  if(ph) ph.style.display = 'none';
-  el.innerHTML = files.map((f, i) => {
+function _tgRenderSections(){
+  const wrap = document.getElementById('tg-sections-wrap');
+  if(!wrap) return;
+  wrap.innerHTML = _tgSections.map((sec, si) => `
+    <div class="tg-section">
+      <div class="tg-section-head">
+        <span class="tg-section-num">Bo‘lim ${si+1}</span>
+        <input class="tg-section-name" value="${esc(sec.name)}" placeholder="Nomi (masalan: Oq rang, 50x70)" oninput="_tgRenameSection(${si},this.value)"/>
+        ${_tgSections.length>1 ? `<button class="tg-section-del" onclick="_tgRemoveSection(${si})" title="Bo‘limni o‘chirish">×</button>` : ''}
+      </div>
+      <div class="tg-upload-zone" id="tg-sec-area-${si}"
+        ondragover="event.preventDefault();this.classList.add('dragover')"
+        ondragleave="this.classList.remove('dragover')"
+        ondrop="_tgSecDrop(event,${si})">
+        <input type="file" id="tg-sec-file-${si}" multiple style="display:none" onchange="_tgSecFiles(this.files,${si})" accept="image/*,.psd,.ai,.eps,.pdf,.zip,.rar,.fig,.sketch"/>
+        <div class="tg-upload-placeholder" id="tg-sec-ph-${si}" onclick="document.getElementById('tg-sec-file-${si}').click()" ${sec.files.length?'style="display:none"':''}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>Fayllarni tashlang yoki tanlang</span>
+        </div>
+        <div class="tg-file-list" id="tg-sec-list-${si}">${_tgSecListHtml(si)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function _tgSecListHtml(si){
+  const files = _tgSections[si]?.files || [];
+  if(!files.length) return '';
+  return files.map((f, fi) => {
     const isImg = f.type.startsWith('image/');
     const thumb = isImg ? URL.createObjectURL(f) : null;
     return `<div class="tg-file-item">
@@ -361,36 +357,67 @@ function tgRenderZoneList(zone){
         <div class="tg-file-name">${esc(f.name)}</div>
         <div class="tg-file-size">${formatFileSize(f.size)}</div>
       </div>
-      <button class="tg-file-remove" onclick="tgRemoveFile2(${i},'${zone}')" title="Olib tashlash">×</button>
+      <button class="tg-file-remove" onclick="_tgSecRemove(${si},${fi})" title="Olib tashlash">×</button>
     </div>`;
   }).join('') + `
-    <div class="tg-file-add" onclick="document.getElementById('tg-file-${zone}').click()">
+    <div class="tg-file-add" onclick="document.getElementById('tg-sec-file-${si}').click()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Yana qo'shish
+      Yana qo‘shish
     </div>`;
+}
+
+function _tgSecDrop(e, si){
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  _tgSecFiles(e.dataTransfer.files, si);
+}
+
+function _tgSecFiles(fileList, si){
+  const sec = _tgSections[si];
+  if(!sec) return;
+  for(const f of fileList){
+    if(!sec.files.some(x=>x.name===f.name && x.size===f.size)){
+      sec.files.push(f);
+    }
+  }
+  _tgRenderSecList(si);
+  _tgUpdateSubmitState();
+}
+
+function _tgSecRemove(si, fi){
+  if(_tgSections[si]) _tgSections[si].files.splice(fi, 1);
+  _tgRenderSecList(si);
+  _tgUpdateSubmitState();
+}
+
+function _tgRenderSecList(si){
+  const el = document.getElementById('tg-sec-list-'+si);
+  const ph = document.getElementById('tg-sec-ph-'+si);
+  const files = _tgSections[si]?.files || [];
+  if(!el) return;
+  if(!files.length){
+    el.innerHTML = '';
+    if(ph) ph.style.display = '';
+    return;
+  }
+  if(ph) ph.style.display = 'none';
+  el.innerHTML = _tgSecListHtml(si);
 }
 
 function _tgUpdateSubmitState(){
   const btn = document.getElementById('tg-send-btn');
   const hint = document.getElementById('tg-submit-hint');
   if(!btn) return;
-  const hasDesign = (_tgZoneFiles.design||[]).length > 0;
-  const hasMaterial = (_tgZoneFiles.material||[]).length > 0;
-  const ok = hasDesign && hasMaterial;
+  const totalFiles = _tgSections.reduce((s, sec) => s + sec.files.length, 0);
+  const ok = totalFiles > 0;
   btn.disabled = !ok;
   if(hint){
     if(ok){ hint.style.display='none'; }
-    else {
-      hint.style.display='';
-      const need=[];
-      if(!hasDesign) need.push('dizayn rasmlari');
-      if(!hasMaterial) need.push('materiallar/PSD');
-      hint.textContent = need.join(' va ')+' yuklang';
-    }
+    else { hint.style.display=''; hint.textContent = "Kamida bitta bo'limga fayl yuklang"; }
   }
 }
 
-// ── IKKI ZONALI TOPSHIRISH ──
+// ── BO'LIMLI TOPSHIRISH ──
 async function tgSubmitDelivery(projectId){
   const p = projects.find(x=>x.id===projectId);
   if(!p){ toast('Loyiha topilmadi'); return; }
@@ -399,37 +426,41 @@ async function tgSubmitDelivery(projectId){
   if(!channelId){ toast('Telegram kanal belgilanmagan'); return; }
   if(!isTgReady()){ toast('Telegram sozlamalari to\'ldirilmagan'); return; }
 
-  const designFiles = _tgZoneFiles.design || [];
-  const materialFiles = _tgZoneFiles.material || [];
-  if(!designFiles.length || !materialFiles.length){
-    toast('Ikkala bo\'limga ham fayl yuklang');
-    return;
-  }
+  const totalFiles = _tgSections.reduce((s, sec) => s + sec.files.length, 0);
+  if(!totalFiles){ toast('Kamida bitta fayl yuklang'); return; }
+
   const figmaLink = document.getElementById('tg-figma-link')?.value?.trim() || '';
   const statusEl = document.getElementById('tg-delivery-status');
   const sendBtn = document.getElementById('tg-send-btn');
   if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Yuborilmoqda...'; }
 
-  // Barcha fayllar: avval dizayn rasmlari, keyin materiallar
-  const allFiles = [
-    ...designFiles.map(f=>({file:f, tag:'🎨 Dizayn'})),
-    ...materialFiles.map(f=>({file:f, tag:'📦 Material'}))
-  ];
-
   try{
     if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...');
     await tgSendMessage(channelId, tgBuildCaption(p, d));
 
-    const totalSize = allFiles.reduce((s,x)=>s+x.file.size, 0);
+    const totalSize = _tgSections.reduce((s, sec) => s + sec.files.reduce((ss, f) => ss + f.size, 0), 0);
     let sentSize = 0;
-    for(let i=0; i<allFiles.length; i++){
-      const { file:f, tag } = allFiles[i];
-      const cap = `${tag} ${i+1}/${allFiles.length}: ${f.name}`;
-      if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:0,phase:'upload',current:i+1,total:allFiles.length,sentSize,totalSize});
-      await tgSendFile(channelId, f, cap, (info)=>{
-        if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:info.loaded,phase:info.phase,pct:info.pct,current:i+1,total:allFiles.length,sentSize,totalSize});
-      });
-      sentSize += f.size;
+    let fileNum = 0;
+
+    for(let si = 0; si < _tgSections.length; si++){
+      const sec = _tgSections[si];
+      if(!sec.files.length) continue;
+
+      const secLabel = sec.name
+        ? `📂 Bo‘lim ${si+1}: ${sec.name}`
+        : `📂 Bo‘lim ${si+1}`;
+      await tgSendMessage(channelId, `*${secLabel}*`);
+
+      for(let fi = 0; fi < sec.files.length; fi++){
+        const f = sec.files[fi];
+        fileNum++;
+        const cap = `${secLabel} — ${fi+1}/${sec.files.length}: ${f.name}`;
+        if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:0,phase:'upload',current:fileNum,total:totalFiles,sentSize,totalSize});
+        await tgSendFile(channelId, f, cap, (info)=>{
+          if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:info.loaded,phase:info.phase,pct:info.pct,current:fileNum,total:totalFiles,sentSize,totalSize});
+        });
+        sentSize += f.size;
+      }
     }
 
     if(figmaLink){
@@ -440,7 +471,7 @@ async function tgSubmitDelivery(projectId){
     if(statusEl) statusEl.innerHTML = `
       <div class="tg-success">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <span>Ishlar yuborildi! Loyiha "Ko'rib chiqilmoqda"ga o'tdi.</span>
+        <span>Ishlar yuborildi! Loyiha "Ko‘rib chiqilmoqda"ga o‘tdi.</span>
       </div>`;
 
     projects = projects.map(pr=>{
@@ -451,7 +482,7 @@ async function tgSubmitDelivery(projectId){
     });
     persist();
     toast('Ishlar Telegram kanalga yuborildi!');
-    _tgZoneFiles.design = []; _tgZoneFiles.material = [];
+    _tgSections = [];
     setTimeout(()=>{ closeModal(); if(typeof rerenderActive==='function') rerenderActive(); }, 1400);
 
   }catch(err){
@@ -505,7 +536,7 @@ function formatFileSize(bytes){
   return (bytes/(1024*1024*1024)).toFixed(2) + ' GB';
 }
 
-// ── FAYL YUKLASH UI ──
+// ── FAYL YUKLASH UI (peek panel uchun) ──
 function renderDeliverySection(project){
   if(!project || project.status !== 'done') return '';
   const d = designers.find(x=>x.id===project.designerId);
@@ -561,7 +592,7 @@ function renderDeliverySection(project){
     </div>`;
 }
 
-// ── FILE HANDLING ──
+// ── FILE HANDLING (peek panel uchun) ──
 function tgHandleDrop(e){
   e.preventDefault();
   e.currentTarget.classList.remove('dragover');
@@ -616,7 +647,7 @@ function tgRenderFileList(){
   }).join('') + `
     <div class="tg-file-add" onclick="document.getElementById('tg-file-real').click()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Yana qo'shish
+      Yana qo‘shish
     </div>`;
 }
 
@@ -644,7 +675,6 @@ function tgQuickSetChannel(designerId){
   if(peekProjId) openProjectPeek(peekProjId);
 }
 
-// Kanal xaritasini sozlamalar sahifasida ko'rsatish
 function renderTgChannelMap(){
   const el = document.getElementById('tg-channel-list');
   if(!el) return;

@@ -314,8 +314,9 @@ a{color:var(--accent-text)}
 
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,12,16,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
-.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px;box-shadow:var(--shadow-lg)}
-.modal-title{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:700;margin-bottom:20px;letter-spacing:-.2px}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.modal-title{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:700;letter-spacing:-.2px;padding:24px 24px 16px;flex-shrink:0}
+#modal-body{flex:1;overflow-y:auto;padding:0 24px 24px;min-height:0}
 .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:2px}
 .modal-close:hover{color:var(--text)}
 .modal-footer{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
@@ -776,7 +777,14 @@ select.prop-input{cursor:pointer}
 
 .tg-send-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 16px;padding:11px;font-size:14px;font-weight:600}
 
-/* Ikki zonali topshirish modali */
+/* Bo'limli topshirish modali */
+.tg-section{margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.tg-section-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--hover);border-bottom:1px solid var(--border)}
+.tg-section-num{font-size:11px;font-weight:700;color:var(--muted2);white-space:nowrap}
+.tg-section-name{flex:1;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text);outline:none;padding:2px 4px;border-radius:4px}
+.tg-section-name:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--accent)}
+.tg-section-del{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;line-height:1}
+.tg-section-del:hover{color:var(--error);background:color-mix(in srgb,var(--error) 10%,transparent)}
 .tg-zone-block{margin-bottom:14px}
 .tg-zone-label{font-size:12.5px;font-weight:700;margin-bottom:6px;color:var(--text)}
 #modal-body .tg-upload-zone{margin:0}
@@ -784,6 +792,8 @@ select.prop-input{cursor:pointer}
 #modal-body .tg-upload-placeholder span{font-size:13px}
 #modal-body .tg-figma-row{margin:0 0 4px}
 #modal-body .tg-progress-wrap{margin:12px 0}
+.tg-add-section-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border:2px dashed var(--border2);border-radius:var(--radius);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;margin-bottom:14px}
+.tg-add-section-btn:hover{border-color:var(--accent);color:var(--accent-text);background:var(--accent-soft)}
 
 .tg-channel-setup{margin:16px;padding:16px;border-radius:var(--radius);background:color-mix(in srgb,var(--warning) 8%,transparent);border:1px solid color-mix(in srgb,var(--warning) 20%,transparent)}
 .tg-channel-note{font-size:13px;color:var(--text);margin-bottom:10px}
