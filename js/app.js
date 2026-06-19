@@ -130,6 +130,8 @@ function showPanel(name){
   const fns={dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
   if(fns[name]) fns[name]();
   updateCounts();
+  const main=document.querySelector('.main');
+  if(main) main.style.overflow = name==='settings' ? 'hidden' : '';
 }
 
 function toggleSidebar(){
