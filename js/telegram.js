@@ -152,7 +152,7 @@ async function tgDeliverProject(projectId){
   }
 
   const uploadEl = document.getElementById('tg-upload-area');
-  const filesInput = document.getElementById('tg-file-input');
+  const filesInput = document.getElementById('tg-file-real');
   const figmaInput = document.getElementById('tg-figma-link');
   const statusEl = document.getElementById('tg-delivery-status');
 
