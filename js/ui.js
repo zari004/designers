@@ -767,8 +767,6 @@ function closeModal(){
   const m = document.getElementById('modal');
   const tgFooter = m.querySelector('.tg-modal-footer');
   if(tgFooter) tgFooter.remove();
-  const tgSheet = document.getElementById('tg-send-sheet');
-  if(tgSheet) tgSheet.style.display='none';
   m.style.display='none';
   document.removeEventListener('paste',_aiPasteHandler);
 }

@@ -128,12 +128,13 @@ async function tgApiFetch(method, buildReq, retries){
   }
 }
 
-async function tgSendMessage(channelId, text){
+async function tgSendMessage(channelId, text, threadId){
+  const tid = (threadId!=null) ? threadId : _tgThreadId;
   return tgApiFetch('sendMessage', () => ({
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       chat_id: channelId,
-      ...(_tgThreadId ? { message_thread_id: _tgThreadId } : {}),
+      ...(tid ? { message_thread_id: tid } : {}),
       text: text,
       parse_mode: 'Markdown',
       disable_web_page_preview: false
@@ -142,12 +143,13 @@ async function tgSendMessage(channelId, text){
 }
 
 // Bir nechta faylni ALBOM (guruh) qilib bitta so'rovda yuborish (2-10 ta)
-async function tgSendMediaGroup(channelId, files, caption, asPhoto){
+async function tgSendMediaGroup(channelId, files, caption, asPhoto, threadId){
+  const tid = (threadId!=null) ? threadId : _tgThreadId;
   const type = asPhoto ? 'photo' : 'document';
   return tgApiFetch('sendMediaGroup', () => {
     const fd = new FormData();
     fd.append('chat_id', channelId);
-    if(_tgThreadId) fd.append('message_thread_id', _tgThreadId);
+    if(tid) fd.append('message_thread_id', tid);
     const media = files.map((f, i) => {
       const item = { type, media: `attach://file${i}` };
       if(i===0 && caption){ item.caption = caption; item.parse_mode = 'Markdown'; }
@@ -160,13 +162,14 @@ async function tgSendMediaGroup(channelId, files, caption, asPhoto){
 }
 
 // Bitta faylni yuborish (albom kamida 2 ta talab qiladi — 1 ta uchun)
-async function tgSendSingle(channelId, file, caption, asPhoto){
+async function tgSendSingle(channelId, file, caption, asPhoto, threadId){
+  const tid = (threadId!=null) ? threadId : _tgThreadId;
   const method = asPhoto ? 'sendPhoto' : 'sendDocument';
   const field  = asPhoto ? 'photo' : 'document';
   return tgApiFetch(method, () => {
     const fd = new FormData();
     fd.append('chat_id', channelId);
-    if(_tgThreadId) fd.append('message_thread_id', _tgThreadId);
+    if(tid) fd.append('message_thread_id', tid);
     fd.append(field, file, file.name);
     if(caption){ fd.append('caption', caption); fd.append('parse_mode', 'Markdown'); }
     return { body: fd };
@@ -175,7 +178,7 @@ async function tgSendSingle(channelId, file, caption, asPhoto){
 
 // Bir bo'lim fayllarini guruhlab yuborish: rasmlar albom, qolganlari hujjat.
 // forceDoc=true bo'lsa hammasi hujjat (original sifat) sifatida ketadi.
-async function tgSendSectionFiles(channelId, files, label, forceDoc){
+async function tgSendSectionFiles(channelId, files, label, forceDoc, threadId){
   const PHOTO_MAX = 10 * 1024 * 1024;
   const photos = forceDoc ? [] : files.filter(f => f.type.startsWith('image/') && f.size <= PHOTO_MAX);
   const docs   = forceDoc ? files.slice() : files.filter(f => !(f.type.startsWith('image/') && f.size <= PHOTO_MAX));
@@ -187,9 +190,9 @@ async function tgSendSectionFiles(channelId, files, label, forceDoc){
       const cap = labelUsed ? undefined : label;
       labelUsed = true;
       if(chunk.length === 1){
-        await tgSendSingle(channelId, chunk[0], cap, asPhoto);
+        await tgSendSingle(channelId, chunk[0], cap, asPhoto, threadId);
       } else {
-        await tgSendMediaGroup(channelId, chunk, cap, asPhoto);
+        await tgSendMediaGroup(channelId, chunk, cap, asPhoto, threadId);
       }
       await _tgDelay(400);
     }
@@ -616,118 +619,110 @@ function _tgRetryNotice(waitMs){
   if(statusEl) statusEl.innerHTML = renderTgProgress(`Telegram chekloviga uchradi — ${Math.round(waitMs/1000)}s kutilmoqda, so'ng davom etadi…`);
 }
 
-// ── YUBORISH PANELI (jonli holat) ──
-let _tgSendState = null;   // { steps, sentFiles, totalFiles, finished, error, retryMsg, projectId }
+// ── FONDA YUBORISH — KICHIK QALQOVCHI OYNACHA (mini) ──
+// Bir nechta yuborish bir vaqtda fonda ketishi mumkin; har biri alohida karta.
+let _tgJobs = [];      // [{ id, projectId, projectTitle, steps, sentFiles, totalFiles, finished, error, retryMsg, expanded }]
+let _tgJobSeq = 0;
 
-function _tgOpenSendSheet(){
-  let sheet = document.getElementById('tg-send-sheet');
-  if(!sheet){
-    sheet = document.createElement('div');
-    sheet.className = 'tg-sheet-overlay';
-    sheet.id = 'tg-send-sheet';
-    sheet.onclick = (e)=>{ if(e.target===sheet && _tgSendState && _tgSendState.finished) _tgCloseSendSheet(); };
-    document.body.appendChild(sheet);
+function _tgMiniEnsure(){
+  let wrap = document.getElementById('tg-mini-wrap');
+  if(!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'tg-mini-wrap';
+    document.body.appendChild(wrap);
   }
-  sheet.style.display = 'flex';
-  _tgRenderSendSheet();
-}
-
-function _tgCloseSendSheet(){
-  const sheet = document.getElementById('tg-send-sheet');
-  if(sheet) sheet.style.display = 'none';
+  return wrap;
 }
 
 function _tgStepIcon(status){
-  if(status==='done')  return '<span class="tg-step-ic done"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>';
+  if(status==='done')  return '<span class="tg-step-ic done"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>';
   if(status==='sending') return '<span class="tg-step-ic sending"></span>';
-  if(status==='error') return '<span class="tg-step-ic error"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>';
+  if(status==='error') return '<span class="tg-step-ic error"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></span>';
   return '<span class="tg-step-ic pending"></span>';
 }
 
-function _tgRenderSendSheet(){
-  const sheet = document.getElementById('tg-send-sheet');
-  if(!sheet || !_tgSendState) return;
-  const st = _tgSendState;
-  const pct = st.totalFiles ? Math.round(st.sentFiles / st.totalFiles * 100) : (st.finished ? 100 : 0);
-
-  let headIcon, headTitle, headClass='';
-  if(st.error){
-    headClass = 'error';
-    headIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
-    headTitle = 'Yuborishda xatolik';
-  } else if(st.finished){
-    headClass = 'done';
-    headIcon = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>';
-    headTitle = 'Yuborildi';
+function _tgJobCardHtml(job){
+  const pct = job.totalFiles ? Math.round(job.sentFiles / job.totalFiles * 100) : (job.finished ? 100 : 0);
+  let state, headIcon, subLine;
+  if(job.error){
+    state = 'error';
+    headIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
+    subLine = 'Xatolik: ' + esc(job.error);
+  } else if(job.finished){
+    state = 'done';
+    headIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>';
+    subLine = 'Yuborildi ✓';
   } else {
-    headIcon = '<span class="tg-sheet-spin"></span>';
-    headTitle = 'Yuborilmoqda…';
+    state = 'sending';
+    headIcon = '<span class="tg-mini-spin"></span>';
+    subLine = `Yuborilmoqda… ${job.sentFiles}/${job.totalFiles} fayl`;
   }
 
-  const subLine = st.error
-    ? esc(st.error)
-    : `${st.sentFiles} / ${st.totalFiles} fayl yuborildi`;
+  const rightBtn = job.finished
+    ? `<button class="tg-mini-x" onclick="event.stopPropagation();_tgMiniDismiss(${job.id})" title="Yopish">×</button>`
+    : `<span class="tg-mini-chev${job.expanded?' open':''}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span>`;
 
-  const stepsHtml = st.steps.map(s => `
-    <div class="tg-step ${s.status}">
-      ${_tgStepIcon(s.status)}
-      <div class="tg-step-body">
-        <div class="tg-step-title">${s.icon} ${esc(s.title)}</div>
-        <div class="tg-step-sub">${esc(s.sub)}</div>
-      </div>
-      ${s.status==='sending' ? '<span class="tg-step-tag">yuborilmoqda</span>' : ''}
-      ${s.status==='done' ? '<span class="tg-step-tag ok">tayyor</span>' : ''}
-    </div>`).join('');
+  const retryHtml = (!job.finished && job.retryMsg)
+    ? `<div class="tg-mini-retry">⏳ ${esc(job.retryMsg)}</div>` : '';
 
-  const retryHtml = (!st.finished && st.retryMsg)
-    ? `<div class="tg-sheet-retry">${esc(st.retryMsg)}</div>` : '';
-
-  const footHtml = st.finished
-    ? `<button class="btn ${st.error?'':'btn-primary'} tg-sheet-close" onclick="${st.error?'_tgCloseSendSheet()':'_tgFinishDelivery()'}">${st.error?'Yopish':'Yopish va davom etish'}</button>`
-    : `<div class="tg-sheet-foot-note">Iltimos kuting — oynani yopmang</div>`;
-
-  sheet.innerHTML = `
-    <div class="tg-sheet">
-      <div class="tg-sheet-head ${headClass}">
-        <div class="tg-sheet-icon ${headClass}">${headIcon}</div>
-        <div class="tg-sheet-head-text">
-          <div class="tg-sheet-title">${headTitle}</div>
-          <div class="tg-sheet-sub">${subLine}</div>
+  const stepsHtml = job.expanded ? `<div class="tg-mini-steps">${
+    job.steps.map(s => `
+      <div class="tg-step ${s.status}">
+        ${_tgStepIcon(s.status)}
+        <div class="tg-step-body">
+          <div class="tg-step-title">${s.icon} ${esc(s.title)}</div>
+          <div class="tg-step-sub">${esc(s.sub)}</div>
         </div>
-        ${st.finished && !st.error ? '<span class="tg-sheet-badge">✓ Yuborildi</span>' : ''}
-      </div>
-      <div class="tg-sheet-bar"><div class="tg-sheet-fill${st.error?' error':''}" style="width:${pct}%"></div></div>
-      ${retryHtml}
-      <div class="tg-sheet-steps">${stepsHtml}</div>
-      <div class="tg-sheet-foot">${footHtml}</div>
-    </div>`;
-}
+        ${s.status==='sending' ? '<span class="tg-step-tag">…</span>' : ''}
+        ${s.status==='done' ? '<span class="tg-step-tag ok">✓</span>' : ''}
+      </div>`).join('')
+  }</div>` : '';
 
-// Muvaffaqiyatdan keyin modalni yopish va ro'yxatni yangilash
-function _tgFinishDelivery(){
-  _tgCloseSendSheet();
-  closeModal();
-  if(typeof rerenderActive==='function') rerenderActive();
-}
-
-// Footer tugmasini "yuborildi" holatiga o'tkazish (qayta ochish uchun)
-function _tgMarkFooterDelivered(){
-  const footer = document.querySelector('.tg-modal-footer');
-  if(!footer) return;
-  footer.innerHTML = `
-    <div class="tg-delivered-row" onclick="_tgOpenSendSheet()">
-      <span class="tg-delivered-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg></span>
-      <div class="tg-delivered-text">
-        <div class="tg-delivered-title">Ishlar yuborildi</div>
-        <div class="tg-delivered-sub">Batafsil ko'rish uchun bosing</div>
+  return `<div class="tg-mini-card ${state}">
+    <div class="tg-mini-head" onclick="_tgMiniToggle(${job.id})">
+      <span class="tg-mini-ic ${state}">${headIcon}</span>
+      <div class="tg-mini-text">
+        <div class="tg-mini-title">${esc(job.projectTitle)}</div>
+        <div class="tg-mini-sub">${subLine}</div>
       </div>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      ${rightBtn}
     </div>
-    <button class="btn btn-primary tg-sheet-close" style="width:100%;justify-content:center;margin-top:10px" onclick="_tgFinishDelivery()">Yopish</button>`;
+    <div class="tg-mini-bar"><div class="tg-mini-fill ${state}" style="width:${pct}%"></div></div>
+    ${retryHtml}
+    ${stepsHtml}
+  </div>`;
 }
 
-// ── BO'LIMLI TOPSHIRISH ──
-async function tgSubmitDelivery(projectId){
+function _tgMiniRender(){
+  const wrap = _tgMiniEnsure();
+  if(!_tgJobs.length){ wrap.innerHTML=''; wrap.style.display='none'; return; }
+  wrap.style.display='flex';
+  wrap.innerHTML = _tgJobs.map(_tgJobCardHtml).join('');
+}
+
+function _tgMiniToggle(id){
+  const job = _tgJobs.find(j=>j.id===id);
+  if(!job) return;
+  job.expanded = !job.expanded;
+  _tgMiniRender();
+}
+
+function _tgMiniDismiss(id){
+  _tgJobs = _tgJobs.filter(j=>j.id!==id);
+  _tgMiniRender();
+}
+
+function _tgRetryNotice(waitMs){
+  // Eng so'nggi tugamagan ishga cheklov xabarini biriktiramiz
+  const job = _tgJobs.filter(j=>!j.finished).pop();
+  if(job){
+    job.retryMsg = `Telegram cheklovi — ${Math.round(waitMs/1000)}s kutilmoqda…`;
+    _tgMiniRender();
+  }
+}
+
+// ── BO'LIMLI TOPSHIRISH (darhol yopiladi, fonda yuboradi) ──
+function tgSubmitDelivery(projectId){
   const p = projects.find(x=>x.id===projectId);
   if(!p){ toast('Loyiha topilmadi'); return; }
   const d = designers.find(x=>x.id===p.designerId);
@@ -740,87 +735,94 @@ async function tgSubmitDelivery(projectId){
   if(!_tgMaterials.length){ toast('Materiallar (PSD, AI, ZIP) yuklanishi shart'); return; }
 
   const figmaLink = document.getElementById('tg-figma-link')?.value?.trim() || '';
-  const sendBtn = document.getElementById('tg-send-btn');
-  if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Yuborilmoqda...'; }
 
-  // yuboriladigan bo'limlar (bo'sh emaslar)
-  const active = _tgSections.filter(s => s.files.length);
-  const totalFiles = active.reduce((s,sec)=>s+sec.files.length,0) + _tgMaterials.length;
+  // Fayllarni nusxalab olamiz (modal yopilgach ham fon ishlashi uchun)
+  const sections  = _tgSections.filter(s => s.files.length).map(s => ({ name: s.name, files: s.files.slice() }));
+  const materials = _tgMaterials.slice();
 
-  // qadamlar ro'yxatini tuzish
+  // Modalni DARHOL yopamiz — foydalanuvchi boshqa ishni qilaversin
+  _tgSections = []; _tgMaterials = [];
+  closeModal();
+  toast('Yuborish boshlandi — fonda davom etadi');
+
+  // Fonda yuborishni boshlaymiz (kutmaymiz)
+  _tgRunDeliveryJob(p, d, channelId, sections, materials, figmaLink);
+}
+
+async function _tgRunDeliveryJob(p, d, channelId, sections, materials, figmaLink){
+  const totalFiles = sections.reduce((s,sec)=>s+sec.files.length,0) + materials.length;
+
   const steps = [];
-  steps.push({ key:'topic', icon:'🗂', title:'Guruhda mavzu ochilmoqda', sub:esc(p.title), files:0, status:'pending' });
+  steps.push({ key:'topic', icon:'🗂', title:'Guruhda mavzu ochilmoqda', sub:p.title, files:0, status:'pending' });
   steps.push({ key:'caption', icon:'📝', title:"Loyiha ma'lumoti", sub:'matn xabari', files:0, status:'pending' });
-  active.forEach((sec, si)=>{
+  sections.forEach((sec, si)=>{
     const nm = sec.name ? `: ${sec.name}` : '';
     steps.push({ key:'sec'+si, icon:'🎨', title:`Bo'lim ${si+1}${nm}`, sub:`${sec.files.length} ta rasm`, files:sec.files.length, status:'pending' });
   });
-  steps.push({ key:'materials', icon:'📦', title:'Materiallar va PSD', sub:`${_tgMaterials.length} ta fayl`, files:_tgMaterials.length, status:'pending' });
+  steps.push({ key:'materials', icon:'📦', title:'Materiallar va PSD', sub:`${materials.length} ta fayl`, files:materials.length, status:'pending' });
   if(figmaLink) steps.push({ key:'figma', icon:'🔗', title:'Figma havola', sub:'link', files:0, status:'pending' });
 
-  _tgSendState = { steps, sentFiles:0, totalFiles, finished:false, error:null, retryMsg:null, projectId };
-  _tgOpenSendSheet();
+  const job = { id:++_tgJobSeq, projectId:p.id, projectTitle:p.title, steps, sentFiles:0, totalFiles, finished:false, error:null, retryMsg:null, expanded:false };
+  _tgJobs.push(job);
+  _tgMiniRender();
 
-  const begin = (i)=>{ steps[i].status='sending'; _tgSendState.retryMsg=null; _tgRenderSendSheet(); };
-  const finish = (i)=>{ steps[i].status='done'; _tgSendState.sentFiles += steps[i].files; _tgRenderSendSheet(); };
+  const begin  = (i)=>{ steps[i].status='sending'; job.retryMsg=null; _tgMiniRender(); };
+  const finish = (i)=>{ steps[i].status='done'; job.sentFiles += steps[i].files; _tgMiniRender(); };
 
   let idx = 0;
-  _tgThreadId = null;
   let topicId = null;
   try{
     // 1) Guruhda loyiha uchun yangi mavzu ochish
     begin(idx);
     topicId = await tgCreateTopic(channelId, p.title);
-    _tgThreadId = topicId;
     finish(idx); await _tgDelay(300); idx++;
 
     begin(idx);
-    await tgSendMessage(channelId, tgBuildCaption(p, d));
+    await tgSendMessage(channelId, tgBuildCaption(p, d), topicId);
     finish(idx); await _tgDelay(350); idx++;
 
-    for(let si = 0; si < active.length; si++){
-      const sec = active[si];
+    for(let si = 0; si < sections.length; si++){
+      const sec = sections[si];
       const name = sec.name ? `: ${sec.name}` : '';
       const label = `📂 *Bo'lim ${si+1}${name}* — ${sec.files.length} ta rasm`;
       begin(idx);
-      await tgSendSectionFiles(channelId, sec.files, label, true);
+      await tgSendSectionFiles(channelId, sec.files, label, true, topicId);
       finish(idx); await _tgDelay(350); idx++;
     }
 
     begin(idx);
-    await tgSendSectionFiles(channelId, _tgMaterials, `📦 *Materiallar va PSD* — ${_tgMaterials.length} ta fayl`, true);
+    await tgSendSectionFiles(channelId, materials, `📦 *Materiallar va PSD* — ${materials.length} ta fayl`, true, topicId);
     finish(idx); await _tgDelay(350); idx++;
 
     if(figmaLink){
       begin(idx);
-      await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`);
+      await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`, topicId);
       finish(idx); idx++;
     }
 
-    _tgThreadId = null;
-    _tgSendState.finished = true;
-    _tgRenderSendSheet();
+    job.finished = true;
+    _tgMiniRender();
 
     projects = projects.map(pr=>{
-      if(pr.id!==projectId) return pr;
+      if(pr.id!==p.id) return pr;
       const upd={...pr, tgDelivered:true, tgDeliveredAt:new Date().toISOString(), tgGroupId:channelId, tgTopicId:topicId};
       if(pr.status==='wip') upd.status='review';
       return upd;
     });
     persist();
-    toast('Ishlar Telegram guruhiga yuborildi!');
-    _tgSections = []; _tgMaterials = [];
-    _tgMarkFooterDelivered();
+    toast(`"${p.title}" — guruhga yuborildi!`);
+    if(typeof rerenderActive==='function') rerenderActive();
+
+    // Kengaytirilmagan bo'lsa, biroz turib o'zi yo'qoladi
+    setTimeout(()=>{ if(!job.expanded) _tgMiniDismiss(job.id); }, 9000);
 
   }catch(err){
     console.error('Telegram yuborish xatosi:', err);
-    _tgThreadId = null;
     if(steps[idx]) steps[idx].status = 'error';
-    _tgSendState.error = err.message || 'Nomaʼlum xatolik';
-    _tgSendState.finished = true;
-    _tgRenderSendSheet();
-    toast('Yuborishda xatolik');
-    if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Qayta urinish'; }
+    job.error = err.message || 'Nomaʼlum xatolik';
+    job.finished = true;
+    _tgMiniRender();
+    toast(`"${p.title}" — yuborishda xatolik`);
   }
 }
 
