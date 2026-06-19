@@ -744,7 +744,9 @@ select.prop-input{cursor:pointer}
 .tg-progress-text{font-size:12.5px;color:var(--text);font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between}
 .tg-progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
 .tg-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .3s ease}
-.tg-progress-pct{font-size:11px;color:var(--muted);text-align:right;margin-top:4px}
+.tg-progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.tg-progress-fill.processing{animation:tgPulse 1.2s ease-in-out infinite;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent))}
+@keyframes tgPulse{0%,100%{opacity:.7}50%{opacity:1}}
 
 .tg-success{display:flex;align-items:center;gap:10px;margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:color-mix(in srgb,var(--success) 10%,transparent);border:1px solid color-mix(in srgb,var(--success) 25%,transparent);color:var(--success);font-size:13px;font-weight:600}
 .tg-error{display:flex;align-items:center;gap:10px;margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:color-mix(in srgb,var(--error) 8%,transparent);border:1px solid color-mix(in srgb,var(--error) 20%,transparent);color:var(--error);font-size:13px;font-weight:500}

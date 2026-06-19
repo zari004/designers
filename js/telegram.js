@@ -100,9 +100,8 @@ async function tgSendFile(channelId, file, caption, onProgress){
   const c = tgCfg();
   if(!c.botToken || !c.proxyUrl) throw new Error('Telegram sozlanmagan');
 
-  const isImage = file.type.startsWith('image/') && file.size < 10*1024*1024;
-  const method = isImage ? 'sendPhoto' : 'sendDocument';
-  const fieldName = isImage ? 'photo' : 'document';
+  const method = 'sendDocument';
+  const fieldName = 'document';
 
   const url = c.proxyUrl.replace(/\/+$/,'') + '/bot' + c.botToken + '/' + method;
 
@@ -115,11 +114,16 @@ async function tgSendFile(channelId, file, caption, onProgress){
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', url);
+    xhr.timeout = 5 * 60 * 1000;
 
     xhr.upload.onprogress = (e) => {
       if(e.lengthComputable && onProgress){
-        onProgress(Math.round(e.loaded / e.total * 100));
+        onProgress({ phase:'upload', loaded: e.loaded, total: e.total, pct: Math.round(e.loaded / e.total * 100) });
       }
+    };
+
+    xhr.upload.onload = () => {
+      if(onProgress) onProgress({ phase:'processing', loaded: file.size, total: file.size, pct: 100 });
     };
 
     xhr.onload = () => {
@@ -131,6 +135,7 @@ async function tgSendFile(channelId, file, caption, onProgress){
     };
 
     xhr.onerror = () => reject(new Error('Tarmoq xatosi'));
+    xhr.ontimeout = () => reject(new Error('Vaqt tugadi (5 daqiqa)'));
     xhr.send(formData);
   });
 }
@@ -171,28 +176,36 @@ async function tgDeliverProject(projectId){
     const caption = tgBuildCaption(p, d);
 
     // 1. Avval loyiha haqida xabar
-    if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...', 0);
+    if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...');
     await tgSendMessage(channelId, caption);
 
     // 2. Fayllarni yuborish
+    const totalSize = files.reduce((s,f)=>s+f.size, 0);
+    let sentSize = 0;
     for(let i = 0; i < files.length; i++){
       const f = files[i];
       const fileCaption = files.length > 1 ? `📎 ${i+1}/${files.length}: ${f.name}` : `📎 ${f.name}`;
-      if(statusEl) statusEl.innerHTML = renderTgProgress(
-        `${f.name} yuborilmoqda (${formatFileSize(f.size)})...`,
-        0, i+1, files.length
-      );
-      await tgSendFile(channelId, f, fileCaption, (pct) => {
-        if(statusEl) statusEl.innerHTML = renderTgProgress(
-          `${f.name} yuborilmoqda...`,
-          pct, i+1, files.length
-        );
+      if(statusEl) statusEl.innerHTML = renderTgProgress({
+        fileName: f.name, fileSize: f.size,
+        loaded: 0, phase: 'upload',
+        current: i+1, total: files.length,
+        sentSize, totalSize
       });
+      await tgSendFile(channelId, f, fileCaption, (info) => {
+        if(statusEl) statusEl.innerHTML = renderTgProgress({
+          fileName: f.name, fileSize: f.size,
+          loaded: info.loaded, phase: info.phase,
+          pct: info.pct,
+          current: i+1, total: files.length,
+          sentSize, totalSize
+        });
+      });
+      sentSize += f.size;
     }
 
     // 3. Figma link yuborish
     if(figmaLink){
-      if(statusEl) statusEl.innerHTML = renderTgProgress('Figma link yuborilmoqda...', 90);
+      if(statusEl) statusEl.innerHTML = renderTgProgress('Figma link yuborilmoqda...');
       await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`);
     }
 
@@ -222,12 +235,34 @@ async function tgDeliverProject(projectId){
   }
 }
 
-function renderTgProgress(text, pct, current, total){
-  const countText = total ? ` (${current}/${total})` : '';
+function renderTgProgress(info){
+  if(typeof info === 'string') return `<div class="tg-progress-wrap"><div class="tg-progress-text">${info}</div></div>`;
+
+  const { fileName, fileSize, loaded, phase, pct, current, total, sentSize, totalSize } = info;
+  const loadedMB = formatFileSize(loaded||0);
+  const totalMB = formatFileSize(fileSize||0);
+  const allSentMB = formatFileSize((sentSize||0) + (loaded||0));
+  const allTotalMB = formatFileSize(totalSize||0);
+
+  let statusText, barPct;
+  if(phase === 'processing'){
+    statusText = `⏳ ${fileName} — serverdan Telegramga uzatilmoqda...`;
+    barPct = 100;
+  } else {
+    statusText = `${fileName} — ${loadedMB} / ${totalMB}`;
+    barPct = pct || 0;
+  }
+
   return `<div class="tg-progress-wrap">
-    <div class="tg-progress-text">${text}${countText}</div>
-    <div class="tg-progress-bar"><div class="tg-progress-fill" style="width:${pct}%"></div></div>
-    <div class="tg-progress-pct">${pct}%</div>
+    <div class="tg-progress-text">
+      <span>${statusText}</span>
+      <span>${current}/${total}</span>
+    </div>
+    <div class="tg-progress-bar"><div class="tg-progress-fill${phase==='processing'?' processing':''}" style="width:${barPct}%"></div></div>
+    <div class="tg-progress-meta">
+      <span>Jami: ${allSentMB} / ${allTotalMB}</span>
+      <span>${barPct}%</span>
+    </div>
   </div>`;
 }
 
