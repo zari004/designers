@@ -91,10 +91,11 @@ function rerenderActive(){
 
 function updateCounts(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
-  set('nav-count-d', designers.length);
-  set('nav-count-p', projects.length);
+  const vp=_visibleProjects();
+  set('nav-count-d', _visibleDesigners().length);
+  set('nav-count-p', vp.length);
   set('nav-count-trash', trashedProjects.length);
-  set('nav-count-pay', projects.filter(p=>p.status==='done').length);
+  set('nav-count-pay', vp.filter(p=>p.status==='done').length);
   set('nav-count-u', getUsers().length);
   renderNotifPanel();
 }
@@ -139,6 +140,7 @@ function _visibleProjects(){
 }
 
 function renderDashboard(){
+  if(typeof isDesignerRole==='function' && isDesignerRole()) return _renderDesignerDashboard();
   const vd = _visibleDesigners();
   const vp = _visibleProjects();
   document.getElementById('st-active').textContent = vd.filter(d=>d.status==='active').length;
@@ -189,6 +191,113 @@ function renderDashboard(){
       </div>
     </div>`;
   }).join('') : '<div class="empty">Hali loyiha yo\'q</div>';
+}
+
+// ═══════════════ DIZAYNER SHAXSIY DASHBOARD ═══════════════
+function _renderDesignerDashboard(){
+  const panel=document.getElementById('panel-dashboard');
+  if(!panel) return;
+  const d=typeof getMyDesigner==='function' ? getMyDesigner() : null;
+  const myProjs=typeof getMyProjects==='function' ? getMyProjects() : [];
+  const done=myProjs.filter(p=>p.status==='done');
+  const wip=myProjs.filter(p=>p.status==='wip');
+  const review=myProjs.filter(p=>p.status==='review');
+  const totalEarned=done.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const totalUnits=done.reduce((s,p)=>s+p.units,0);
+  const overdue=myProjs.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0);
+
+  const ci=d?catOf(d.category):{color:'var(--accent)',cls:''};
+  const avatarHtml=d?(d.photo?`<img src="${d.photo}"/>`:esc(d.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase())):'?';
+
+  const months=_desMonthlyChart(myProjs);
+
+  panel.innerHTML=`
+    <div class="des-hero">
+      <div class="des-avatar" style="background:${ci.color}">${avatarHtml}</div>
+      <div>
+        <div class="des-hello">Salom, ${esc(d?.name?.split(' ')[0]||'Dizayner')}!</div>
+        <div class="des-role">${esc(d?.role||'')} ${d?'· '+d.category+' kategoriya':''} ${d?.telegram?'· '+esc(d.telegram):''}</div>
+      </div>
+    </div>
+
+    <div class="des-stats">
+      <div class="des-stat-card"><div class="des-stat-val" style="color:var(--success)">${done.length}</div><div class="des-stat-lbl">Bajarilgan</div></div>
+      <div class="des-stat-card"><div class="des-stat-val" style="color:var(--accent2)">${wip.length}</div><div class="des-stat-lbl">Jarayonda</div></div>
+      <div class="des-stat-card"><div class="des-stat-val" style="color:var(--accent-text)">${fmtPrice(totalEarned)}</div><div class="des-stat-lbl">Jami to'lov (so'm)</div></div>
+      <div class="des-stat-card"><div class="des-stat-val">${totalUnits}</div><div class="des-stat-lbl">Jami birlik</div></div>
+    </div>
+
+    ${overdue.length?`<div class="card" style="border-color:color-mix(in srgb,var(--error) 35%,transparent);padding:14px 18px;margin-bottom:20px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--error);margin-bottom:8px">Diqqat — ${overdue.length} ta loyiha muddati o'tgan</div>
+      ${overdue.map(p=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer" onclick="openProjectPeek(${p.id})">
+        <span style="font-size:12.5px;font-weight:600;flex:1">${esc(p.title)}</span>
+        <span class="status s-away">${Math.abs(deadlineDays(p.deadline))} kun o'tdi</span>
+      </div>`).join('')}
+    </div>`:''}
+
+    <div class="des-chart-wrap">
+      <div class="des-chart-title">Oxirgi 6 oy faoliyati</div>
+      ${months}
+    </div>
+
+    <div style="font-size:14px;font-weight:700;margin-bottom:14px">Loyihalarim</div>
+    ${_renderKanban(wip,review,done)}
+  `;
+}
+
+function _desMonthlyChart(projs){
+  const now=new Date();
+  const bars=[];
+  for(let i=5;i>=0;i--){
+    const m=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const label=m.toLocaleString('uz',{month:'short'});
+    const cnt=projs.filter(p=>{
+      const pd=new Date(p.doneDate||p.date);
+      return pd.getMonth()===m.getMonth()&&pd.getFullYear()===m.getFullYear()&&p.status==='done';
+    }).length;
+    bars.push({label,cnt});
+  }
+  const max=Math.max(1,...bars.map(b=>b.cnt));
+  return bars.map(b=>`<div class="des-bar-row">
+    <span class="des-bar-label">${b.label}</span>
+    <div class="des-bar-track"><div class="des-bar-fill" style="width:${Math.round(b.cnt/max*100)}%;background:var(--accent2)"></div></div>
+    <span class="des-bar-val">${b.cnt}</span>
+  </div>`).join('');
+}
+
+function _renderKanban(wip,review,done){
+  const col=(title,dot,items,canDeliver)=>{
+    return `<div class="kanban-col">
+      <div class="kanban-col-head">
+        <div class="kanban-col-dot" style="background:${dot}"></div>
+        <div class="kanban-col-title">${title}</div>
+        <span class="kanban-col-count">${items.length}</span>
+      </div>
+      ${items.length?items.map(p=>{
+        const isOver=p.deadline&&deadlineDays(p.deadline)<0;
+        return `<div class="kanban-card${isOver?' overdue':''}" onclick="openProjectPeek(${p.id})">
+          <div class="kanban-card-title">${esc(p.title)}</div>
+          <div class="kanban-card-meta">
+            <span>${p.date}</span>
+            ${p.deadline?`<span>muddat: ${p.deadline}</span>`:''}
+            ${isOver?'<span style="color:var(--error);font-weight:600">kechikkan</span>':''}
+          </div>
+          <div class="kanban-card-foot">
+            <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>
+            ${canDeliver?`<button class="kanban-deliver-btn" onclick="event.stopPropagation();openProjectPeek(${p.id})" title="Ishlarni topshirish">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Topshirish
+            </button>`:`<button class="kanban-deliver-btn" disabled>Topshirish</button>`}
+          </div>
+        </div>`;
+      }).join(''):`<div style="text-align:center;padding:30px 10px;color:var(--muted);font-size:12px">Hozircha bo'sh</div>`}
+    </div>`;
+  };
+  return `<div class="kanban">
+    ${col('Jarayonda','var(--accent2)',wip,false)}
+    ${col("Ko'rib chiqilmoqda",'var(--warning)',review,false)}
+    ${col('Bajarildi','var(--success)',[...done].sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||'')).slice(0,10),true)}
+  </div>`;
 }
 
 // ═══════════════ DIZAYNERLAR ═══════════════
@@ -346,16 +455,33 @@ function setProjFilter(f){
 
 function renderProjects(){
   const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
-  const projAddBtn=document.querySelector('#panel-projects .btn-primary[onclick*="openProjectModal"]');
-  if(projAddBtn) projAddBtn.style.display=_isDes?'none':'';
-  const dsel=document.getElementById('proj-d-filter');
-  if(_isDes && dsel){ dsel.style.display='none'; }
-  else {
-    const dval=dsel?.value||'all';
-    if(dsel){ dsel.style.display=''; dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
-      designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${esc(d.name)}</option>`).join(''); }
+
+  if(_isDes){
+    const header=document.querySelector('#panel-projects .page-header');
+    if(header) header.style.display='none';
+    const filterBar=document.querySelector('#panel-projects .filter-bar');
+    if(filterBar) filterBar.style.display='none';
+    const el=document.getElementById('projects-list');
+    if(!el) return;
+    const myProjs=_visibleProjects();
+    const wip=myProjs.filter(p=>p.status==='wip');
+    const review=myProjs.filter(p=>p.status==='review');
+    const done=myProjs.filter(p=>p.status==='done');
+    el.innerHTML=`<div style="font-size:16px;font-weight:700;margin-bottom:16px">Loyihalarim — doska</div>`+_renderKanban(wip,review,done);
+    return;
   }
-  const dval=_isDes?'all':(dsel?.value||'all');
+
+  const projAddBtn=document.querySelector('#panel-projects .btn-primary[onclick*="openProjectModal"]');
+  if(projAddBtn) projAddBtn.style.display='';
+  const header2=document.querySelector('#panel-projects .page-header');
+  if(header2) header2.style.display='';
+  const filterBar2=document.querySelector('#panel-projects .filter-bar');
+  if(filterBar2) filterBar2.style.display='';
+
+  const dsel=document.getElementById('proj-d-filter');
+  const dval=dsel?.value||'all';
+  if(dsel){ dsel.style.display=''; dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+    designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${esc(d.name)}</option>`).join(''); }
 
   const catSel=document.getElementById('proj-cat-filter');
   if(catSel){
@@ -909,20 +1035,26 @@ function renderReports(){
 
   const topEl=document.getElementById('rep-top-designers');
   if(topEl){
-    const ranked=[...vd].map(d=>{
-      const dp=done.filter(p=>p.designerId===d.id);
-      return {...d,doneCount:dp.length,earned:dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0)};
-    }).sort((a,b)=>b.earned-a.earned);
-    topEl.innerHTML=ranked.length ? ranked.map((d,i)=>`
-      <div class="table-row" style="grid-template-columns:24px 1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
-        <span style="font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums">${i+1}</span>
-        <div style="display:flex;align-items:center;gap:9px">
-          ${photoAvatar(d,26)}
-          <span style="font-size:13px;font-weight:600">${esc(d.name)}</span>
-        </div>
-        <span style="font-size:11.5px;color:var(--muted)">${d.doneCount} ta</span>
-        <span class="price-tag">${fmtPrice(d.earned)} so'm</span>
-      </div>`).join('') : '<div class="empty">Dizayner yo\'q</div>';
+    const _isDesRep=typeof isDesignerRole==='function'&&isDesignerRole();
+    const topWrap=topEl.closest('.card')||topEl.parentElement;
+    if(_isDesRep){ if(topWrap)topWrap.style.display='none'; }
+    else {
+      if(topWrap)topWrap.style.display='';
+      const ranked=[...vd].map(d=>{
+        const dp=done.filter(p=>p.designerId===d.id);
+        return {...d,doneCount:dp.length,earned:dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0)};
+      }).sort((a,b)=>b.earned-a.earned);
+      topEl.innerHTML=ranked.length ? ranked.map((d,i)=>`
+        <div class="table-row" style="grid-template-columns:24px 1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
+          <span style="font-size:11.5px;color:var(--muted2);font-variant-numeric:tabular-nums">${i+1}</span>
+          <div style="display:flex;align-items:center;gap:9px">
+            ${photoAvatar(d,26)}
+            <span style="font-size:13px;font-weight:600">${esc(d.name)}</span>
+          </div>
+          <span style="font-size:11.5px;color:var(--muted)">${d.doneCount} ta</span>
+          <span class="price-tag">${fmtPrice(d.earned)} so'm</span>
+        </div>`).join('') : '<div class="empty">Dizayner yo\'q</div>';
+    }
   }
 }
 

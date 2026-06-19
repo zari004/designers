@@ -154,6 +154,7 @@ document.addEventListener('click',e=>{
 
 // ── HUQUQLAR ──
 function applyNavPermissions(user){
+  const isDes = user.role==='designer';
   const map={
     'nav-designers':'designers',
     'nav-projects':'projects',
@@ -161,10 +162,14 @@ function applyNavPermissions(user){
     'nav-users':'users',
     'nav-reports':'reports',
     'nav-payments':'payments',
+    'nav-trash':'trash',
   };
   Object.entries(map).forEach(([elId,perm])=>{
     const el=document.getElementById(elId);
     if(!el) return;
+    if(isDes && (perm==='designers'||perm==='trash'||perm==='users'||perm==='settings'||perm==='reports')){
+      el.style.display='none'; return;
+    }
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
   });
@@ -178,6 +183,9 @@ function applyNavPermissions(user){
   Object.entries(bmap).forEach(([elId,perm])=>{
     const el=document.getElementById(elId);
     if(!el) return;
+    if(isDes && (perm==='designers'||perm==='settings')){
+      el.style.display='none'; return;
+    }
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
   });
