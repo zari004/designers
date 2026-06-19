@@ -92,6 +92,7 @@ function rerenderActive(){
 function updateCounts(){
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const vp=_visibleProjects();
+  set('nav-count-d', _visibleDesigners().length);
   set('nav-count-p', vp.length);
   set('nav-count-trash', trashedProjects.length);
   set('nav-count-pay', vp.filter(p=>p.status==='done').length);
@@ -140,10 +141,27 @@ function _visibleProjects(){
 
 function renderDashboard(){
   if(typeof isDesignerRole==='function' && isDesignerRole()) return _renderDesignerDashboard();
+  const vd = _visibleDesigners();
   const vp = _visibleProjects();
+  document.getElementById('st-active').textContent = vd.filter(d=>d.status==='active').length;
+  document.getElementById('st-total').textContent = vd.length;
   document.getElementById('st-wip').textContent = vp.filter(p=>p.status==='wip').length;
   const total = vp.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
   document.getElementById('st-budget').textContent = fmtPrice(total);
+
+  const dd = document.getElementById('dash-designers');
+  dd.innerHTML = vd.length ? vd.map(d=>`
+    <div class="table-row" style="grid-template-columns:1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
+      <div style="display:flex;align-items:center;gap:10px">
+        ${photoAvatar(d,32)}
+        <div>
+          <div style="font-size:13px;font-weight:600">${esc(d.name)}</div>
+          <div style="font-size:11.5px;color:var(--muted)">${esc(d.role)}</div>
+        </div>
+      </div>
+      <span class="d-cat-badge ${catOf(d.category).cls}">${d.category}</span>
+      ${statusBadge(d.status)}
+    </div>`).join('') : '<div class="empty">Hali dizayner qo\'shilmagan</div>';
 
   const overdue=vp.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<=3);
   const dashAlerts=document.getElementById('dash-alerts');
@@ -309,7 +327,6 @@ function renderCatTabs(){
 }
 
 function renderDesigners(){
-  if(!document.getElementById('designers-grid')) return; // Dizaynerlar bo'limi olib tashlangan
   renderCatTabs();
   const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
   const dAddBtn=document.querySelector('#panel-designers .btn-primary[onclick*="openDesignerModal"]');
@@ -371,24 +388,24 @@ function deleteDesigner(id){
 }
 
 // ═══════════════ DIZAYNER PROFILI ═══════════════
-let _detailFromPanel = 'dashboard';
+let _detailFromPanel = 'designers';
 
 function openDetail(id){
-  _detailFromPanel = document.querySelector('.panel.active')?.id?.replace('panel-','') || 'dashboard';
+  _detailFromPanel = document.querySelector('.panel.active')?.id?.replace('panel-','') || 'designers';
   currentDesignerId=id;
   showPanel('detail');
 }
 
 function goBackFromDetail(){
-  showPanel(_detailFromPanel || 'dashboard');
+  showPanel(_detailFromPanel || 'designers');
 }
 
 function renderDetail(){
   const d=designers.find(x=>x.id===currentDesignerId);
-  if(!d){ showPanel('dashboard'); return; }
+  if(!d){ showPanel('designers'); return; }
   const _backLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',reports:'← Hisobotlar',payments:"← To'lovlar"};
   const backBtn=document.querySelector('#panel-detail .back-btn');
-  if(backBtn) backBtn.textContent=_backLabels[_detailFromPanel]||'← Orqaga';
+  if(backBtn) backBtn.textContent=_backLabels[_detailFromPanel]||'← Dizaynerlar';
   const ci=catOf(d.category);
   const dProjs=projects.filter(p=>p.designerId===d.id);
   const lastMonth=new Date(); lastMonth.setMonth(lastMonth.getMonth()-1);
