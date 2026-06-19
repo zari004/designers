@@ -41,6 +41,7 @@ function tgAutoSave(){
     saveSettingToFirestore('tgProxyUrl', localStorage.getItem('tg_proxy_url')||'');
   }, 700);
   if(typeof _stgUpdateBadges==='function') _stgUpdateBadges();
+  updateTgStatus();
 }
 
 function updateTgStatus(){
