@@ -320,6 +320,7 @@ a{color:var(--accent-text)}
 .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:2px}
 .modal-close:hover{color:var(--text)}
 .modal-footer{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+.tg-modal-footer{flex-shrink:0;padding:12px 24px 20px;border-top:1px solid var(--border);background:var(--panel);border-radius:0 0 14px 14px}
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:56px;right:22px;background:var(--text);color:var(--bg);padding:11px 18px;border-radius:var(--radius);font-size:13px;font-weight:600;z-index:200;animation:toastIn .25s ease;box-shadow:var(--shadow-lg);max-width:380px}

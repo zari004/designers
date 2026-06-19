@@ -764,7 +764,10 @@ function deleteComment(pid,idx){
 
 // ═══════════════ MODALLAR ═══════════════
 function closeModal(){
-  document.getElementById('modal').style.display='none';
+  const m = document.getElementById('modal');
+  const tgFooter = m.querySelector('.tg-modal-footer');
+  if(tgFooter) tgFooter.remove();
+  m.style.display='none';
   document.removeEventListener('paste',_aiPasteHandler);
 }
 

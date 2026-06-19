@@ -392,15 +392,21 @@ function openDeliveryModal(projectId){
     <div class="tg-figma-row">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0 0 8 4 4 0 0 0 4 4 4 4 0 0 0 0-8 4 4 0 0 0-4-4z"/></svg>
       <input class="form-input" id="tg-figma-link" placeholder="Figma link (ixtiyoriy)" style="flex:1"/>
-    </div>
+    </div>`;
 
+  const modalEl = mb.closest('.modal');
+  let footer = modalEl.querySelector('.tg-modal-footer');
+  if(footer) footer.remove();
+  footer = document.createElement('div');
+  footer.className = 'tg-modal-footer';
+  footer.innerHTML = `
     <div id="tg-delivery-status"></div>
-
-    <button class="btn btn-primary tg-send-btn" id="tg-send-btn" onclick="tgSubmitDelivery(${p.id})" style="width:100%;margin-top:12px;justify-content:center" disabled>
+    <button class="btn btn-primary tg-send-btn" id="tg-send-btn" onclick="tgSubmitDelivery(${p.id})" style="width:100%;justify-content:center" disabled>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       Topshirish
     </button>
-    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Kamida bitta dizayn rasmini yuklang</div>`;
+    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px">Dizayn rasmlarini va materiallarni yuklang</div>`;
+  modalEl.appendChild(footer);
 
   _tgRenderSections();
   _tgRenderMaterials();
@@ -552,11 +558,19 @@ function _tgUpdateSubmitState(){
   const hint = document.getElementById('tg-submit-hint');
   if(!btn) return;
   const designFiles = _tgSections.reduce((s, sec) => s + sec.files.length, 0);
-  const ok = designFiles > 0;
+  const hasDesign = designFiles > 0;
+  const hasMaterials = _tgMaterials.length > 0;
+  const ok = hasDesign && hasMaterials;
   btn.disabled = !ok;
   if(hint){
     if(ok){ hint.style.display='none'; }
-    else { hint.style.display=''; hint.textContent = "Kamida bitta dizayn rasmini yuklang"; }
+    else {
+      let msg = '';
+      if(!hasDesign && !hasMaterials) msg = 'Dizayn rasmlarini va materiallarni yuklang';
+      else if(!hasDesign) msg = 'Kamida bitta dizayn rasmini yuklang';
+      else msg = 'Materiallar (PSD, AI, ZIP) yuklanishi shart';
+      hint.style.display=''; hint.textContent = msg;
+    }
   }
 }
 
@@ -576,6 +590,7 @@ async function tgSubmitDelivery(projectId){
 
   const designFiles = _tgSections.reduce((s, sec) => s + sec.files.length, 0);
   if(!designFiles){ toast('Kamida bitta dizayn rasmini yuklang'); return; }
+  if(!_tgMaterials.length){ toast('Materiallar (PSD, AI, ZIP) yuklanishi shart'); return; }
 
   const figmaLink = document.getElementById('tg-figma-link')?.value?.trim() || '';
   const statusEl = document.getElementById('tg-delivery-status');
@@ -598,7 +613,7 @@ async function tgSubmitDelivery(projectId){
       const name = sec.name ? `: ${sec.name}` : '';
       const label = `📂 *Bo'lim ${si+1}${name}* — ${sec.files.length} ta rasm`;
       if(statusEl) statusEl.innerHTML = renderTgProgress(`Bo'lim ${si+1}${name} yuborilmoqda… (${step}/${totalSteps})`);
-      await tgSendSectionFiles(channelId, sec.files, label, false);
+      await tgSendSectionFiles(channelId, sec.files, label, true);
       await _tgDelay(400);
     }
 
