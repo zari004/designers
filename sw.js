@@ -1,6 +1,6 @@
 // EXON PWA Service Worker
 // Versiyani o'zgartirish → eski kesh o'chib yangilanadi
-const CACHE_VER  = 'exon-v76';
+const CACHE_VER  = 'exon-v86';
 
 // Sahifadan "yangilansin" xabar kelsa — darhol faollashuv
 self.addEventListener('message', e => {
@@ -24,6 +24,7 @@ const SHELL_URLS = [
   '/js/editor.js',
   '/js/notion.js',
   '/js/sheets.js',
+  '/js/telegram.js',
   '/js/ai.js',
   '/js/app.js',
 ];

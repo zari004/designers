@@ -105,6 +105,8 @@ function propRow2(l1, ic1, inp1, l2, ic2, inp2){
 // ── PANELNI OCHISH ──
 function openProjectPeek(id = null, preDesignerId = null){
   if(!designers.length){ toast("Avval dizayner qo'shing"); return; }
+  const _isDes0 = typeof isDesignerRole==='function' && isDesignerRole();
+  if(_isDes0 && !id){ toast("Yangi loyiha qo'shish huquqi yo'q"); return; }
   const p = id ? projects.find(x=>x.id===id) : null;
   peekProjId = p ? p.id : null;
   peekTags = [...(p?.tags||[])];
@@ -171,13 +173,32 @@ function openProjectPeek(id = null, preDesignerId = null){
   ensureBubble();
   ensureSlash();
   updateNotionBtnLabel(p);
+  const tgBtn=document.getElementById('peek-tg-btn');
+  if(tgBtn) tgBtn.style.display = (p && p.status==='done') ? '' : 'none';
+
+  const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  if(_isDes && p){
+    byId('pk-title').readOnly=true;
+    byId('pk-rte').contentEditable='false';
+    byId('peek-del-btn').style.display='none';
+    document.querySelectorAll('#peek .peek-foot .btn-primary').forEach(b=>b.style.display='none');
+    document.querySelectorAll('#peek .peek-foot .btn-ghost').forEach(b=>{ if(!b.id||b.id!=='peek-tg-btn') b.style.display='none'; });
+    document.querySelectorAll('#pk-props select.prop-input, #pk-props input.prop-input, #pk-props .cat-pill-select, #pk-props .dp-input').forEach(el=>{
+      el.disabled=true;
+    });
+    const tagInp=byId('pk-tag-inp');
+    if(tagInp) tagInp.disabled=true;
+    const filesInp=byId('pk-files');
+    if(filesInp) filesInp.readOnly=true;
+  }
+
   setTimeout(setupRteHandlers, 0);
 
   applyPeekWidth();
   byId('peek-overlay').classList.add('open');
   byId('peek').classList.add('open');
   document.body.style.overflow = 'hidden';
-  if(!p) setTimeout(()=>byId('pk-title')?.focus(), 280);
+  if(!p && !_isDes) setTimeout(()=>byId('pk-title')?.focus(), 280);
 }
 
 // Notion tugmasi yozuvini holatga qarab yangilash
@@ -303,6 +324,7 @@ function collectPeekProject(){
 }
 
 function savePeekProject(){
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   const obj = collectPeekProject();
   if(!obj.title){ toast('Loyiha nomini kiriting'); byId('pk-title')?.focus(); return; }
   const status = obj.status;
@@ -331,6 +353,7 @@ function savePeekProject(){
 
 function deleteProjectFromPeek(){
   if(!peekProjId) return;
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   if(!confirm("Loyiha chiqitdonga tashlansinmi? Chiqitdondan tiklash mumkin.")) return;
   trashProject(peekProjId);
   closePeek();

@@ -11,6 +11,7 @@ const PERM_LABELS = {
 const _DEFAULT_ROLES = {
   admin:   { label:'Admin', perms:{designers:true, projects:true, payments:true, reports:true, users:true, settings:true} },
   manager: { label:'Menejer', perms:{designers:true, projects:true, payments:true, reports:true, users:false, settings:false} },
+  designer:{ label:'Dizayner', perms:{designers:false, projects:true, payments:true, reports:true, users:false, settings:false} },
   viewer:  { label:"Ko'ruvchi", perms:{designers:true, projects:true, payments:false, reports:true, users:false, settings:false} }
 };
 let ROLE_DEFS;
@@ -30,6 +31,26 @@ function hasPermission(key){
   if(!u) return false;
   if(u.role === 'admin') return true;
   return !!(u.permissions && u.permissions[key]);
+}
+
+function isDesignerRole(){
+  return _currentUser?.role === 'designer';
+}
+
+function getMyDesignerId(){
+  return _currentUser?.designerId || null;
+}
+
+function getMyProjects(){
+  const did = getMyDesignerId();
+  if(!did) return [];
+  return projects.filter(p => p.designerId === did);
+}
+
+function getMyDesigner(){
+  const did = getMyDesignerId();
+  if(!did) return null;
+  return designers.find(d => d.id === did) || null;
 }
 
 // Firestore so'roviga timeout qo'yish
@@ -227,18 +248,24 @@ async function renderFbUsersAdmin(){
       el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Hozircha foydalanuvchi yo\'q</div>';
       return;
     }
-    el.innerHTML = _fbUsersCache.map(u => `
-      <div class="user-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+    el.innerHTML = _fbUsersCache.map(u => {
+      const isDesigner = u.role === 'designer';
+      return `<div class="user-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
         <div class="user-avatar" style="font-size:12px;width:34px;height:34px;flex-shrink:0">${(u.displayName||u.email).slice(0,2).toUpperCase()}</div>
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:120px">
           <div style="font-weight:600;font-size:13px">${esc(u.displayName||'—')}</div>
           <div style="font-size:11.5px;color:var(--muted)">${esc(u.email)}</div>
         </div>
         <select class="mini-select" onchange="fbChangeRole('${u.uid}',this.value)" ${u.uid===_currentUser?.uid?'disabled title="O\'z rolini o\'zgartirish mumkin emas"':''}>
           ${Object.entries(ROLE_DEFS).map(([rk,rd])=>`<option value="${esc(rk)}" ${u.role===rk?'selected':''}>${esc(rd.label)}</option>`).join('')}
         </select>
+        ${isDesigner ? `<select class="mini-select" onchange="fbLinkDesigner('${u.uid}',this.value)" style="max-width:140px">
+          <option value="">— Bog'lash —</option>
+          ${designers.map(d=>`<option value="${d.id}" ${u.designerId==d.id?'selected':''}>${esc(d.name)}</option>`).join('')}
+        </select>` : ''}
         ${u.uid!==_currentUser?.uid?`<button class="btn btn-danger btn-xs" onclick="fbDeleteUser('${u.uid}','${esc(u.displayName||u.email)}')">×</button>`:''}
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }catch(e){
     el.innerHTML = `<div style="color:var(--err);font-size:13px;padding:8px">Xatolik: ${esc(e.message)}</div>`;
   }
@@ -258,6 +285,16 @@ async function fbChangeRole(uid, role){
   }catch(e){ toast("Xato: " + e.message); }
 }
 
+async function fbLinkDesigner(uid, designerId){
+  try{
+    const did = designerId ? parseInt(designerId) : null;
+    await getDb().collection('users').doc(uid).set({ designerId: did }, { merge: true });
+    toast(did ? "Dizaynerga bog'landi" : "Bog'lanish olib tashlandi");
+    _fbUsersCache = await getAllFbUsers();
+    renderFbUsersAdmin();
+  }catch(e){ toast("Xato: " + e.message); }
+}
+
 async function fbDeleteUser(uid, name){
   if(!confirm(`"${name}" foydalanuvchisini o'chirish? Kirish imkoni yo'qoladi.`)) return;
   try{
@@ -269,7 +306,7 @@ async function fbDeleteUser(uid, name){
 
 // ── ROL BOSHQARISH ──
 // Asosiy (o'chirib bo'lmaydigan) rollar
-const _BUILTIN_ROLES = ['admin','manager','viewer'];
+const _BUILTIN_ROLES = ['admin','manager','designer','viewer'];
 
 function saveRoleDefs(){
   localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
