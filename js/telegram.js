@@ -175,7 +175,7 @@ async function tgDeliverProject(projectId){
   try {
     const caption = tgBuildCaption(p, d);
 
-    if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...');
+    if(statusEl) statusEl.innerHTML = renderTgProgress("Loyiha ma'lumoti yuborilmoqda...");
     await tgSendMessage(channelId, caption);
 
     const totalSize = files.reduce((s,f)=>s+f.size, 0);
@@ -265,7 +265,7 @@ function openDeliveryModal(projectId){
         <div style="font-size:13.5px;font-weight:600;margin-bottom:6px">${esc(p.title)}</div>
         <div class="tg-channel-note" style="color:var(--warning);font-size:13px">
           Sizning Telegram kanalingiz hali admin tomonidan sozlanmagan.
-          Iltimos, administrator bilan bog‘laning.
+          Iltimos, administrator bilan bog'laning.
         </div>
       </div>`;
     document.getElementById('modal').style.display='flex';
@@ -277,14 +277,14 @@ function openDeliveryModal(projectId){
   mb.innerHTML = `<div id="tg-deliver-modal-flag" style="display:none"></div>
     <div style="margin-bottom:14px">
       <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${esc(p.title)}</div>
-      <div style="font-size:12px;color:var(--muted)">Rasmlarni bo‘limlar bo‘yicha yuklang (rang, o‘lcham, tarkib va h.k.). Har bir bo‘limga fayl yuklang va «Topshirish» tugmasini bosing.</div>
+      <div style="font-size:12px;color:var(--muted)">Rasmlarni bo'limlar bo'yicha yuklang (rang, o'lcham, tarkib va h.k.). Har bir bo'limga fayl yuklang va «Topshirish» tugmasini bosing.</div>
     </div>
 
     <div id="tg-sections-wrap"></div>
 
     <button class="tg-add-section-btn" onclick="_tgAddSection();_tgRenderSections()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Bo‘lim qo‘shish
+      Bo'lim qo'shish
     </button>
 
     <div class="tg-figma-row">
@@ -298,7 +298,7 @@ function openDeliveryModal(projectId){
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       Topshirish
     </button>
-    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Kamida bitta bo‘limga fayl yuklang</div>`;
+    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Kamida bitta bo'limga fayl yuklang</div>`;
 
   _tgRenderSections();
   document.getElementById('modal').style.display='flex';
@@ -327,9 +327,9 @@ function _tgRenderSections(){
   wrap.innerHTML = _tgSections.map((sec, si) => `
     <div class="tg-section">
       <div class="tg-section-head">
-        <span class="tg-section-num">Bo‘lim ${si+1}</span>
+        <span class="tg-section-num">Bo'lim ${si+1}</span>
         <input class="tg-section-name" value="${esc(sec.name)}" placeholder="Nomi (masalan: Oq rang, 50x70)" oninput="_tgRenameSection(${si},this.value)"/>
-        ${_tgSections.length>1 ? `<button class="tg-section-del" onclick="_tgRemoveSection(${si})" title="Bo‘limni o‘chirish">×</button>` : ''}
+        ${_tgSections.length>1 ? `<button class="tg-section-del" onclick="_tgRemoveSection(${si})" title="Bo'limni o'chirish">×</button>` : ''}
       </div>
       <div class="tg-upload-zone" id="tg-sec-area-${si}"
         ondragover="event.preventDefault();this.classList.add('dragover')"
@@ -362,7 +362,7 @@ function _tgSecListHtml(si){
   }).join('') + `
     <div class="tg-file-add" onclick="document.getElementById('tg-sec-file-${si}').click()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Yana qo‘shish
+      Yana qo'shish
     </div>`;
 }
 
@@ -435,8 +435,11 @@ async function tgSubmitDelivery(projectId){
   if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Yuborilmoqda...'; }
 
   try{
+    const delay = (ms) => new Promise(r => setTimeout(r, ms));
+
     if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...');
     await tgSendMessage(channelId, tgBuildCaption(p, d));
+    await delay(300);
 
     const totalSize = _tgSections.reduce((s, sec) => s + sec.files.reduce((ss, f) => ss + f.size, 0), 0);
     let sentSize = 0;
@@ -447,9 +450,10 @@ async function tgSubmitDelivery(projectId){
       if(!sec.files.length) continue;
 
       const secLabel = sec.name
-        ? `📂 Bo‘lim ${si+1}: ${sec.name}`
-        : `📂 Bo‘lim ${si+1}`;
+        ? `📂 Bo'lim ${si+1}: ${sec.name}`
+        : `📂 Bo'lim ${si+1}`;
       await tgSendMessage(channelId, `*${secLabel}*`);
+      await delay(300);
 
       for(let fi = 0; fi < sec.files.length; fi++){
         const f = sec.files[fi];
@@ -460,18 +464,20 @@ async function tgSubmitDelivery(projectId){
           if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:info.loaded,phase:info.phase,pct:info.pct,current:fileNum,total:totalFiles,sentSize,totalSize});
         });
         sentSize += f.size;
+        if(fi < sec.files.length - 1) await delay(150);
       }
     }
 
     if(figmaLink){
       if(statusEl) statusEl.innerHTML = renderTgProgress('Figma link yuborilmoqda...');
+      await delay(300);
       await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`);
     }
 
     if(statusEl) statusEl.innerHTML = `
       <div class="tg-success">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <span>Ishlar yuborildi! Loyiha "Ko‘rib chiqilmoqda"ga o‘tdi.</span>
+        <span>Ishlar yuborildi! Loyiha "Ko'rib chiqilmoqda"ga o'tdi.</span>
       </div>`;
 
     projects = projects.map(pr=>{
@@ -647,7 +653,7 @@ function tgRenderFileList(){
   }).join('') + `
     <div class="tg-file-add" onclick="document.getElementById('tg-file-real').click()">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Yana qo‘shish
+      Yana qo'shish
     </div>`;
 }
 
