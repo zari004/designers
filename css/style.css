@@ -776,6 +776,15 @@ select.prop-input{cursor:pointer}
 
 .tg-send-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 16px;padding:11px;font-size:14px;font-weight:600}
 
+/* Ikki zonali topshirish modali */
+.tg-zone-block{margin-bottom:14px}
+.tg-zone-label{font-size:12.5px;font-weight:700;margin-bottom:6px;color:var(--text)}
+#modal-body .tg-upload-zone{margin:0}
+#modal-body .tg-upload-placeholder{padding:22px 16px}
+#modal-body .tg-upload-placeholder span{font-size:13px}
+#modal-body .tg-figma-row{margin:0 0 4px}
+#modal-body .tg-progress-wrap{margin:12px 0}
+
 .tg-channel-setup{margin:16px;padding:16px;border-radius:var(--radius);background:color-mix(in srgb,var(--warning) 8%,transparent);border:1px solid color-mix(in srgb,var(--warning) 20%,transparent)}
 .tg-channel-note{font-size:13px;color:var(--text);margin-bottom:10px}
 

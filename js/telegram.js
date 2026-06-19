@@ -254,6 +254,7 @@ function openDeliveryModal(projectId){
   if(!p){ toast('Loyiha topilmadi'); return; }
   const d = designers.find(x=>x.id===p.designerId);
   const channelId = tgDesignerChannel(p.designerId);
+  _tgZoneFiles.design = []; _tgZoneFiles.material = [];
 
   const tt = document.getElementById('modal-title-text');
   if(tt) tt.textContent = 'Ishlarni topshirish';
@@ -273,24 +274,30 @@ function openDeliveryModal(projectId){
     return;
   }
 
+  const zone = (key, label, sub, accept) => `
+    <div class="tg-zone-block">
+      <div class="tg-zone-label">${label}</div>
+      <div class="tg-upload-zone" id="tg-area-${key}"
+        ondragover="event.preventDefault();this.classList.add('dragover')"
+        ondragleave="this.classList.remove('dragover')"
+        ondrop="tgHandleDrop2(event,'${key}')">
+        <input type="file" id="tg-file-${key}" multiple style="display:none" onchange="tgHandleFiles2(this.files,'${key}')" accept="${accept}"/>
+        <div class="tg-upload-placeholder" id="tg-ph-${key}" onclick="document.getElementById('tg-file-${key}').click()">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span>${sub}</span>
+        </div>
+        <div class="tg-file-list" id="tg-list-${key}"></div>
+      </div>
+    </div>`;
+
   mb.innerHTML = `<div id="tg-deliver-modal-flag" style="display:none"></div>
     <div style="margin-bottom:14px">
       <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${esc(p.title)}</div>
-      <div style="font-size:12px;color:var(--muted)">Tayyor rasmlar, materiallar va PSD fayllarini yuklang. Hammasi yuklangach «Topshirish»ni bosing — ish ko'rib chiqishga yuboriladi.</div>
+      <div style="font-size:12px;color:var(--muted)">Dizayn rasmlarini va materiallar/PSD fayllarini alohida yuklang. Ikkalasi ham yuklangach «Topshirish» faollashadi.</div>
     </div>
 
-    <div class="tg-upload-zone" id="tg-upload-area"
-      ondragover="event.preventDefault();this.classList.add('dragover')"
-      ondragleave="this.classList.remove('dragover')"
-      ondrop="tgHandleDrop(event)">
-      <input type="file" id="tg-file-real" multiple style="display:none" onchange="tgHandleFiles(this.files)" accept="image/*,.psd,.ai,.eps,.pdf,.zip,.rar,.fig,.sketch"/>
-      <div class="tg-upload-placeholder" id="tg-upload-placeholder" onclick="document.getElementById('tg-file-real').click()">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span>Fayllarni shu yerga tashlang</span>
-        <span class="tg-upload-hint">yoki bosib tanlang · PSD, PNG, JPG, ZIP, Figma...</span>
-      </div>
-      <div class="tg-file-list" id="tg-file-list"></div>
-    </div>
+    ${zone('design','🎨 Dizayn rasmlari','Tayyor rasmlarni tashlang · PNG, JPG','image/*')}
+    ${zone('material','📦 Materiallar va PSD','PSD, AI, ZIP, fayllarni tashlang','.psd,.ai,.eps,.pdf,.zip,.rar,.fig,.sketch,image/*')}
 
     <div class="tg-figma-row">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0 0 8 4 4 0 0 0 4 4 4 4 0 0 0 0-8 4 4 0 0 0-4-4z"/></svg>
@@ -299,12 +306,164 @@ function openDeliveryModal(projectId){
 
     <div id="tg-delivery-status"></div>
 
-    <button class="btn btn-primary tg-send-btn" id="tg-send-btn" onclick="tgDeliverProject(${p.id})" style="width:100%;margin-top:12px;justify-content:center">
+    <button class="btn btn-primary tg-send-btn" id="tg-send-btn" onclick="tgSubmitDelivery(${p.id})" style="width:100%;margin-top:12px;justify-content:center" disabled>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       Topshirish
-    </button>`;
+    </button>
+    <div id="tg-submit-hint" style="font-size:11px;color:var(--muted);text-align:center;margin-top:8px">Ikkala bo'limga ham fayl yuklang</div>`;
 
   document.getElementById('modal').style.display='flex';
+}
+
+// ── IKKI ZONALI FAYL BOSHQARUVI ──
+const _tgZoneFiles = { design: [], material: [] };
+
+function tgHandleDrop2(e, zone){
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  tgHandleFiles2(e.dataTransfer.files, zone);
+}
+
+function tgHandleFiles2(fileList, zone){
+  if(!_tgZoneFiles[zone]) _tgZoneFiles[zone] = [];
+  for(const f of fileList){
+    if(!_tgZoneFiles[zone].some(x=>x.name===f.name && x.size===f.size)){
+      _tgZoneFiles[zone].push(f);
+    }
+  }
+  tgRenderZoneList(zone);
+  _tgUpdateSubmitState();
+}
+
+function tgRemoveFile2(idx, zone){
+  if(_tgZoneFiles[zone]) _tgZoneFiles[zone].splice(idx, 1);
+  tgRenderZoneList(zone);
+  _tgUpdateSubmitState();
+}
+
+function tgRenderZoneList(zone){
+  const el = document.getElementById('tg-list-'+zone);
+  const files = _tgZoneFiles[zone] || [];
+  if(!el) return;
+  const ph = document.getElementById('tg-ph-'+zone);
+  if(!files.length){
+    el.innerHTML = '';
+    if(ph) ph.style.display = '';
+    return;
+  }
+  if(ph) ph.style.display = 'none';
+  el.innerHTML = files.map((f, i) => {
+    const isImg = f.type.startsWith('image/');
+    const thumb = isImg ? URL.createObjectURL(f) : null;
+    return `<div class="tg-file-item">
+      ${thumb ? `<img class="tg-file-thumb" src="${thumb}" alt="${esc(f.name)}"/>` : `<div class="tg-file-icon">${getFileIcon(f.name)}</div>`}
+      <div class="tg-file-info">
+        <div class="tg-file-name">${esc(f.name)}</div>
+        <div class="tg-file-size">${formatFileSize(f.size)}</div>
+      </div>
+      <button class="tg-file-remove" onclick="tgRemoveFile2(${i},'${zone}')" title="Olib tashlash">×</button>
+    </div>`;
+  }).join('') + `
+    <div class="tg-file-add" onclick="document.getElementById('tg-file-${zone}').click()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Yana qo'shish
+    </div>`;
+}
+
+function _tgUpdateSubmitState(){
+  const btn = document.getElementById('tg-send-btn');
+  const hint = document.getElementById('tg-submit-hint');
+  if(!btn) return;
+  const hasDesign = (_tgZoneFiles.design||[]).length > 0;
+  const hasMaterial = (_tgZoneFiles.material||[]).length > 0;
+  const ok = hasDesign && hasMaterial;
+  btn.disabled = !ok;
+  if(hint){
+    if(ok){ hint.style.display='none'; }
+    else {
+      hint.style.display='';
+      const need=[];
+      if(!hasDesign) need.push('dizayn rasmlari');
+      if(!hasMaterial) need.push('materiallar/PSD');
+      hint.textContent = need.join(' va ')+' yuklang';
+    }
+  }
+}
+
+// ── IKKI ZONALI TOPSHIRISH ──
+async function tgSubmitDelivery(projectId){
+  const p = projects.find(x=>x.id===projectId);
+  if(!p){ toast('Loyiha topilmadi'); return; }
+  const d = designers.find(x=>x.id===p.designerId);
+  const channelId = tgDesignerChannel(p.designerId);
+  if(!channelId){ toast('Telegram kanal belgilanmagan'); return; }
+  if(!isTgReady()){ toast('Telegram sozlamalari to\'ldirilmagan'); return; }
+
+  const designFiles = _tgZoneFiles.design || [];
+  const materialFiles = _tgZoneFiles.material || [];
+  if(!designFiles.length || !materialFiles.length){
+    toast('Ikkala bo\'limga ham fayl yuklang');
+    return;
+  }
+  const figmaLink = document.getElementById('tg-figma-link')?.value?.trim() || '';
+  const statusEl = document.getElementById('tg-delivery-status');
+  const sendBtn = document.getElementById('tg-send-btn');
+  if(sendBtn){ sendBtn.disabled = true; sendBtn.textContent = 'Yuborilmoqda...'; }
+
+  // Barcha fayllar: avval dizayn rasmlari, keyin materiallar
+  const allFiles = [
+    ...designFiles.map(f=>({file:f, tag:'🎨 Dizayn'})),
+    ...materialFiles.map(f=>({file:f, tag:'📦 Material'}))
+  ];
+
+  try{
+    if(statusEl) statusEl.innerHTML = renderTgProgress('Loyiha ma\'lumoti yuborilmoqda...');
+    await tgSendMessage(channelId, tgBuildCaption(p, d));
+
+    const totalSize = allFiles.reduce((s,x)=>s+x.file.size, 0);
+    let sentSize = 0;
+    for(let i=0; i<allFiles.length; i++){
+      const { file:f, tag } = allFiles[i];
+      const cap = `${tag} ${i+1}/${allFiles.length}: ${f.name}`;
+      if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:0,phase:'upload',current:i+1,total:allFiles.length,sentSize,totalSize});
+      await tgSendFile(channelId, f, cap, (info)=>{
+        if(statusEl) statusEl.innerHTML = renderTgProgress({fileName:f.name,fileSize:f.size,loaded:info.loaded,phase:info.phase,pct:info.pct,current:i+1,total:allFiles.length,sentSize,totalSize});
+      });
+      sentSize += f.size;
+    }
+
+    if(figmaLink){
+      if(statusEl) statusEl.innerHTML = renderTgProgress('Figma link yuborilmoqda...');
+      await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`);
+    }
+
+    if(statusEl) statusEl.innerHTML = `
+      <div class="tg-success">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <span>Ishlar yuborildi! Loyiha "Ko'rib chiqilmoqda"ga o'tdi.</span>
+      </div>`;
+
+    projects = projects.map(pr=>{
+      if(pr.id!==projectId) return pr;
+      const upd={...pr, tgDelivered:true, tgDeliveredAt:new Date().toISOString()};
+      if(pr.status==='wip') upd.status='review';
+      return upd;
+    });
+    persist();
+    toast('Ishlar Telegram kanalga yuborildi!');
+    _tgZoneFiles.design = []; _tgZoneFiles.material = [];
+    setTimeout(()=>{ closeModal(); if(typeof rerenderActive==='function') rerenderActive(); }, 1400);
+
+  }catch(err){
+    console.error('Telegram yuborish xatosi:', err);
+    if(statusEl) statusEl.innerHTML = `
+      <div class="tg-error">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        <span>Xatolik: ${esc(err.message)}</span>
+      </div>`;
+    toast('Yuborishda xatolik');
+    if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Topshirish'; }
+  }
 }
 
 
