@@ -123,15 +123,32 @@ function updateTopbar(name){
 }
 
 // ═══════════════ DASHBOARD ═══════════════
+function _visibleDesigners(){
+  if(typeof isDesignerRole==='function' && isDesignerRole()){
+    const my = typeof getMyDesigner==='function' ? getMyDesigner() : null;
+    return my ? [my] : [];
+  }
+  return designers;
+}
+function _visibleProjects(){
+  if(typeof isDesignerRole==='function' && isDesignerRole()){
+    const did = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+    return did ? projects.filter(p=>p.designerId===did) : [];
+  }
+  return projects;
+}
+
 function renderDashboard(){
-  document.getElementById('st-active').textContent = designers.filter(d=>d.status==='active').length;
-  document.getElementById('st-total').textContent = designers.length;
-  document.getElementById('st-wip').textContent = projects.filter(p=>p.status==='wip').length;
-  const total = projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const vd = _visibleDesigners();
+  const vp = _visibleProjects();
+  document.getElementById('st-active').textContent = vd.filter(d=>d.status==='active').length;
+  document.getElementById('st-total').textContent = vd.length;
+  document.getElementById('st-wip').textContent = vp.filter(p=>p.status==='wip').length;
+  const total = vp.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
   document.getElementById('st-budget').textContent = fmtPrice(total);
 
   const dd = document.getElementById('dash-designers');
-  dd.innerHTML = designers.length ? designers.map(d=>`
+  dd.innerHTML = vd.length ? vd.map(d=>`
     <div class="table-row" style="grid-template-columns:1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
       <div style="display:flex;align-items:center;gap:10px">
         ${photoAvatar(d,32)}
@@ -144,7 +161,7 @@ function renderDashboard(){
       ${statusBadge(d.status)}
     </div>`).join('') : '<div class="empty">Hali dizayner qo\'shilmagan</div>';
 
-  const overdue=projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<=3);
+  const overdue=vp.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<=3);
   const dashAlerts=document.getElementById('dash-alerts');
   if(dashAlerts){
     dashAlerts.innerHTML = overdue.length ? `<div class="card" style="border-color:color-mix(in srgb,var(--error) 35%,transparent);padding:14px 18px;margin-bottom:16px">
@@ -158,7 +175,7 @@ function renderDashboard(){
     </div>` : '';
   }
 
-  const recent=[...projects].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
+  const recent=[...vp].sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,6);
   document.getElementById('dash-projects').innerHTML = recent.length ? recent.map(p=>{
     const d=designers.find(x=>x.id===p.designerId);
     return `<div class="table-row" style="grid-template-columns:1fr auto;cursor:pointer" onclick="openProjectPeek(${p.id})">
@@ -192,8 +209,12 @@ function renderCatTabs(){
 
 function renderDesigners(){
   renderCatTabs();
+  const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  const dAddBtn=document.querySelector('#panel-designers .btn-primary[onclick*="openDesignerModal"]');
+  if(dAddBtn) dAddBtn.style.display=_isDes?'none':'';
   const q=(document.getElementById('search-d')?.value||'').toLowerCase();
-  let list=designers.filter(d=>
+  const base = _visibleDesigners();
+  let list=base.filter(d=>
     (catFilter==='all'||d.category===catFilter)&&
     (d.name.toLowerCase().includes(q)||(d.role||'').toLowerCase().includes(q))
   );
@@ -230,16 +251,17 @@ function renderDesigners(){
           <div class="d-contact-row"><span class="card-num">${maskCard(d.cardNumber)}</span>${d.cardNumber?_cpBtn(d.cardNumber):''}</div>
           ${d.telegram?`<div class="d-contact-row">${esc(d.telegram)}${_cpBtn(d.telegram)}</div>`:''}
         </div>
-        <div class="d-actions" onclick="event.stopPropagation()">
+        ${!_isDes ? `<div class="d-actions" onclick="event.stopPropagation()">
           <button class="btn btn-ghost btn-xs" onclick="openDesignerModal(${d.id})">Tahrir</button>
           <button class="btn btn-danger btn-xs" onclick="deleteDesigner(${d.id})">O'chirish</button>
-        </div>
+        </div>` : ''}
       </div>
     </div>`;
   }).join('');
 }
 
 function deleteDesigner(id){
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   if(!confirm("Dizayner o'chirilsinmi? Uning barcha loyihalari ham o'chadi.")) return;
   designers=designers.filter(d=>d.id!==id);
   projects=projects.filter(p=>p.designerId!==id);
@@ -291,10 +313,10 @@ function renderDetail(){
           <span class="contact-item">Qo'shilgan: ${d.joinedAt||'—'}</span>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
+      ${!(typeof isDesignerRole==='function'&&isDesignerRole()) ? `<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">
         <button class="btn btn-ghost btn-sm" onclick="openDesignerModal(${d.id})">Tahrirlash</button>
         <div style="font-size:11px;color:var(--muted2);text-align:center">${ci.priceRange[0].toLocaleString()}–${ci.priceRange[1].toLocaleString()} so'm/birlik</div>
-      </div>
+      </div>` : ''}
     </div>`;
 
   document.getElementById('detail-stats').innerHTML=[
@@ -304,7 +326,11 @@ function renderDetail(){
     {l:"Jami to'lov (so'm)",v:fmtPrice(totalEarned),c:'var(--accent-text)'},
   ].map(s=>`<div class="det-stat"><div class="v" style="color:${s.c}">${s.v}</div><div class="l">${s.l}</div></div>`).join('');
 
-  document.getElementById('detail-add-btn').onclick=()=>openProjectModal(null,d.id);
+  const _detAddBtn=document.getElementById('detail-add-btn');
+  if(_detAddBtn){
+    if(typeof isDesignerRole==='function'&&isDesignerRole()){ _detAddBtn.style.display='none'; }
+    else { _detAddBtn.style.display=''; _detAddBtn.onclick=()=>openProjectModal(null,d.id); }
+  }
 
   const el=document.getElementById('detail-projects');
   if(!dProjs.length){el.innerHTML='<div class="empty">Hali loyiha yo\'q</div>';return;}
@@ -319,10 +345,17 @@ function setProjFilter(f){
 }
 
 function renderProjects(){
+  const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  const projAddBtn=document.querySelector('#panel-projects .btn-primary[onclick*="openProjectModal"]');
+  if(projAddBtn) projAddBtn.style.display=_isDes?'none':'';
   const dsel=document.getElementById('proj-d-filter');
-  const dval=dsel?.value||'all';
-  if(dsel) dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
-    designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${esc(d.name)}</option>`).join('');
+  if(_isDes && dsel){ dsel.style.display='none'; }
+  else {
+    const dval=dsel?.value||'all';
+    if(dsel){ dsel.style.display=''; dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+      designers.map(d=>`<option value="${d.id}"${dval==d.id?' selected':''}>${esc(d.name)}</option>`).join(''); }
+  }
+  const dval=_isDes?'all':(dsel?.value||'all');
 
   const catSel=document.getElementById('proj-cat-filter');
   if(catSel){
@@ -333,7 +366,7 @@ function renderProjects(){
   const cval=document.getElementById('proj-cat-filter')?.value||'all';
   const prval=document.getElementById('proj-priority-filter')?.value||'all';
   const qval=(document.getElementById('search-p')?.value||'').toLowerCase();
-  let list=projects;
+  let list=_visibleProjects();
   if(projStatusFilter!=='all') list=list.filter(p=>p.status===projStatusFilter);
   if(dval!=='all') list=list.filter(p=>p.designerId===parseInt(dval));
   if(cval!=='all') list=list.filter(p=>p.category===cval);
@@ -370,6 +403,7 @@ function projCardHtml(p,showDesigner){
   const ci=CAT_INFO[p.category];
   const total=p.units*p.pricePerUnit;
   const isOver=p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0;
+  const _isDes=typeof isDesignerRole==='function'&&isDesignerRole();
   return `<div class="report-card${isOver?' overdue':''}" id="pcard-${p.id}" style="cursor:pointer" onclick="cardClick(event,${p.id})">
     <div class="report-header">
       <div>
@@ -381,13 +415,13 @@ function projCardHtml(p,showDesigner){
         <span class="d-cat-badge ${ci.cls}">${p.category}</span>
         ${projStatusBadge(p.status)}
         ${deadlineBadge(p)}
-        <select class="mini-select" onchange="changeProjStatus(${p.id},this.value)">
+        ${_isDes?'':`<select class="mini-select" onchange="changeProjStatus(${p.id},this.value)">
           <option value="wip"${p.status==='wip'?' selected':''}>Jarayonda</option>
           <option value="review"${p.status==='review'?' selected':''}>Ko'rib chiqilmoqda</option>
           <option value="done"${p.status==='done'?' selected':''}>Bajarildi</option>
-        </select>
+        </select>`}
         <button class="btn btn-ghost btn-xs" onclick="openProjectPeek(${p.id})">Ochish</button>
-        <button class="btn btn-danger btn-xs" onclick="deleteProject(${p.id})">×</button>
+        ${_isDes?'':`<button class="btn btn-danger btn-xs" onclick="deleteProject(${p.id})">×</button>`}
       </div>
     </div>
     <div class="report-meta">
@@ -407,6 +441,7 @@ function projCardHtml(p,showDesigner){
 }
 
 function changeProjStatus(id,status){
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   projects=projects.map(p=>{
     if(p.id!==id) return p;
     const upd={...p,status};
@@ -422,6 +457,7 @@ function changeProjStatus(id,status){
 }
 
 function deleteProject(id){
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   if(!confirm("Loyiha chiqitdonga tashlansinmi? Chiqitdondan tiklash mumkin.")) return;
   trashProject(id);
   persist(); rerenderActive(); toast("Loyiha chiqitdonga tashlandi");
@@ -597,6 +633,7 @@ function closeModal(){
 }
 
 function openDesignerModal(id=null){
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Dizayner qo'shish/tahrirlash huquqi yo'q"); return; }
   const d=id?designers.find(x=>x.id===id):null;
   photoData.tempPhoto = d?.photo||null;
   document.getElementById('modal-title-text').textContent = d ? "Dizaynerni tahrirlash" : "Yangi dizayner qo'shish";
@@ -711,17 +748,24 @@ function filterByMonth(list, mval){
 }
 
 function renderPayments(){
+  const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  const vp = _visibleProjects();
+  const vd = _visibleDesigners();
   const dsel=document.getElementById('pay-d-filter');
   if(dsel){
-    const v=dsel.value;
-    dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
-      designers.map(d=>`<option value="${d.id}"${v==d.id?' selected':''}>${esc(d.name)}</option>`).join('');
+    if(_isDes){ dsel.style.display='none'; }
+    else {
+      dsel.style.display='';
+      const v=dsel.value;
+      dsel.innerHTML='<option value="all">Barcha dizaynerlar</option>'+
+        vd.map(d=>`<option value="${d.id}"${v==d.id?' selected':''}>${esc(d.name)}</option>`).join('');
+    }
   }
-  const dval=document.getElementById('pay-d-filter')?.value||'all';
+  const dval=_isDes?'all':(document.getElementById('pay-d-filter')?.value||'all');
   const mval=document.getElementById('pay-month-filter')?.value||'all';
-  let doneProjs=projects.filter(p=>p.status==='done'&&(dval==='all'||p.designerId===parseInt(dval)));
+  let doneProjs=vp.filter(p=>p.status==='done'&&(dval==='all'||p.designerId===parseInt(dval)));
   doneProjs=filterByMonth(doneProjs,mval);
-  const totalAll=projects.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
+  const totalAll=vp.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
   const totalFiltered=doneProjs.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
   const paidTotal=doneProjs.filter(p=>p.paymentPaid).reduce((s,p)=>s+p.units*p.pricePerUnit,0);
 
@@ -735,7 +779,7 @@ function renderPayments(){
 
   const el=document.getElementById('payments-list');
   if(!el) return;
-  const byD=designers.filter(d=>dval==='all'||d.id===parseInt(dval)).map(d=>{
+  const byD=vd.filter(d=>dval==='all'||d.id===parseInt(dval)).map(d=>{
     const dp=doneProjs.filter(p=>p.designerId===d.id).sort((a,b)=>(b.doneDate||b.date||'').localeCompare(a.doneDate||a.date||''));
     if(!dp.length) return '';
     const total=dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
@@ -756,7 +800,7 @@ function renderPayments(){
       ${dp.map(p=>{
         const isOverdue=p.deadline&&p.doneDate&&p.doneDate>p.deadline;
         const rowCls=p.paymentPaid?'pay-row-paid':(isOverdue?'pay-row-overdue':'');
-        return `<div class="table-row ${rowCls}" style="grid-template-columns:1fr auto auto auto">
+        return `<div class="table-row ${rowCls}" style="grid-template-columns:1fr auto auto${_isDes?'':' auto'}">
           <div style="cursor:pointer" onclick="openProjectPeek(${p.id})">
             <div style="font-size:12.5px;font-weight:600">${esc(p.title)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px">
@@ -766,9 +810,9 @@ function renderPayments(){
           </div>
           <span style="font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums">${p.units} × ${p.pricePerUnit.toLocaleString()}</span>
           <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)}</span>
-          <button onclick="togglePayment(${p.id})" class="btn btn-xs ${p.paymentPaid?'pay-btn-paid':'pay-btn-unpaid'}">
+          ${_isDes?'':`<button onclick="togglePayment(${p.id})" class="btn btn-xs ${p.paymentPaid?'pay-btn-paid':'pay-btn-unpaid'}">
             ${p.paymentPaid?"To'langan ✓":"To'lanmagan"}
-          </button>
+          </button>`}
         </div>`;
       }).join('')}
     </div>`;
@@ -777,6 +821,7 @@ function renderPayments(){
 }
 
 function togglePayment(projId){
+  if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   projects=projects.map(p=>{
     if(p.id!==projId) return p;
     const paid=!p.paymentPaid;
@@ -793,8 +838,10 @@ function printPayments(){ window.print(); }
 
 // ═══════════════ HISOBOTLAR ═══════════════
 function renderReports(){
-  const done=projects.filter(p=>p.status==='done');
-  const wip=projects.filter(p=>p.status==='wip');
+  const vp = _visibleProjects();
+  const vd = _visibleDesigners();
+  const done=vp.filter(p=>p.status==='done');
+  const wip=vp.filter(p=>p.status==='wip');
   const totalPay=done.reduce((s,p)=>s+p.units*p.pricePerUnit,0);
 
   const rs=document.getElementById('rep-stats');
@@ -802,18 +849,18 @@ function renderReports(){
     {v:done.length,l:'Bajarilgan loyiha',c:'var(--success)'},
     {v:wip.length,l:'Jarayonda',c:'var(--accent2)'},
     {v:fmtPrice(totalPay),l:"Jami to'lov (so'm)",c:'var(--accent-text)'},
-    {v:designers.filter(d=>d.status==='active').length,l:'Faol dizayner',c:'var(--text)'},
+    {v:vd.filter(d=>d.status==='active').length,l:'Faol dizayner',c:'var(--text)'},
   ].map(s=>`<div class="stat-card"><div class="stat-val" style="color:${s.c}">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
 
   const wlEl=document.getElementById('rep-workload');
   if(wlEl){
-    if(!designers.length){ wlEl.innerHTML='<div class="empty">Dizayner yo\'q</div>'; }
+    if(!vd.length){ wlEl.innerHTML='<div class="empty">Dizayner yo\'q</div>'; }
     else {
-      const maxWip=Math.max(1,...designers.map(d=>projects.filter(p=>p.designerId===d.id&&p.status==='wip').length));
-      wlEl.innerHTML=designers.map(d=>{
-        const dWip=projects.filter(p=>p.designerId===d.id&&p.status==='wip');
-        const dReview=projects.filter(p=>p.designerId===d.id&&p.status==='review');
-        const dDone=projects.filter(p=>p.designerId===d.id&&p.status==='done');
+      const maxWip=Math.max(1,...vd.map(d=>vp.filter(p=>p.designerId===d.id&&p.status==='wip').length));
+      wlEl.innerHTML=vd.map(d=>{
+        const dWip=vp.filter(p=>p.designerId===d.id&&p.status==='wip');
+        const dReview=vp.filter(p=>p.designerId===d.id&&p.status==='review');
+        const dDone=vp.filter(p=>p.designerId===d.id&&p.status==='done');
         const dOverdue=dWip.filter(p=>p.deadline&&deadlineDays(p.deadline)<0);
         const pct=Math.round(dWip.length/maxWip*100);
         const ci=catOf(d.category);
@@ -862,7 +909,7 @@ function renderReports(){
 
   const topEl=document.getElementById('rep-top-designers');
   if(topEl){
-    const ranked=[...designers].map(d=>{
+    const ranked=[...vd].map(d=>{
       const dp=done.filter(p=>p.designerId===d.id);
       return {...d,doneCount:dp.length,earned:dp.reduce((s,p)=>s+p.units*p.pricePerUnit,0)};
     }).sort((a,b)=>b.earned-a.earned);
