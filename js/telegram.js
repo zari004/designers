@@ -667,7 +667,7 @@ function _tgJobCardHtml(job){
   if(job.error){
     state = 'error';
     headIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>';
-    subLine = 'Xatolik: ' + esc(job.error);
+    subLine = 'Yuborishda xatolik';
   } else if(job.finished){
     state = 'done';
     headIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>';
@@ -708,6 +708,7 @@ function _tgJobCardHtml(job){
       ${rightBtn}
     </div>
     <div class="tg-mini-bar"><div class="tg-mini-fill ${state}" style="width:${pct}%"></div></div>
+    ${job.error ? `<div class="tg-mini-err">${esc(job.error)}</div>` : ''}
     ${retryHtml}
     ${stepsHtml}
   </div>`;
@@ -1085,9 +1086,35 @@ function renderTgChannelMap(){
       <div class="tg-ch-name">${esc(d.name)}</div>
       <input class="form-input tg-ch-input" value="${esc(ch)}"
         placeholder="Guruh ID: -100..."
-        onchange="tgSetDesignerChannel(${d.id},this.value.trim())"/>
+        onchange="tgValidateGroupInput(${d.id}, this)"/>
     </div>`;
   }).join('');
+}
+
+// Guruh ID maydonini tekshirib saqlash — taklif havolasi/noto'g'ri formatni rad etadi
+function tgValidateGroupInput(designerId, inputEl){
+  const val = (inputEl.value||'').trim();
+  inputEl.classList.remove('input-error');
+
+  if(!val){ tgSetDesignerChannel(designerId, ''); return; }
+
+  // Taklif havolasi yoki har qanday URL — yaramaydi
+  if(/^https?:\/\//i.test(val) || val.includes('t.me/') || val.includes('+')){
+    inputEl.classList.add('input-error');
+    toast("Bu havola — raqamli ID kerak. \"Guruh ID sini aniqlash\" tugmasidan foydalaning.");
+    return;
+  }
+
+  // To'g'ri format: -100... (superguruh) yoki @username
+  const ok = /^-100\d{5,}$/.test(val) || /^@[A-Za-z0-9_]{4,}$/.test(val);
+  if(!ok){
+    inputEl.classList.add('input-error');
+    toast("Noto'g'ri format. To'g'ri: -100... (superguruh ID si)");
+    return;
+  }
+
+  tgSetDesignerChannel(designerId, val);
+  toast('Guruh ID saqlandi');
 }
 
 // Bot ko'rgan guruhlarni getUpdates orqali aniqlab, ID larini ko'rsatish
