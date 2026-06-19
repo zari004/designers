@@ -209,18 +209,31 @@ async function tgDeliverProject(projectId){
       await tgSendMessage(channelId, `🎨 *Figma:* ${figmaLink}`);
     }
 
-    // 4. Muvaffaqiyat
+    // 4. Muvaffaqiyat — loyihani "Ko'rib chiqilmoqda"ga o'tkazish
+    const wasWip = p.status === 'wip';
     if(statusEl) statusEl.innerHTML = `
       <div class="tg-success">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
-        <span>Barcha fayllar muvaffaqiyatli yuborildi!</span>
+        <span>Ishlar yuborildi!${wasWip ? ' Loyiha "Ko\'rib chiqilmoqda"ga o\'tdi.' : ''}</span>
       </div>`;
 
-    // Loyihaga yetkazilganlik belgisi
-    projects = projects.map(pr => pr.id===projectId ? {...pr, tgDelivered: true, tgDeliveredAt: new Date().toISOString()} : pr);
+    projects = projects.map(pr => {
+      if(pr.id!==projectId) return pr;
+      const upd = {...pr, tgDelivered: true, tgDeliveredAt: new Date().toISOString()};
+      // Jarayonda → Ko'rib chiqilmoqda (topshirilgandan keyin)
+      if(pr.status==='wip') upd.status = 'review';
+      return upd;
+    });
     persist();
 
-    toast('Fayllar Telegram kanalga yuborildi!');
+    toast('Ishlar Telegram kanalga yuborildi!');
+
+    // Modal orqali ochilgan bo'lsa — yopib, doskani yangilash
+    if(document.getElementById('tg-deliver-modal-flag')){
+      setTimeout(()=>{ closeModal(); if(typeof rerenderActive==='function') rerenderActive(); }, 1400);
+    } else if(typeof rerenderActive==='function'){
+      rerenderActive();
+    }
 
   } catch(err) {
     console.error('Telegram yuborish xatosi:', err);
@@ -231,9 +244,69 @@ async function tgDeliverProject(projectId){
       </div>`;
     toast('Yuborishda xatolik yuz berdi');
   } finally {
-    if(sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Telegramga yuborish'; }
+    if(sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Topshirish'; }
   }
 }
+
+// ── TOPSHIRISH MODALI (qalqib chiquvchi oyna) ──
+function openDeliveryModal(projectId){
+  const p = projects.find(x=>x.id===projectId);
+  if(!p){ toast('Loyiha topilmadi'); return; }
+  const d = designers.find(x=>x.id===p.designerId);
+  const channelId = tgDesignerChannel(p.designerId);
+
+  const tt = document.getElementById('modal-title-text');
+  if(tt) tt.textContent = 'Ishlarni topshirish';
+  const mb = document.getElementById('modal-body');
+  if(!mb) return;
+
+  if(!channelId){
+    mb.innerHTML = `<div id="tg-deliver-modal-flag" style="display:none"></div>
+      <div style="padding:10px 4px">
+        <div style="font-size:13.5px;font-weight:600;margin-bottom:6px">${esc(p.title)}</div>
+        <div class="tg-channel-note" style="color:var(--warning);font-size:13px">
+          Sizning Telegram kanalingiz hali admin tomonidan sozlanmagan.
+          Iltimos, administrator bilan bog'laning.
+        </div>
+      </div>`;
+    document.getElementById('modal').style.display='flex';
+    return;
+  }
+
+  mb.innerHTML = `<div id="tg-deliver-modal-flag" style="display:none"></div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:13.5px;font-weight:700;margin-bottom:3px">${esc(p.title)}</div>
+      <div style="font-size:12px;color:var(--muted)">Tayyor rasmlar, materiallar va PSD fayllarini yuklang. Hammasi yuklangach «Topshirish»ni bosing — ish ko'rib chiqishga yuboriladi.</div>
+    </div>
+
+    <div class="tg-upload-zone" id="tg-upload-area"
+      ondragover="event.preventDefault();this.classList.add('dragover')"
+      ondragleave="this.classList.remove('dragover')"
+      ondrop="tgHandleDrop(event)">
+      <input type="file" id="tg-file-real" multiple style="display:none" onchange="tgHandleFiles(this.files)" accept="image/*,.psd,.ai,.eps,.pdf,.zip,.rar,.fig,.sketch"/>
+      <div class="tg-upload-placeholder" id="tg-upload-placeholder" onclick="document.getElementById('tg-file-real').click()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span>Fayllarni shu yerga tashlang</span>
+        <span class="tg-upload-hint">yoki bosib tanlang · PSD, PNG, JPG, ZIP, Figma...</span>
+      </div>
+      <div class="tg-file-list" id="tg-file-list"></div>
+    </div>
+
+    <div class="tg-figma-row">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2a4 4 0 0 0-4 4 4 4 0 0 0 0 8 4 4 0 0 0 4 4 4 4 0 0 0 0-8 4 4 0 0 0-4-4z"/></svg>
+      <input class="form-input" id="tg-figma-link" placeholder="Figma link (ixtiyoriy)" style="flex:1"/>
+    </div>
+
+    <div id="tg-delivery-status"></div>
+
+    <button class="btn btn-primary tg-send-btn" id="tg-send-btn" onclick="tgDeliverProject(${p.id})" style="width:100%;margin-top:12px;justify-content:center">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Topshirish
+    </button>`;
+
+  document.getElementById('modal').style.display='flex';
+}
+
 
 function renderTgProgress(info){
   if(typeof info === 'string') return `<div class="tg-progress-wrap"><div class="tg-progress-text">${info}</div></div>`;

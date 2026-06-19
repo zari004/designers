@@ -266,7 +266,7 @@ function _desMonthlyChart(projs){
 }
 
 function _renderKanban(wip,review,done){
-  const col=(title,dot,items,canDeliver)=>{
+  const col=(title,dot,items,colKind)=>{
     return `<div class="kanban-col">
       <div class="kanban-col-head">
         <div class="kanban-col-dot" style="background:${dot}"></div>
@@ -275,28 +275,38 @@ function _renderKanban(wip,review,done){
       </div>
       ${items.length?items.map(p=>{
         const isOver=p.deadline&&deadlineDays(p.deadline)<0;
+        let footRight='';
+        if(colKind==='wip'){
+          // Jarayonda: topshirish tugmasi — modal ochadi
+          footRight=`<button class="kanban-deliver-btn" onclick="event.stopPropagation();openDeliveryModal(${p.id})" title="Tayyor ishlarni topshirish">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Topshirish
+          </button>`;
+        } else if(colKind==='review'){
+          footRight=`<span style="font-size:10.5px;color:var(--warning);font-weight:600">⏳ Tekshiruvda</span>`;
+        } else if(colKind==='done'){
+          footRight=`<span style="font-size:10.5px;color:var(--success);font-weight:600">✓ Tasdiqlangan</span>`;
+        }
         return `<div class="kanban-card${isOver?' overdue':''}" onclick="openProjectPeek(${p.id})">
           <div class="kanban-card-title">${esc(p.title)}</div>
           <div class="kanban-card-meta">
             <span>${p.date}</span>
             ${p.deadline?`<span>muddat: ${p.deadline}</span>`:''}
             ${isOver?'<span style="color:var(--error);font-weight:600">kechikkan</span>':''}
+            ${p.tgDelivered?'<span style="color:var(--accent2)">📎 yuborilgan</span>':''}
           </div>
           <div class="kanban-card-foot">
             <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>
-            ${canDeliver?`<button class="kanban-deliver-btn" onclick="event.stopPropagation();openProjectPeek(${p.id})" title="Ishlarni topshirish">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              Topshirish
-            </button>`:`<button class="kanban-deliver-btn" disabled>Topshirish</button>`}
+            ${footRight}
           </div>
         </div>`;
       }).join(''):`<div style="text-align:center;padding:30px 10px;color:var(--muted);font-size:12px">Hozircha bo'sh</div>`}
     </div>`;
   };
   return `<div class="kanban">
-    ${col('Jarayonda','var(--accent2)',wip,false)}
-    ${col("Ko'rib chiqilmoqda",'var(--warning)',review,false)}
-    ${col('Bajarildi','var(--success)',[...done].sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||'')).slice(0,10),true)}
+    ${col('Jarayonda','var(--accent2)',wip,'wip')}
+    ${col("Ko'rib chiqilmoqda",'var(--warning)',review,'review')}
+    ${col('Bajarildi','var(--success)',[...done].sort((a,b)=>(b.doneDate||'').localeCompare(a.doneDate||'')).slice(0,10),'done')}
   </div>`;
 }
 
