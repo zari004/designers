@@ -26,6 +26,35 @@ function tgSetDesignerChannel(designerId, channelId){
   }catch(e){}
 }
 
+// ── FORUM MAVZULARI (TOPICS) ──
+// Faol mavzu — yuborish vaqtida o'rnatiladi; barcha xabarlar shu mavzuga ketadi.
+let _tgThreadId = null;
+
+// Guruhda yangi mavzu (forum topic) ochish → message_thread_id qaytaradi.
+// Guruh superguruh bo'lib, Mavzular (Topics) yoqilgan va bot admin bo'lishi kerak.
+async function tgCreateTopic(groupId, name){
+  let res;
+  try{
+    res = await tgApiFetch('createForumTopic', () => ({
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ chat_id: groupId, name: (name||'Loyiha').slice(0,128) })
+    }));
+  }catch(e){
+    throw new Error("Mavzu ochib bo'lmadi — guruhda 'Mavzular' (Topics) yoqilganini va bot admin (can_manage_topics) ekanini tekshiring.");
+  }
+  const tid = res?.result?.message_thread_id;
+  if(!tid) throw new Error("Mavzu ochilmadi — guruh sozlamalarini tekshiring.");
+  return tid;
+}
+
+// Mavzuni butun ichidagi xabarlar bilan o'chirish (bot can_delete_messages bo'lishi kerak)
+async function tgDeleteTopic(groupId, threadId){
+  return tgApiFetch('deleteForumTopic', () => ({
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ chat_id: groupId, message_thread_id: threadId })
+  }));
+}
+
 function isTgReady(){
   const c = tgCfg();
   return !!(c.botToken && c.proxyUrl);
@@ -104,6 +133,7 @@ async function tgSendMessage(channelId, text){
     headers: {'Content-Type':'application/json'},
     body: JSON.stringify({
       chat_id: channelId,
+      ...(_tgThreadId ? { message_thread_id: _tgThreadId } : {}),
       text: text,
       parse_mode: 'Markdown',
       disable_web_page_preview: false
@@ -117,6 +147,7 @@ async function tgSendMediaGroup(channelId, files, caption, asPhoto){
   return tgApiFetch('sendMediaGroup', () => {
     const fd = new FormData();
     fd.append('chat_id', channelId);
+    if(_tgThreadId) fd.append('message_thread_id', _tgThreadId);
     const media = files.map((f, i) => {
       const item = { type, media: `attach://file${i}` };
       if(i===0 && caption){ item.caption = caption; item.parse_mode = 'Markdown'; }
@@ -135,6 +166,7 @@ async function tgSendSingle(channelId, file, caption, asPhoto){
   return tgApiFetch(method, () => {
     const fd = new FormData();
     fd.append('chat_id', channelId);
+    if(_tgThreadId) fd.append('message_thread_id', _tgThreadId);
     fd.append(field, file, file.name);
     if(caption){ fd.append('caption', caption); fd.append('parse_mode', 'Markdown'); }
     return { body: fd };
@@ -191,6 +223,7 @@ function tgSendFileOnce(channelId, file, caption, onProgress){
 
   const formData = new FormData();
   formData.append('chat_id', channelId);
+  if(_tgThreadId) formData.append('message_thread_id', _tgThreadId);
   formData.append(fieldName, file, file.name);
   if(caption) formData.append('caption', caption);
   formData.append('parse_mode', 'Markdown');
@@ -350,7 +383,7 @@ function openDeliveryModal(projectId){
       <div style="padding:10px 4px">
         <div style="font-size:13.5px;font-weight:600;margin-bottom:6px">${esc(p.title)}</div>
         <div class="tg-channel-note" style="color:var(--warning);font-size:13px">
-          Sizning Telegram kanalingiz hali admin tomonidan sozlanmagan.
+          Sizning Telegram guruhingiz hali admin tomonidan sozlanmagan.
           Iltimos, administrator bilan bog'laning.
         </div>
       </div>`;
@@ -699,7 +732,7 @@ async function tgSubmitDelivery(projectId){
   if(!p){ toast('Loyiha topilmadi'); return; }
   const d = designers.find(x=>x.id===p.designerId);
   const channelId = tgDesignerChannel(p.designerId);
-  if(!channelId){ toast('Telegram kanal belgilanmagan'); return; }
+  if(!channelId){ toast('Telegram guruh belgilanmagan'); return; }
   if(!isTgReady()){ toast("Telegram sozlamalari to'ldirilmagan"); return; }
 
   const designFiles = _tgSections.reduce((s, sec) => s + sec.files.length, 0);
@@ -716,6 +749,7 @@ async function tgSubmitDelivery(projectId){
 
   // qadamlar ro'yxatini tuzish
   const steps = [];
+  steps.push({ key:'topic', icon:'🗂', title:'Guruhda mavzu ochilmoqda', sub:esc(p.title), files:0, status:'pending' });
   steps.push({ key:'caption', icon:'📝', title:"Loyiha ma'lumoti", sub:'matn xabari', files:0, status:'pending' });
   active.forEach((sec, si)=>{
     const nm = sec.name ? `: ${sec.name}` : '';
@@ -731,7 +765,15 @@ async function tgSubmitDelivery(projectId){
   const finish = (i)=>{ steps[i].status='done'; _tgSendState.sentFiles += steps[i].files; _tgRenderSendSheet(); };
 
   let idx = 0;
+  _tgThreadId = null;
+  let topicId = null;
   try{
+    // 1) Guruhda loyiha uchun yangi mavzu ochish
+    begin(idx);
+    topicId = await tgCreateTopic(channelId, p.title);
+    _tgThreadId = topicId;
+    finish(idx); await _tgDelay(300); idx++;
+
     begin(idx);
     await tgSendMessage(channelId, tgBuildCaption(p, d));
     finish(idx); await _tgDelay(350); idx++;
@@ -755,22 +797,24 @@ async function tgSubmitDelivery(projectId){
       finish(idx); idx++;
     }
 
+    _tgThreadId = null;
     _tgSendState.finished = true;
     _tgRenderSendSheet();
 
     projects = projects.map(pr=>{
       if(pr.id!==projectId) return pr;
-      const upd={...pr, tgDelivered:true, tgDeliveredAt:new Date().toISOString()};
+      const upd={...pr, tgDelivered:true, tgDeliveredAt:new Date().toISOString(), tgGroupId:channelId, tgTopicId:topicId};
       if(pr.status==='wip') upd.status='review';
       return upd;
     });
     persist();
-    toast('Ishlar Telegram kanalga yuborildi!');
+    toast('Ishlar Telegram guruhiga yuborildi!');
     _tgSections = []; _tgMaterials = [];
     _tgMarkFooterDelivered();
 
   }catch(err){
     console.error('Telegram yuborish xatosi:', err);
+    _tgThreadId = null;
     if(steps[idx]) steps[idx].status = 'error';
     _tgSendState.error = err.message || 'Nomaʼlum xatolik';
     _tgSendState.finished = true;
@@ -778,6 +822,50 @@ async function tgSubmitDelivery(projectId){
     toast('Yuborishda xatolik');
     if(sendBtn){ sendBtn.disabled=false; sendBtn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Qayta urinish'; }
   }
+}
+
+// ── LOYIHANI RAD ETISH (guruhdagi mavzuni o'chirish) ──
+async function tgRejectDelivery(projectId){
+  const p = projects.find(x=>x.id===projectId);
+  if(!p){ toast('Loyiha topilmadi'); return; }
+  if(!confirm("Loyiha rad etilsinmi? Guruhdagi mavzu va undagi BARCHA fayllar butunlay o'chadi, loyiha 'Jarayonda'ga qaytadi.")) return;
+
+  const btn = document.getElementById('tg-reject-btn');
+  if(btn){ btn.disabled = true; btn.textContent = "O'chirilmoqda…"; }
+
+  try{
+    if(p.tgGroupId && p.tgTopicId){
+      await tgDeleteTopic(p.tgGroupId, p.tgTopicId);
+    }
+    projects = projects.map(pr => pr.id!==projectId ? pr
+      : ({...pr, status:'wip', tgDelivered:false, tgDeliveredAt:null, tgGroupId:null, tgTopicId:null}));
+    persist();
+    toast("Loyiha rad etildi — guruhdan o'chirildi");
+    if(typeof closePeek==='function') closePeek();
+    if(typeof rerenderActive==='function') rerenderActive();
+  }catch(err){
+    console.error('Rad etish xatosi:', err);
+    toast("O'chirishda xatolik: " + (err.message||''));
+    if(btn){ btn.disabled = false; btn.innerHTML = _tgRejectBtnInner(); }
+  }
+}
+
+function _tgRejectBtnInner(){
+  return '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg> Rad etish (guruhdan o\'chirish)';
+}
+
+// Peek panelda review holatidagi yuborilgan loyiha uchun "Rad etish" bloki
+function renderReviewActions(p){
+  if(!p || p.status!=='review' || !p.tgDelivered || !p.tgTopicId) return '';
+  if(typeof isDesignerRole==='function' && isDesignerRole()) return '';
+  return `
+    <div class="tg-reject-box">
+      <div class="tg-reject-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+        <span>Bu loyiha Telegram guruhiga yuborilgan. Rad etilsa — guruhdagi mavzu va undagi barcha fayllar butunlay o'chiriladi.</span>
+      </div>
+      <button class="btn tg-reject-btn" id="tg-reject-btn" onclick="tgRejectDelivery(${p.id})">${_tgRejectBtnInner()}</button>
+    </div>`;
 }
 
 
@@ -952,9 +1040,9 @@ function getFileIcon(name){
 
 function tgQuickSetChannel(designerId){
   const val = document.getElementById('tg-quick-channel')?.value?.trim();
-  if(!val){ toast('Kanal ID kiriting'); return; }
+  if(!val){ toast('Guruh ID kiriting'); return; }
   tgSetDesignerChannel(designerId, val);
-  toast('Kanal saqlandi');
+  toast('Guruh saqlandi');
   if(peekProjId) openProjectPeek(peekProjId);
 }
 
@@ -974,7 +1062,7 @@ function renderTgChannelMap(){
     return `<div class="tg-ch-row">
       <div class="tg-ch-name">${esc(d.name)}</div>
       <input class="form-input tg-ch-input" value="${esc(ch)}"
-        placeholder="@kanal yoki -100..."
+        placeholder="Guruh ID: -100..."
         onchange="tgSetDesignerChannel(${d.id},this.value.trim())"/>
     </div>`;
   }).join('');

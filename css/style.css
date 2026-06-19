@@ -878,6 +878,14 @@ select.prop-input{cursor:pointer}
 .tg-delivered-title{font-size:13.5px;font-weight:700;color:var(--success)}
 .tg-delivered-sub{font-size:11.5px;color:var(--muted);margin-top:1px}
 
+/* ── RAD ETISH BLOKI ── */
+.tg-reject-box{margin-top:18px;padding:14px;border-radius:12px;background:color-mix(in srgb,var(--error) 6%,transparent);border:1px solid color-mix(in srgb,var(--error) 20%,transparent)}
+.tg-reject-info{display:flex;gap:9px;align-items:flex-start;font-size:12.5px;line-height:1.5;color:var(--muted);margin-bottom:12px}
+.tg-reject-info svg{flex-shrink:0;color:var(--error);margin-top:1px}
+.tg-reject-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--error);color:#fff;border:none;font-weight:600;padding:11px}
+.tg-reject-btn:hover{filter:brightness(.94)}
+.tg-reject-btn:disabled{opacity:.6;cursor:not-allowed}
+
 /* Telegram sozlamalari */
 .tg-ch-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
 .tg-ch-name{width:140px;flex-shrink:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

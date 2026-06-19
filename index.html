@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css"/>
-<link rel="stylesheet" href="css/style.css?v=97"/>
+<link rel="stylesheet" href="css/style.css?v=98"/>
 <!-- Firebase SDK (compat v10) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -657,16 +657,17 @@
         <!-- TELEGRAM -->
         <div class="stg-section" id="stg-telegram">
           <div class="stg-content-title">Telegram integratsiya</div>
-          <div class="stg-content-sub">Tayyor ishlarni dizayner kanaliga avtomatik yuborish</div>
+          <div class="stg-content-sub">Tayyor ishlarni dizayner guruhiga avtomatik yuborish</div>
           <span id="tg-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
           <div class="settings-note" style="margin-top:12px">
-            Loyiha "Bajarildi" bo'lganda, dizayner tayyor fayllarni (PSD, rasmlar, Figma link)
-            to'g'ridan-to'g'ri saytdan yuklaydi — fayllar avtomatik Telegram kanalga yuboriladi.<br/>
+            Dizayner tayyor fayllarni (rasmlar, PSD, Figma link) saytdan yuklaydi — har bir loyiha uchun
+            guruhda avtomatik <strong>yangi mavzu (Topic)</strong> ochiladi va hammasi o'sha yerga yuboriladi.
+            Loyiha rad etilsa, mavzu va undagi barcha fayllar guruhdan o'chiriladi.<br/>
             <strong>Sozlash:</strong>
             <ol style="margin:8px 0 0 18px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px">
               <li><a href="https://t.me/BotFather" target="_blank" style="color:var(--accent-text)">@BotFather</a> ga yozing → <code>/newbot</code> → Bot token oling</li>
-              <li>Har bir dizayner uchun kanal/guruh yarating</li>
-              <li>Botni kanallarga admin sifatida qo'shing</li>
+              <li>Har bir dizayner uchun <strong>guruh</strong> yarating va sozlamalarda <strong>Topics (Mavzular)</strong>ni yoqing</li>
+              <li>Botni guruhga <strong>admin</strong> qiling — <code>Manage Topics</code> va <code>Delete Messages</code> huquqlari bilan</li>
               <li>Proxy server URL kiriting (fayllarni yuborish uchun)</li>
             </ol>
           </div>
@@ -682,9 +683,9 @@
           </div>
           <div class="stg-divider"></div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <label class="form-label" style="margin:0;font-size:14px;font-weight:600">Dizayner kanallari</label>
+            <label class="form-label" style="margin:0;font-size:14px;font-weight:600">Dizayner guruhlari</label>
           </div>
-          <div class="form-hint" style="margin-bottom:10px">Har bir dizayner uchun Telegram kanal ID sini kiriting. Masalan: <code>@kanal_nomi</code> yoki <code>-1001234567890</code></div>
+          <div class="form-hint" style="margin-bottom:10px">Har bir dizayner uchun Telegram <strong>guruh</strong> ID sini kiriting (Topics yoqilgan superguruh). Masalan: <code>-1001234567890</code></div>
           <div id="tg-channel-list"></div>
           <div style="display:flex;gap:8px;margin-top:12px">
             <button class="btn btn-ghost btn-sm" onclick="localStorage.removeItem('tg_bot_token');localStorage.removeItem('tg_proxy_url');tgAutoSave();renderSettingsPage()">Tozalash</button>
@@ -756,10 +757,10 @@
 <script src="js/auth.js?v=76"></script>
 <script src="js/ui.js?v=97"></script>
 <script src="js/datepicker.js?v=76"></script>
-<script src="js/editor.js?v=76"></script>
+<script src="js/editor.js?v=98"></script>
 <script src="js/notion.js?v=76"></script>
 <script src="js/sheets.js?v=76"></script>
-<script src="js/telegram.js?v=97"></script>
+<script src="js/telegram.js?v=98"></script>
 <script src="js/ai.js?v=76"></script>
 <script src="js/app.js?v=76"></script>
 <script>

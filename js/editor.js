@@ -164,6 +164,7 @@ function openProjectPeek(id = null, preDesignerId = null){
     </div>
     ${p ? `<div class="section-label" style="display:block;margin:24px 0 2px">Izohlar</div>${commentBoxHtml(p,'peek')}` : ''}
     ${typeof renderDeliverySection==='function' && p ? renderDeliverySection(p) : ''}
+    ${typeof renderReviewActions==='function' && p ? renderReviewActions(p) : ''}
   `;
 
   byId('pk-rte').innerHTML = p ? (p.descHtml || (p.description ? '<p>'+esc(p.description)+'</p>' : '')) : '';
