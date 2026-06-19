@@ -120,8 +120,9 @@ a{color:var(--accent-text)}
 .main{margin-left:var(--sidebar);padding:calc(var(--topbar) + 24px) 26px 64px}
 .panel{display:none;animation:fadeIn .2s ease}
 .panel.active{display:block}
+#panel-settings.active{display:flex;flex-direction:column;height:calc(100vh - var(--topbar) - 24px - 64px);overflow:hidden}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.page-header{margin-bottom:20px}
+.page-header{margin-bottom:20px;flex-shrink:0}
 .page-title{font-size:21px;font-weight:700;letter-spacing:-.3px}
 .page-sub{font-size:13px;color:var(--muted);margin-top:3px}
 .back-btn{background:none;border:none;color:var(--muted);font-size:13px;font-weight:500;cursor:pointer;padding:0 0 14px;display:inline-flex;align-items:center;gap:5px}
@@ -262,8 +263,8 @@ a{color:var(--accent-text)}
 .settings-note{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 18%,transparent);border-radius:var(--radius);padding:12px 14px;font-size:12.5px;color:var(--text);line-height:1.65;margin-bottom:14px}
 
 /* ── SOZLAMALAR: ChatGPT-style sidebar layout ── */
-.stg-layout{display:flex;gap:0;min-height:calc(100vh - var(--topbar) - 90px);background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow)}
-.stg-sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto}
+.stg-layout{display:flex;gap:0;flex:1;min-height:0;background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);overflow:hidden}
+.stg-sidebar{width:220px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);padding:12px 0;overflow-y:auto;border-radius:var(--radius-lg) 0 0 var(--radius-lg)}
 .stg-sidebar-title{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted2);padding:10px 18px 6px}
 .stg-nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;margin:1px 8px;border-radius:var(--radius);cursor:pointer;color:var(--muted);font-size:13.5px;font-weight:500;border:none;background:none;width:calc(100% - 16px);text-align:left;transition:all .12s}
 .stg-nav-item:hover{color:var(--text);background:var(--hover)}
@@ -273,15 +274,17 @@ a{color:var(--accent-text)}
 .stg-nav-badge{margin-left:auto;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600}
 .stg-nav-badge.on{background:color-mix(in srgb,var(--success) 15%,transparent);color:var(--success)}
 .stg-nav-badge.off{background:var(--hover);color:var(--muted2)}
-.stg-content{flex:1;padding:28px 32px;overflow-y:auto;min-width:0}
+.stg-content{flex:1;padding:28px 32px;overflow-y:auto;min-width:0;max-height:100%}
 .stg-content-title{font-size:18px;font-weight:700;margin-bottom:4px}
 .stg-content-sub{font-size:13px;color:var(--muted);margin-bottom:20px}
 .stg-section{display:none}
 .stg-section.active{display:block}
 .stg-divider{height:1px;background:var(--border);margin:20px 0}
 @media(max-width:880px){
-  .stg-layout{flex-direction:column;min-height:auto}
-  .stg-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:8px 0;display:flex;overflow-x:auto;overflow-y:hidden;gap:0;flex-shrink:0}
+  #panel-settings.active{height:auto;overflow:visible}
+  .stg-layout{flex-direction:column;flex:none;overflow:visible}
+  .stg-sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:8px 0;display:flex;overflow-x:auto;overflow-y:hidden;gap:0;flex-shrink:0;border-radius:var(--radius-lg) var(--radius-lg) 0 0}
+  .stg-content{max-height:none}
   .stg-sidebar-title{display:none}
   .stg-nav-item{margin:0 2px;padding:8px 14px;white-space:nowrap;font-size:12.5px;width:auto;flex-shrink:0}
   .stg-nav-badge{display:none}
@@ -311,8 +314,9 @@ a{color:var(--accent-text)}
 
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(10,12,16,.55);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
-.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;padding:24px;box-shadow:var(--shadow-lg)}
-.modal-title{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:700;margin-bottom:20px;letter-spacing:-.2px}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg)}
+.modal-title{display:flex;justify-content:space-between;align-items:center;font-size:16px;font-weight:700;letter-spacing:-.2px;padding:24px 24px 16px;flex-shrink:0}
+#modal-body{flex:1;overflow-y:auto;padding:0 24px 24px;min-height:0}
 .modal-close{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1;padding:2px}
 .modal-close:hover{color:var(--text)}
 .modal-footer{display:flex;justify-content:flex-end;gap:9px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
@@ -557,6 +561,45 @@ select.prop-input{cursor:pointer}
 .trash-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trash-meta{font-size:11.5px;color:var(--muted)}
 
+/* ═══ DIZAYNER SHAXSIY DASHBOARD ═══ */
+.des-hero{display:flex;align-items:center;gap:20px;margin-bottom:24px;flex-wrap:wrap}
+.des-avatar{width:72px;height:72px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;overflow:hidden;flex-shrink:0}
+.des-avatar img{width:100%;height:100%;object-fit:cover}
+.des-hello{font-size:22px;font-weight:800;letter-spacing:-.3px}
+.des-role{font-size:13px;color:var(--muted);margin-top:2px}
+.des-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.des-stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;text-align:center}
+.des-stat-val{font-size:24px;font-weight:800}
+.des-stat-lbl{font-size:11.5px;color:var(--muted);margin-top:4px}
+.des-chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin-bottom:24px}
+.des-chart-title{font-size:13px;font-weight:700;margin-bottom:14px}
+.des-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.des-bar-label{font-size:11px;color:var(--muted);width:70px;text-align:right;flex-shrink:0}
+.des-bar-track{flex:1;height:8px;background:var(--hover);border-radius:4px;overflow:hidden}
+.des-bar-fill{height:100%;border-radius:4px;transition:width .5s}
+.des-bar-val{font-size:11px;color:var(--muted);width:30px;flex-shrink:0}
+
+/* ═══ KANBAN DOSKA ═══ */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-items:start}
+.kanban-col{background:var(--bg);border-radius:var(--radius-lg);padding:12px;min-height:200px}
+.kanban-col-head{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:0 4px}
+.kanban-col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.kanban-col-title{font-size:12.5px;font-weight:700;flex:1}
+.kanban-col-count{font-size:11px;color:var(--muted);background:var(--hover);border-radius:10px;padding:1px 8px}
+.kanban-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;cursor:pointer;transition:box-shadow .15s}
+.kanban-card:hover{box-shadow:var(--shadow)}
+.kanban-card-title{font-size:13px;font-weight:600;margin-bottom:6px}
+.kanban-card-meta{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.kanban-card-foot{display:flex;align-items:center;justify-content:space-between;margin-top:10px;gap:8px}
+.kanban-card .price-tag{font-size:11px}
+.kanban-card.overdue{border-color:color-mix(in srgb,var(--error) 40%,transparent)}
+.kanban-deliver-btn{font-size:11px;padding:4px 12px;border-radius:6px;border:1.5px solid var(--accent2);color:var(--accent2);background:transparent;cursor:pointer;font-weight:600;display:flex;align-items:center;gap:4px;transition:all .15s}
+.kanban-deliver-btn:hover{background:var(--accent2);color:#fff}
+.kanban-deliver-btn:disabled{opacity:.4;cursor:not-allowed;border-color:var(--border);color:var(--muted)}
+.kanban-deliver-btn:disabled:hover{background:transparent;color:var(--muted)}
+@media(max-width:900px){.kanban{grid-template-columns:1fr}}
+@media(max-width:640px){.des-hero{gap:14px}.des-hello{font-size:18px}.des-avatar{width:56px;height:56px;font-size:20px}}
+
 /* Kategoriya tahrirlash (sozlamalar) */
 .cat-edit-row{border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:11px}
 .cat-edit-head{display:flex;align-items:center;gap:9px}
@@ -699,6 +742,82 @@ select.prop-input{cursor:pointer}
 .ai-chat-send:hover{opacity:.85}
 @media(max-width:880px){.ai-chat-fab{bottom:80px;right:16px;width:64px;height:64px}.ai-fab-face{width:56px;height:56px}.ai-fab-trash{bottom:80px}.ai-chat-panel{bottom:0;right:0;width:100vw;height:100vh;max-height:100vh;max-width:100vw;border-radius:0}}
 @media print{.ai-chat-fab,.ai-chat-panel{display:none!important}}
+
+/* ── TELEGRAM DELIVERY (Ishlarni topshirish) ── */
+.tg-delivery-section{margin:24px 0 8px;border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:0;overflow:hidden;background:var(--card)}
+.tg-delivery-section.delivered{border-color:color-mix(in srgb,var(--success) 30%,transparent)}
+.tg-delivery-header{display:flex;align-items:center;gap:14px;padding:16px 18px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 6%,transparent),color-mix(in srgb,var(--accent2) 4%,transparent));border-bottom:1px solid var(--border)}
+.tg-delivery-icon{width:40px;height:40px;border-radius:10px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent-text);flex-shrink:0}
+.tg-delivery-title{font-size:15px;font-weight:700;color:var(--text)}
+.tg-delivery-sub{font-size:12px;color:var(--muted);margin-top:2px}
+
+.tg-upload-zone{margin:16px;border:2px dashed var(--border2);border-radius:var(--radius-lg);transition:all .2s;background:var(--bg);position:relative}
+.tg-upload-zone.dragover{border-color:var(--accent);background:var(--accent-soft);transform:scale(1.01)}
+.tg-upload-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:32px 20px;cursor:pointer;color:var(--muted);transition:color .15s}
+.tg-upload-placeholder:hover{color:var(--accent-text)}
+.tg-upload-placeholder span{font-size:14px;font-weight:600}
+.tg-upload-hint{font-size:12px!important;font-weight:400!important;color:var(--muted2)}
+
+.tg-file-list{padding:0}
+.tg-file-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid color-mix(in srgb,var(--border) 50%,transparent);transition:background .1s}
+.tg-file-item:hover{background:var(--hover)}
+.tg-file-item:last-of-type{border-bottom:none}
+.tg-file-thumb{width:42px;height:42px;border-radius:8px;object-fit:cover;border:1px solid var(--border);flex-shrink:0}
+.tg-file-icon{width:42px;height:42px;border-radius:8px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;background:var(--panel);flex-shrink:0}
+.tg-file-info{flex:1;min-width:0}
+.tg-file-name{font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-file-size{font-size:11.5px;color:var(--muted);margin-top:1px}
+.tg-file-remove{width:28px;height:28px;border:none;background:none;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:6px;flex-shrink:0;transition:all .12s}
+.tg-file-remove:hover{background:color-mix(in srgb,var(--error) 12%,transparent);color:var(--error)}
+.tg-file-add{display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;cursor:pointer;color:var(--accent-text);font-size:13px;font-weight:500;transition:background .12s;border-radius:0 0 var(--radius) var(--radius)}
+.tg-file-add:hover{background:var(--accent-soft)}
+
+.tg-figma-row{display:flex;align-items:center;gap:10px;margin:0 16px 12px;color:var(--muted)}
+.tg-figma-row .form-input{font-size:13px}
+
+.tg-send-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:calc(100% - 32px);margin:0 16px 16px;padding:11px;font-size:14px;font-weight:600}
+
+/* Bo'limli topshirish modali */
+.tg-section{margin-bottom:14px;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.tg-section-head{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--hover);border-bottom:1px solid var(--border)}
+.tg-section-num{font-size:11px;font-weight:700;color:var(--muted2);white-space:nowrap}
+.tg-section-name{flex:1;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text);outline:none;padding:2px 4px;border-radius:4px}
+.tg-section-name:focus{background:var(--card);box-shadow:0 0 0 1.5px var(--accent)}
+.tg-section-del{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px;line-height:1}
+.tg-section-del:hover{color:var(--error);background:color-mix(in srgb,var(--error) 10%,transparent)}
+.tg-zone-block{margin-bottom:14px}
+.tg-zone-label{font-size:12.5px;font-weight:700;margin-bottom:6px;color:var(--text)}
+#modal-body .tg-upload-zone{margin:0}
+#modal-body .tg-upload-placeholder{padding:22px 16px}
+#modal-body .tg-upload-placeholder span{font-size:13px}
+#modal-body .tg-figma-row{margin:0 0 4px}
+#modal-body .tg-progress-wrap{margin:12px 0}
+.tg-add-section-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:10px;border:2px dashed var(--border2);border-radius:var(--radius);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;margin-bottom:14px}
+.tg-add-section-btn:hover{border-color:var(--accent);color:var(--accent-text);background:var(--accent-soft)}
+
+.tg-channel-setup{margin:16px;padding:16px;border-radius:var(--radius);background:color-mix(in srgb,var(--warning) 8%,transparent);border:1px solid color-mix(in srgb,var(--warning) 20%,transparent)}
+.tg-channel-note{font-size:13px;color:var(--text);margin-bottom:10px}
+
+.tg-progress-wrap{margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:var(--bg);border:1px solid var(--border)}
+.tg-progress-text{font-size:12.5px;color:var(--text);font-weight:500;margin-bottom:8px;display:flex;justify-content:space-between}
+.tg-progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.tg-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:3px;transition:width .3s ease}
+.tg-progress-meta{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:4px}
+.tg-progress-fill.processing{animation:tgPulse 1.2s ease-in-out infinite;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent))}
+@keyframes tgPulse{0%,100%{opacity:.7}50%{opacity:1}}
+
+.tg-success{display:flex;align-items:center;gap:10px;margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:color-mix(in srgb,var(--success) 10%,transparent);border:1px solid color-mix(in srgb,var(--success) 25%,transparent);color:var(--success);font-size:13px;font-weight:600}
+.tg-error{display:flex;align-items:center;gap:10px;margin:12px 16px;padding:12px 14px;border-radius:var(--radius);background:color-mix(in srgb,var(--error) 8%,transparent);border:1px solid color-mix(in srgb,var(--error) 20%,transparent);color:var(--error);font-size:13px;font-weight:500}
+
+/* Telegram sozlamalari */
+.tg-ch-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tg-ch-name{width:140px;flex-shrink:0;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg-ch-input{flex:1;font-size:12.5px}
+@media(max-width:640px){
+  .tg-ch-row{flex-direction:column;align-items:stretch;gap:4px}
+  .tg-ch-name{width:auto}
+  .tg-upload-placeholder{padding:24px 16px}
+}
 
 /* ── PRINT ── */
 @media print{

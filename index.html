@@ -24,7 +24,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css"/>
-<link rel="stylesheet" href="css/style.css?v=76"/>
+<link rel="stylesheet" href="css/style.css?v=93"/>
 <!-- Firebase SDK (compat v10) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -491,6 +491,11 @@
           Notion
           <span class="stg-nav-badge" id="stg-nt-badge">—</span>
         </button>
+        <button class="stg-nav-item" onclick="stgTab('telegram')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Telegram
+          <span class="stg-nav-badge" id="stg-tg-badge">—</span>
+        </button>
       </div>
 
       <!-- ── CONTENT ── -->
@@ -649,6 +654,44 @@
           <div id="nt-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
         </div>
 
+        <!-- TELEGRAM -->
+        <div class="stg-section" id="stg-telegram">
+          <div class="stg-content-title">Telegram integratsiya</div>
+          <div class="stg-content-sub">Tayyor ishlarni dizayner kanaliga avtomatik yuborish</div>
+          <span id="tg-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
+          <div class="settings-note" style="margin-top:12px">
+            Loyiha "Bajarildi" bo'lganda, dizayner tayyor fayllarni (PSD, rasmlar, Figma link)
+            to'g'ridan-to'g'ri saytdan yuklaydi — fayllar avtomatik Telegram kanalga yuboriladi.<br/>
+            <strong>Sozlash:</strong>
+            <ol style="margin:8px 0 0 18px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:12.5px">
+              <li><a href="https://t.me/BotFather" target="_blank" style="color:var(--accent-text)">@BotFather</a> ga yozing → <code>/newbot</code> → Bot token oling</li>
+              <li>Har bir dizayner uchun kanal/guruh yarating</li>
+              <li>Botni kanallarga admin sifatida qo'shing</li>
+              <li>Proxy server URL kiriting (fayllarni yuborish uchun)</li>
+            </ol>
+          </div>
+          <div class="form-group" style="margin-top:14px">
+            <label class="form-label">Bot Token</label>
+            <input class="form-input" id="tg-bot-token" type="password" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz" oninput="tgAutoSave()"/>
+            <div class="form-hint">BotFather'dan olingan token. Avtomatik saqlanadi.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Proxy server URL</label>
+            <input class="form-input" id="tg-proxy-url" placeholder="https://sizning-proxy.onrender.com" oninput="tgAutoSave()"/>
+            <div class="form-hint">Render.com yoki boshqa platformadagi proxy. Katta fayllarni yuborish uchun kerak.</div>
+          </div>
+          <div class="stg-divider"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <label class="form-label" style="margin:0;font-size:14px;font-weight:600">Dizayner kanallari</label>
+          </div>
+          <div class="form-hint" style="margin-bottom:10px">Har bir dizayner uchun Telegram kanal ID sini kiriting. Masalan: <code>@kanal_nomi</code> yoki <code>-1001234567890</code></div>
+          <div id="tg-channel-list"></div>
+          <div style="display:flex;gap:8px;margin-top:12px">
+            <button class="btn btn-ghost btn-sm" onclick="localStorage.removeItem('tg_bot_token');localStorage.removeItem('tg_proxy_url');tgAutoSave();renderSettingsPage()">Tozalash</button>
+          </div>
+          <div id="tg-status" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+        </div>
+
       </div>
     </div>
 
@@ -685,6 +728,10 @@
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>
         Notionga yuborish
       </button>
+      <button class="btn btn-ghost btn-sm" id="peek-tg-btn" onclick="document.querySelector('.tg-delivery-section')?.scrollIntoView({behavior:'smooth'})" title="Ishlarni topshirish — Telegram" style="display:none;border-color:var(--accent2);color:var(--accent2)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Topshirish
+      </button>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-ghost" onclick="closePeek()">Bekor qilish</button>
@@ -712,6 +759,7 @@
 <script src="js/editor.js?v=76"></script>
 <script src="js/notion.js?v=76"></script>
 <script src="js/sheets.js?v=76"></script>
+<script src="js/telegram.js?v=93"></script>
 <script src="js/ai.js?v=76"></script>
 <script src="js/app.js?v=76"></script>
 <script>
