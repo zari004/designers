@@ -141,11 +141,6 @@
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
       Asosiy sahifa
     </button>
-    <button class="nav-item" id="nav-designers" data-panel="designers" onclick="showPanel('designers');closeSidebar()">
-      <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5"/><circle cx="13" cy="6" r="2"/><path d="M11 14c0-2 .9-3 2-3"/></svg>
-      Dizaynerlar
-      <span class="nav-count" id="nav-count-d">0</span>
-    </button>
     <button class="nav-item" id="nav-projects" data-panel="projects" onclick="showPanel('projects');closeSidebar()">
       <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M5 6h6M5 9h6M5 12h4"/></svg>
       Loyihalar
@@ -204,10 +199,6 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
     <span>Bosh sahifa</span>
   </button>
-  <button class="bnav-item" id="bnav-designers" data-panel="designers" onclick="showPanel('designers')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="7" r="4"/><path d="M2 21c0-4.4 3.1-8 7-8s7 3.6 7 8"/><circle cx="19" cy="8" r="3"/><path d="M17 21c0-3 1.3-5 2-5"/></svg>
-    <span>Dizaynerlar</span>
-  </button>
   <button class="bnav-item" id="bnav-projects" data-panel="projects" onclick="showPanel('projects')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"/><path d="M8 10h8M8 14h6"/></svg>
     <span>Loyihalar</span>
@@ -264,46 +255,17 @@
       <div class="page-title">Umumiy ko'rinish</div>
       <div class="page-sub">Art direktor paneli · exon-designers.uz</div>
     </div>
-    <div class="stat-grid">
-      <div class="stat-card" style="cursor:pointer" onclick="showPanel('designers')" title="Faol dizaynerlar ro'yxati"><div class="stat-val" id="st-active" style="color:var(--success)">0</div><div class="stat-label">Faol dizayner</div></div>
-      <div class="stat-card" style="cursor:pointer" onclick="showPanel('designers')" title="Barcha dizaynerlar"><div class="stat-val" id="st-total">0</div><div class="stat-label">Jami dizayner</div></div>
+    <div class="stat-grid" style="grid-template-columns:repeat(2,1fr)">
       <div class="stat-card" style="cursor:pointer" onclick="setProjFilter('wip');showPanel('projects')" title="Jarayondagi loyihalar"><div class="stat-val" id="st-wip" style="color:var(--accent2)">0</div><div class="stat-label">Jarayondagi loyiha</div></div>
       <div class="stat-card" style="cursor:pointer" onclick="showPanel('payments')" title="To'lovlar hisobi"><div class="stat-val" id="st-budget" style="color:var(--accent-text)">0</div><div class="stat-label">Jami to'lov (so'm)</div></div>
     </div>
     <div id="dash-alerts"></div>
-    <div class="dash-grid">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Dizaynerlar</span></div>
-        <div id="dash-designers"></div>
-      </div>
+    <div class="dash-grid" style="grid-template-columns:1fr">
       <div class="card">
         <div class="card-header"><span class="card-title">So'nggi loyihalar</span></div>
         <div id="dash-projects"></div>
       </div>
     </div>
-  </div>
-
-  <!-- DIZAYNERLAR -->
-  <div class="panel" id="panel-designers">
-    <div class="page-header">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-        <div>
-          <div class="page-title">Dizaynerlar</div>
-          <div class="page-sub">EXON dizayn jamoasi</div>
-        </div>
-        <button class="btn btn-primary" onclick="openDesignerModal()">+ Dizayner qo'shish</button>
-      </div>
-    </div>
-    <div class="filter-bar">
-      <input class="search-input" placeholder="Qidirish..." id="search-d" oninput="renderDesigners()" style="width:220px" aria-label="Dizayner qidirish"/>
-      <div class="tab-group" id="cat-tabs">
-        <button class="tab-btn active" data-cat="all" onclick="setCatFilter('all')">Barchasi</button>
-        <button class="tab-btn" data-cat="A" onclick="setCatFilter('A')">A</button>
-        <button class="tab-btn" data-cat="B" onclick="setCatFilter('B')">B</button>
-        <button class="tab-btn" data-cat="C" onclick="setCatFilter('C')">C</button>
-      </div>
-    </div>
-    <div class="designers-grid" id="designers-grid"></div>
   </div>
 
   <!-- DIZAYNER PROFILI -->
@@ -761,14 +723,14 @@
 <script src="js/firebase.js?v=76"></script>
 <script src="js/data.js?v=76"></script>
 <script src="js/auth.js?v=76"></script>
-<script src="js/ui.js?v=99"></script>
+<script src="js/ui.js?v=104"></script>
 <script src="js/datepicker.js?v=76"></script>
 <script src="js/editor.js?v=98"></script>
 <script src="js/notion.js?v=76"></script>
 <script src="js/sheets.js?v=76"></script>
 <script src="js/telegram.js?v=103"></script>
-<script src="js/ai.js?v=76"></script>
-<script src="js/app.js?v=76"></script>
+<script src="js/ai.js?v=104"></script>
+<script src="js/app.js?v=104"></script>
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
 // Yangi SW faollashganda — sahifa BIR MARTA qayta yuklanadi (cheksiz aylanma yo'q).

@@ -665,8 +665,18 @@ function dismissAiFab(){
   if(trash) trash.classList.remove('visible','over');
 }
 
+// Rolga qarab AI yordamchi tugmasini boshqarish: dizaynerga ko'rsatilmaydi
+function aiSetForRole(isDesigner){
+  if(isDesigner){ dismissAiFab(); return; }
+  _aiFabHidden=false;
+  const fab=document.getElementById('ai-chat-fab');
+  if(fab){ fab.classList.remove('hide'); fab.style.transition=''; }
+  else if(!_aiChatReady) _ensureAiChat();
+}
+
 function _ensureAiChat(){
   if(_aiChatReady) return;
+  if(typeof isDesignerRole==='function' && isDesignerRole()) return; // dizaynerga AI yordamchi yo'q
   _aiChatReady=true;
   if(_aiFabHidden) return;
 

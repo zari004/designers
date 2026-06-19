@@ -108,6 +108,7 @@ function updateNavVisibility(){
 }
 
 function showPanel(name){
+  if(name==='designers') name='dashboard'; // Dizaynerlar bo'limi olib tashlangan
   const freePanels = ['dashboard','detail','trash'];
   if(!freePanels.includes(name) && typeof hasPermission === 'function' && typeof getCurrentUser === 'function' && getCurrentUser() && !hasPermission(name)){
     toast(`"${name}" bo'limiga kirish ruxsati yo'q`);
@@ -155,6 +156,7 @@ document.addEventListener('click',e=>{
 // ── HUQUQLAR ──
 function applyNavPermissions(user){
   const isDes = user.role==='designer';
+  if(typeof aiSetForRole==='function') aiSetForRole(isDes); // dizaynerga AI yordamchi ko'rinmasin
   const map={
     'nav-designers':'designers',
     'nav-projects':'projects',
