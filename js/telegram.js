@@ -30,6 +30,26 @@ function tgSetDesignerChannel(designerId, channelId){
 // Faol mavzu — yuborish vaqtida o'rnatiladi; barcha xabarlar shu mavzuga ketadi.
 let _tgThreadId = null;
 
+// Telegram xato matnidan tushunarli sabab chiqarish
+function _tgFriendlyError(raw){
+  const low = (raw||'').toLowerCase();
+  let desc = raw || '';
+  const m = (raw||'').match(/"description"\s*:\s*"([^"]+)"/);
+  if(m) desc = m[1];
+
+  if(low.includes('chat not found'))
+    return "Guruh topilmadi. Guruh ID noto'g'ri yoki bot guruhga qo'shilmagan. To'g'ri ID: -100... (taklif havolasi emas).";
+  if(low.includes('not a forum') || low.includes('topic') && low.includes('disabled') || low.includes('forum'))
+    return "Guruhda 'Mavzular' (Topics) yoqilmagan. Guruh sozlamalari → Topics ni yoqing.";
+  if(low.includes('not enough rights') || low.includes('admin') || low.includes('can_manage_topics') || low.includes('rights to manage'))
+    return "Bot huquqi yetarli emas. Botni admin qiling va 'Manage Topics' (Mavzularni boshqarish) huquqini bering.";
+  if(low.includes('bot is not a member') || low.includes('member of the'))
+    return "Bot guruhda emas. Avval botni guruhga qo'shing.";
+  if(low.includes('supergroup'))
+    return "Bu oddiy guruh. Topics faqat superguruhda ishlaydi (Topics yoqilsa guruh avtomatik superguruhga aylanadi).";
+  return desc;
+}
+
 // Guruhda yangi mavzu (forum topic) ochish → message_thread_id qaytaradi.
 // Guruh superguruh bo'lib, Mavzular (Topics) yoqilgan va bot admin bo'lishi kerak.
 async function tgCreateTopic(groupId, name){
@@ -40,7 +60,7 @@ async function tgCreateTopic(groupId, name){
       body: JSON.stringify({ chat_id: groupId, name: (name||'Loyiha').slice(0,128) })
     }));
   }catch(e){
-    throw new Error("Mavzu ochib bo'lmadi — guruhda 'Mavzular' (Topics) yoqilganini va bot admin (can_manage_topics) ekanini tekshiring.");
+    throw new Error("Mavzu ochib bo'lmadi — " + _tgFriendlyError(e.message));
   }
   const tid = res?.result?.message_thread_id;
   if(!tid) throw new Error("Mavzu ochilmadi — guruh sozlamalarini tekshiring.");
