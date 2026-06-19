@@ -235,6 +235,10 @@ async function syncSettingsFromFirestore(){
       if(rd && typeof ROLE_DEFS !== 'undefined'){
         Object.keys(ROLE_DEFS).forEach(k=>delete ROLE_DEFS[k]);
         Object.assign(ROLE_DEFS, rd);
+        if(!ROLE_DEFS.designer && typeof _DEFAULT_ROLES!=='undefined'){
+          ROLE_DEFS.designer = _DEFAULT_ROLES.designer;
+          localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));
+        }
       }
     }catch(e){ /* noto'g'ri JSON — e'tiborsiz */ }
     // Sozlamalar sahifasi ochiq bo'lsa — maydonlar va belgilarni yangilash
