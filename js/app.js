@@ -154,7 +154,14 @@ document.addEventListener('click',e=>{
 
 // ── HUQUQLAR ──
 function applyNavPermissions(user){
-  if(user.role==='_loading') return; // skeleton ko'rinishda nav yashirin
+  const allNav=['nav-designers','nav-projects','nav-settings','nav-users','nav-reports','nav-payments','nav-trash'];
+  const allBnav=['bnav-designers','bnav-projects','bnav-payments','bnav-settings'];
+
+  if(user.role==='_loading'){
+    allNav.concat(allBnav).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    return;
+  }
+
   const isDes = user.role==='designer';
   if(typeof aiSetForRole==='function') aiSetForRole(isDes);
   const map={
@@ -175,7 +182,6 @@ function applyNavPermissions(user){
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
   });
-  // Bottom nav huquqlari
   const bmap={
     'bnav-designers':'designers',
     'bnav-projects':'projects',
@@ -286,10 +292,18 @@ function initApp(user){
   const bn=document.getElementById('bottom-nav'); if(bn) bn.style.visibility='';
 
   const sbu=document.getElementById('sidebar-username');
-  if(sbu) sbu.textContent=user.displayName||user.username||user.email||'—';
   const sba=document.getElementById('sidebar-avatar');
-  const name=user.displayName||user.username||user.email||'?';
-  if(sba) sba.textContent=name.slice(0,2).toUpperCase();
+  const sFooter=document.querySelector('.sidebar-footer');
+  if(user.role==='_loading'){
+    if(sFooter) sFooter.style.opacity='0';
+    if(sbu) sbu.textContent='';
+    if(sba) sba.textContent='';
+  } else {
+    if(sFooter) sFooter.style.opacity='';
+    const name=user.displayName||user.username||user.email||'?';
+    if(sbu) sbu.textContent=name;
+    if(sba) sba.textContent=name.slice(0,2).toUpperCase();
+  }
 
   // UI render qismi — xato bo'lsa ham Firebase yuklash to'xtamasin
   try{

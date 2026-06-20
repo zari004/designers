@@ -58,6 +58,16 @@ function getMyDesigner(){
   return designers.find(d => d.id === did) || null;
 }
 
+function _updateSidebarUser(user){
+  const sbu=document.getElementById('sidebar-username');
+  const sba=document.getElementById('sidebar-avatar');
+  const sFooter=document.querySelector('.sidebar-footer');
+  if(sFooter) sFooter.style.opacity='';
+  const name=user.displayName||user.username||user.email||'?';
+  if(sbu) sbu.textContent=name;
+  if(sba) sba.textContent=name.slice(0,2).toUpperCase();
+}
+
 // Firestore so'roviga timeout qo'yish
 function _fbQueryWithTimeout(promise, ms){
   return Promise.race([
@@ -101,6 +111,7 @@ async function _loadFirestoreProfile(uid){
       const profile = snap.data();
       _currentUser = profile;
       if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
+      _updateSidebarUser(profile);
       if(typeof rerenderActive==='function') rerenderActive();
     }
   } catch(e) { console.warn('Firestore profil:', e); }

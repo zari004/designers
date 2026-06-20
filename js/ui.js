@@ -103,6 +103,7 @@ function rerenderActive(){
 }
 
 function updateCounts(){
+  if(_isLoading()) return;
   const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
   const vp=_visibleProjects();
   set('nav-count-d', _visibleDesigners().length);
@@ -152,7 +153,7 @@ function _visibleProjects(){
   return projects;
 }
 
-function _isLoading(){ return _currentUser?.role === '_loading' || (typeof getCurrentUser==='function' && getCurrentUser()?.role === '_loading'); }
+function _isLoading(){ return typeof getCurrentUser==='function' && getCurrentUser()?.role === '_loading'; }
 
 function renderDashboard(){
   if(_isLoading()) return _renderSkeletonDashboard();
