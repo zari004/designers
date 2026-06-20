@@ -156,7 +156,9 @@ function _visibleProjects(){
 function _isLoading(){ return typeof getCurrentUser==='function' && getCurrentUser()?.role === '_loading'; }
 
 function renderDashboard(){
-  if(_isLoading()) return _renderSkeletonDashboard();
+  // Yuklanish paytida hech narsa chizilmaydi — butun ekranni OQ FON overlay yopib turadi.
+  // (Skeleton ataylab chizilmaydi: u dashboard'ning statik HTML'ini buzar va sirib chiqardi.)
+  if(_isLoading()) return;
   applyOverduePenalties();
   if(typeof isDesignerRole==='function' && isDesignerRole()) return _renderDesignerDashboard();
   const vd = _visibleDesigners();

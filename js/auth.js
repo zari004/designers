@@ -108,33 +108,61 @@ function setupAuthListener(onLogin, onLogout){
 }
 
 async function _loadFirestoreProfile(uid){
-  try {
-    if(!isFbReady()){ _dismissAppLoading(); return; }
-    const snap = await Promise.race([
-      getDb().collection('users').doc(uid).get(),
-      new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
-    ]);
-    if(snap.exists){
-      const profile = snap.data();
-      _currentUser = profile;
-      if(profile.role === 'pending'){
-        if(typeof showPendingScreen==='function') showPendingScreen();
-        _dismissAppLoading();
-        return;
-      }
-      if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
-      _updateSidebarUser(profile);
-      if(typeof rerenderActive==='function') rerenderActive();
-    }
-  } catch(e) { console.warn('Firestore profil:', e); }
+  if(!isFbReady()){
+    // Firebase tayyor emas — admin paneli KO'RSATILMAYDI
+    if(typeof showPendingScreen==='function') showPendingScreen();
+    _dismissAppLoading();
+    return;
+  }
+
+  // Profilni bir necha marta o'qishga urinamiz:
+  // · Yangi ro'yxatdan o'tganda hujjat hali yozilmagan bo'lishi mumkin (poyga holati)
+  // · Firestore sekin javob berishi mumkin
+  // MUHIM: profil aniqlanmaguncha OQ FON ustki qatlam (overlay) olib tashlanmaydi —
+  // shu sabab admin paneli boshqa foydalanuvchilarga sira ko'rinmaydi.
+  let profile = null;
+  for(let attempt=0; attempt<6; attempt++){
+    try{
+      const snap = await Promise.race([
+        getDb().collection('users').doc(uid).get(),
+        new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),5000))
+      ]);
+      if(snap && snap.exists){ profile = snap.data(); break; }
+    }catch(e){ console.warn('Firestore profil urinish #'+attempt+':', e); }
+    await new Promise(r=>setTimeout(r, 1200));
+  }
+
+  // Profil topilmadi (yangi ro'yxatdan o'tgan yoki hujjat o'chirilgan) →
+  // tizimga kiritmaymiz, faqat "Tasdiqlanishi kutilmoqda" ekrani.
+  if(!profile){
+    if(typeof showPendingScreen==='function') showPendingScreen();
+    _dismissAppLoading();
+    return;
+  }
+
+  _currentUser = profile;
+
+  // Rol berilmagan (pending) → faqat tasdiqlash ekrani, admin paneli yo'q
+  if(profile.role === 'pending' || !profile.role){
+    if(typeof showPendingScreen==='function') showPendingScreen();
+    _dismissAppLoading();
+    return;
+  }
+
+  // Haqiqiy rol — endi to'g'ri panel chiziladi, keyin overlay olib tashlanadi
+  if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
+  _updateSidebarUser(profile);
+  if(typeof rerenderActive==='function') rerenderActive();
   _dismissAppLoading();
-  // Admin foydalanuvchilar ro'yxati
+
+  // Admin foydalanuvchilar ro'yxati (rol kutayotganlar bildirishnomasi uchun ham)
   try {
     const users = await Promise.race([
       getAllFbUsers(),
       new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
     ]);
     _fbUsersCache = users || [];
+    if(typeof renderNotifPanel==='function') renderNotifPanel();
   } catch { _fbUsersCache = []; }
 }
 

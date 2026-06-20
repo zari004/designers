@@ -159,6 +159,8 @@ function applyNavPermissions(user){
 
   if(user.role==='_loading'||user.role==='pending'){
     allNav.concat(allBnav).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    document.querySelectorAll('.sidebar-section').forEach(s=>s.style.display='none');
+    if(typeof aiSetForRole==='function') aiSetForRole(true); // AI tugmasini yashirish
     return;
   }
 
@@ -196,6 +198,13 @@ function applyNavPermissions(user){
     }
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
+  });
+  // Ichidagi barcha nav-itemlari yashirilgan bo'limlar (va ularning sarlavhasi)
+  // butunlay yashiriladi — dizaynerga "Tizim" kabi bo'sh bo'limlar ko'rinmaydi
+  document.querySelectorAll('.sidebar-section').forEach(sec=>{
+    const items=sec.querySelectorAll('.nav-item');
+    const anyVisible=Array.from(items).some(it=>it.style.display!=='none');
+    sec.style.display=anyVisible?'':'none';
   });
 }
 
@@ -410,7 +419,6 @@ setTimeout(drawFavicon, 2500);
       return;
     }
     setSyncStatus('load', "Kirish tekshirilmoqda...");
-    setTimeout(()=>{ if(typeof _dismissAppLoading==='function') _dismissAppLoading(); }, 10000);
     setupAuthListener(
       user => initApp(user),
       ()   => showAppLogin()
