@@ -1281,10 +1281,12 @@ function buildNotifications(){
     const d=designers.find(x=>x.id===p.designerId);
     list.push({id:'soon-'+p.id,type:'soon',projId:p.id,title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
-  src.filter(p=>p.status==='review').forEach(p=>{
-    const d=designers.find(x=>x.id===p.designerId);
-    list.push({id:'rev-'+p.id,type:'review',projId:p.id,title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
-  });
+  if(!_isDes){
+    src.filter(p=>p.status==='review').forEach(p=>{
+      const d=designers.find(x=>x.id===p.designerId);
+      list.push({id:'rev-'+p.id,type:'review',projId:p.id,title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
+    });
+  }
   src.filter(p=>p.penaltyApplied===true&&p.status!=='done').forEach(p=>{
     list.push({id:'pen-'+p.id,type:'penalty',projId:p.id,title:`Jarima: ${p.title}`,sub:`Kechiktirilgani uchun ${fmtPrice(p.originalPricePerUnit*p.units)} → ${fmtPrice(p.pricePerUnit*p.units)} so'm (−30%)`,read:false,time:p.deadline});
   });
