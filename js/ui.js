@@ -1319,10 +1319,7 @@ function notifClick(nid){
   document.getElementById('notif-panel').classList.remove('open');
   const n=notifications.find(x=>x.id===nid);
   if(!n) return;
-  if(n.type==='review'){
-    setProjFilter('review');
-    showPanel('projects');
-  } else if(n.projId){
+  if(n.projId){
     openProjectPeek(n.projId);
   }
 }
