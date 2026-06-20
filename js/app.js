@@ -157,7 +157,7 @@ function applyNavPermissions(user){
   const allNav=['nav-designers','nav-projects','nav-settings','nav-users','nav-reports','nav-payments','nav-trash'];
   const allBnav=['bnav-designers','bnav-projects','bnav-payments','bnav-settings'];
 
-  if(user.role==='_loading'){
+  if(user.role==='_loading'||user.role==='pending'){
     allNav.concat(allBnav).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     return;
   }
@@ -327,6 +327,7 @@ function initApp(user){
 }
 
 function showAppLogin(){
+  if(typeof _dismissAppLoading==='function') _dismissAppLoading();
   document.getElementById('sidebar').style.visibility='hidden';
   document.querySelector('.main').style.visibility='hidden';
   document.querySelector('.topbar').style.visibility='hidden';
@@ -337,7 +338,19 @@ function showAppLogin(){
   if(fbSetup) fbSetup.style.display = 'none';
 }
 
+function showPendingScreen(){
+  document.getElementById('sidebar').style.visibility='hidden';
+  document.querySelector('.main').style.visibility='hidden';
+  document.querySelector('.topbar').style.visibility='hidden';
+  document.getElementById('sync-bar').style.visibility='hidden';
+  const bn=document.getElementById('bottom-nav'); if(bn) bn.style.visibility='hidden';
+  document.getElementById('login-screen').style.display='none';
+  const ps=document.getElementById('pending-approval-screen');
+  if(ps) ps.style.display='';
+}
+
 function showFbSetup(){
+  if(typeof _dismissAppLoading==='function') _dismissAppLoading();
   document.getElementById('sidebar').style.visibility='hidden';
   document.querySelector('.main').style.visibility='hidden';
   document.querySelector('.topbar').style.visibility='hidden';
@@ -397,6 +410,7 @@ setTimeout(drawFavicon, 2500);
       return;
     }
     setSyncStatus('load', "Kirish tekshirilmoqda...");
+    setTimeout(()=>{ if(typeof _dismissAppLoading==='function') _dismissAppLoading(); }, 10000);
     setupAuthListener(
       user => initApp(user),
       ()   => showAppLogin()

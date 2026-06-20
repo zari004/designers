@@ -1322,6 +1322,12 @@ function buildNotifications(){
   src.filter(p=>p.penaltyApplied===true&&p.status!=='done').forEach(p=>{
     list.push({id:'pen-'+p.id,type:'penalty',projId:p.id,title:`Jarima: ${p.title}`,sub:`Kechiktirilgani uchun ${fmtPrice(p.originalPricePerUnit*p.units)} → ${fmtPrice(p.pricePerUnit*p.units)} so'm (−30%)`,read:false,time:p.deadline});
   });
+  if(!_isDes && typeof getUsers==='function'){
+    const pending=getUsers().filter(u=>u.role==='pending');
+    pending.forEach(u=>{
+      list.push({id:'pu-'+u.uid,type:'pending_user',title:`Yangi foydalanuvchi rol kutmoqda`,sub:u.displayName||u.email,read:false,time:u.createdAt||''});
+    });
+  }
   const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
   list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
   notifications=list;
@@ -1335,7 +1341,7 @@ function renderNotifPanel(){
   const el=document.getElementById('notif-list');
   if(!el) return;
   if(!notifications.length){ el.innerHTML='<div class="notif-item" style="color:var(--muted2);font-size:12.5px">Bildirishnomalar yo\'q</div>'; return; }
-  const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)',penalty:'var(--error)'};
+  const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)',penalty:'var(--error)',pending_user:'var(--accent2)'};
   el.innerHTML=notifications.map(n=>`
     <div class="notif-item${n.read?'':' unread'}" style="cursor:pointer" onclick="notifClick('${n.id}')">
       <div class="notif-item-title"><span class="notif-dot" style="background:${dotColor[n.type]||'var(--muted)'}"></span>${esc(n.title)}</div>
@@ -1351,6 +1357,10 @@ function notifClick(nid){
   document.getElementById('notif-panel').classList.remove('open');
   const n=notifications.find(x=>x.id===nid);
   if(!n) return;
+  if(n.type==='pending_user'){
+    showPanel('users');
+    return;
+  }
   if(n.projId){
     openProjectPeek(n.projId);
   }

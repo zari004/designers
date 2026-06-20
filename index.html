@@ -24,13 +24,33 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css"/>
-<link rel="stylesheet" href="css/style.css?v=107"/>
+<link rel="stylesheet" href="css/style.css?v=108"/>
 <!-- Firebase SDK (compat v10) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+<!-- LOADING OVERLAY — profil yuklanguncha butun ekranni yopadi -->
+<div id="app-loading-overlay" style="position:fixed;inset:0;z-index:9999;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .3s">
+  <div style="width:42px;height:42px;border:3.5px solid #e8ecf0;border-top-color:#2c7be5;border-radius:50%;animation:appSpin .7s linear infinite"></div>
+  <div style="margin-top:16px;font-size:14px;color:#6b7a8d;font-family:system-ui,sans-serif">Yuklanmoqda...</div>
+</div>
+<style>@keyframes appSpin{to{transform:rotate(360deg)}}</style>
+
+<!-- TASDIQLASH KUTISH EKRANI (roʻl berilmaganlar uchun) -->
+<div id="pending-approval-screen" style="display:none;position:fixed;inset:0;z-index:9998;background:#fff">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;padding:24px">
+    <div style="width:64px;height:64px;border-radius:50%;background:#e8f4fd;display:flex;align-items:center;justify-content:center;margin-bottom:20px">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2c7be5" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    </div>
+    <div style="font-size:20px;font-weight:700;color:#1a2332;margin-bottom:8px">Tasdiqlanishi kutilmoqda</div>
+    <div style="font-size:14px;color:#6b7a8d;max-width:340px;line-height:1.6">Sizning so'rovingiz adminlarga yuborildi. Admin sizga rol bergandan so'ng tizimga kirishingiz mumkin bo'ladi.</div>
+    <button onclick="location.reload()" style="margin-top:28px;padding:10px 28px;background:#2c7be5;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:system-ui,sans-serif">Qayta tekshirish</button>
+    <button onclick="doLogout()" style="margin-top:12px;padding:8px 20px;background:none;color:#6b7a8d;border:1px solid #dfe3e8;border-radius:8px;font-size:13px;cursor:pointer;font-family:system-ui,sans-serif">Chiqish</button>
+  </div>
+</div>
 
 <!-- FIREBASE SOZLASH EKRANI (birinchi kirish) -->
 <div id="fb-setup-screen" style="display:none">
@@ -760,15 +780,15 @@
 
 <script src="js/firebase.js?v=76"></script>
 <script src="js/data.js?v=76"></script>
-<script src="js/auth.js?v=107"></script>
-<script src="js/ui.js?v=107"></script>
+<script src="js/auth.js?v=108"></script>
+<script src="js/ui.js?v=108"></script>
 <script src="js/datepicker.js?v=76"></script>
 <script src="js/editor.js?v=98"></script>
 <script src="js/notion.js?v=76"></script>
 <script src="js/sheets.js?v=76"></script>
 <script src="js/telegram.js?v=105"></script>
 <script src="js/ai.js?v=104"></script>
-<script src="js/app.js?v=107"></script>
+<script src="js/app.js?v=108"></script>
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
 // Yangi SW faollashganda — sahifa BIR MARTA qayta yuklanadi (cheksiz aylanma yo'q).

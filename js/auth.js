@@ -12,7 +12,8 @@ const _DEFAULT_ROLES = {
   admin:   { label:'Admin', perms:{designers:true, projects:true, payments:true, reports:true, users:true, settings:true} },
   manager: { label:'Menejer', perms:{designers:true, projects:true, payments:true, reports:true, users:false, settings:false} },
   designer:{ label:'Dizayner', perms:{designers:false, projects:true, payments:true, reports:true, users:false, settings:false} },
-  viewer:  { label:"Ko'ruvchi", perms:{designers:true, projects:true, payments:false, reports:true, users:false, settings:false} }
+  viewer:  { label:"Ko'ruvchi", perms:{designers:true, projects:true, payments:false, reports:true, users:false, settings:false} },
+  pending: { label:'Kutilmoqda', perms:{designers:false, projects:false, payments:false, reports:false, users:false, settings:false} }
 };
 let ROLE_DEFS;
 try {
@@ -58,6 +59,13 @@ function getMyDesigner(){
   return designers.find(d => d.id === did) || null;
 }
 
+function _dismissAppLoading(){
+  const ov=document.getElementById('app-loading-overlay');
+  if(!ov) return;
+  ov.style.opacity='0';
+  setTimeout(()=>ov.remove(), 350);
+}
+
 function _updateSidebarUser(user){
   const sbu=document.getElementById('sidebar-username');
   const sba=document.getElementById('sidebar-avatar');
@@ -99,10 +107,9 @@ function setupAuthListener(onLogin, onLogout){
   });
 }
 
-// Firestore profilini yuklash — yuklanguncha skeleton ko'rinadi
 async function _loadFirestoreProfile(uid){
   try {
-    if(!isFbReady()) return;
+    if(!isFbReady()){ _dismissAppLoading(); return; }
     const snap = await Promise.race([
       getDb().collection('users').doc(uid).get(),
       new Promise((_,r)=>setTimeout(()=>r('timeout'),5000))
@@ -110,11 +117,17 @@ async function _loadFirestoreProfile(uid){
     if(snap.exists){
       const profile = snap.data();
       _currentUser = profile;
+      if(profile.role === 'pending'){
+        if(typeof showPendingScreen==='function') showPendingScreen();
+        _dismissAppLoading();
+        return;
+      }
       if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
       _updateSidebarUser(profile);
       if(typeof rerenderActive==='function') rerenderActive();
     }
   } catch(e) { console.warn('Firestore profil:', e); }
+  _dismissAppLoading();
   // Admin foydalanuvchilar ro'yxati
   try {
     const users = await Promise.race([
@@ -262,7 +275,12 @@ async function renderFbUsersAdmin(){
       el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px">Hozircha foydalanuvchi yo\'q</div>';
       return;
     }
-    el.innerHTML = _fbUsersCache.map(u => {
+    const pendingUsers = _fbUsersCache.filter(u=>u.role==='pending');
+    const warnHtml = pendingUsers.length ? `<div style="background:#fef3cd;border:1px solid #ffc107;border-radius:8px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:18px">&#9888;</span>
+      <div style="font-size:13px;color:#664d03;font-weight:600">${pendingUsers.length} ta foydalanuvchi rol kutmoqda — iltimos, rol belgilang</div>
+    </div>` : '';
+    el.innerHTML = warnHtml + _fbUsersCache.map(u => {
       const isDesigner = u.role === 'designer';
       return `<div class="user-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
         <div class="user-avatar" style="font-size:12px;width:34px;height:34px;flex-shrink:0">${(u.displayName||u.email).slice(0,2).toUpperCase()}</div>
@@ -320,7 +338,7 @@ async function fbDeleteUser(uid, name){
 
 // ── ROL BOSHQARISH ──
 // Asosiy (o'chirib bo'lmaydigan) rollar
-const _BUILTIN_ROLES = ['admin','manager','designer','viewer'];
+const _BUILTIN_ROLES = ['admin','manager','designer','viewer','pending'];
 
 function saveRoleDefs(){
   localStorage.setItem('exon_role_defs', JSON.stringify(ROLE_DEFS));

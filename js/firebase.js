@@ -196,10 +196,13 @@ async function fbRegisterUser(email, pass, displayName){
   await u.updateProfile({ displayName });
   // Endi authenticated — Firestore'dan birinchi foydalanuvchimi tekshirish
   const snap = await _db.collection('users').limit(1).get();
-  const role = snap.empty ? 'admin' : 'viewer';
+  const role = snap.empty ? 'admin' : 'pending';
+  const perms = snap.empty
+    ? { designers:true, projects:true, payments:true, reports:true, users:true, settings:true }
+    : { designers:false, projects:false, payments:false, reports:false, users:false, settings:false };
   await _db.collection('users').doc(u.uid).set({
     uid: u.uid, email, displayName, role,
-    permissions:{ designers:true, projects:true, payments:false, reports:true, users:false, settings:false },
+    permissions: perms,
     createdAt: new Date().toISOString(),
   });
   return u;
