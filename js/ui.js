@@ -58,6 +58,19 @@ function deadlineBadge(p){
   return `<span class="status s-draft">${days} kun qoldi</span>`;
 }
 
+function applyOverduePenalties(){
+  let changed=false;
+  projects.forEach(p=>{
+    if(p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0&&!p.penaltyApplied){
+      p.originalPricePerUnit=p.pricePerUnit;
+      p.pricePerUnit=Math.round(p.pricePerUnit*0.7);
+      p.penaltyApplied=true;
+      changed=true;
+    }
+  });
+  if(changed) persist();
+}
+
 function priorityBadge(pr){
   if(!pr) return '';
   const map={
@@ -140,6 +153,7 @@ function _visibleProjects(){
 }
 
 function renderDashboard(){
+  applyOverduePenalties();
   if(typeof isDesignerRole==='function' && isDesignerRole()) return _renderDesignerDashboard();
   const vd = _visibleDesigners();
   const vp = _visibleProjects();
@@ -173,7 +187,7 @@ function renderDashboard(){
           <span style="font-size:12.5px;font-weight:600;flex:1;min-width:160px">${esc(p.title)}</span>
           <span style="font-size:11.5px;color:var(--muted)">${esc(d?.name||'')}</span>
           ${days<0?`<span class="status s-away">${Math.abs(days)} kun o'tdi</span>`:days===0?`<span class="status s-away">Bugun!</span>`:`<span class="status s-idle">${days} kun qoldi</span>`}
-        </div>`;}).join('')}
+        </div>${p.penaltyApplied?`<div style="font-size:11px;color:var(--error);margin-bottom:6px;padding-left:4px">Kechiktirilgani uchun loyiha summasi 30% ga kamaydi: ${fmtPrice(p.originalPricePerUnit*p.units)} → ${fmtPrice(p.pricePerUnit*p.units)} so'm</div>`:''}`;}).join('')}
     </div>` : '';
   }
 
@@ -195,6 +209,7 @@ function renderDashboard(){
 
 // ═══════════════ DIZAYNER SHAXSIY DASHBOARD ═══════════════
 function _renderDesignerDashboard(){
+  applyOverduePenalties();
   const panel=document.getElementById('panel-dashboard');
   if(!panel) return;
   const d=typeof getMyDesigner==='function' ? getMyDesigner() : null;
@@ -232,7 +247,7 @@ function _renderDesignerDashboard(){
       ${overdue.map(p=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer" onclick="openProjectPeek(${p.id})">
         <span style="font-size:12.5px;font-weight:600;flex:1">${esc(p.title)}</span>
         <span class="status s-away">${Math.abs(deadlineDays(p.deadline))} kun o'tdi</span>
-      </div>`).join('')}
+      </div>${p.penaltyApplied?`<div style="font-size:11px;color:var(--error);margin-bottom:6px;padding-left:4px">Kechiktirilgani uchun loyiha summasi 30% ga kamaydi: ${fmtPrice(p.originalPricePerUnit*p.units)} → ${fmtPrice(p.pricePerUnit*p.units)} so'm</div>`:''}`).join('')}
     </div>`:''}
 
     <div class="des-chart-wrap">
@@ -296,7 +311,7 @@ function _renderKanban(wip,review,done){
             ${p.tgDelivered?'<span style="color:var(--accent2)">📎 yuborilgan</span>':''}
           </div>
           <div class="kanban-card-foot">
-            <span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>
+            ${p.penaltyApplied?`<span style="text-decoration:line-through;color:var(--muted);font-size:10px">${fmtPrice(p.originalPricePerUnit*p.units)}</span><span class="price-tag" style="color:var(--error)">${fmtPrice(p.pricePerUnit*p.units)} so'm</span>`:`<span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>`}
             ${footRight}
           </div>
         </div>`;
@@ -567,7 +582,7 @@ function projCardHtml(p,showDesigner){
       <span>·</span>
       <span>${p.units} birlik × ${p.pricePerUnit.toLocaleString()} so'm</span>
       <span>·</span>
-      <span class="report-price">Jami: ${fmtPrice(total)} so'm</span>
+      ${p.penaltyApplied?`<span style="text-decoration:line-through;color:var(--muted)">${fmtPrice(p.originalPricePerUnit*p.units)} so'm</span><span>·</span><span class="report-price" style="color:var(--error)">Jami: ${fmtPrice(total)} so'm (−30%)</span>`:`<span class="report-price">Jami: ${fmtPrice(total)} so'm</span>`}
     </div>
     ${p.tags&&p.tags.length?`<div class="report-files">${p.tags.map(t=>tagChipHtml(t)).join('')}</div>`:''}
     ${p.descHtml?`<div class="report-desc rich">${sanitizeHtml(p.descHtml)}</div>`:(p.description?`<div class="report-desc">${esc(p.description)}</div>`:'')}
@@ -1251,21 +1266,27 @@ let notifications = [];
 
 function buildNotifications(){
   const list=[];
-  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).forEach(p=>{
+  const _isDes=typeof isDesignerRole==='function'&&isDesignerRole();
+  const myId=_isDes&&typeof getMyDesignerId==='function'?getMyDesignerId():null;
+  const src=_isDes?projects.filter(p=>p.designerId===myId):projects;
+  src.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)<0).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
     list.push({id:'od-'+p.id,type:'overdue',projId:p.id,title:`Muddati o'tdi: ${p.title}`,sub:`${d?.name||''} · ${Math.abs(deadlineDays(p.deadline))} kun o'tgan`,read:false,time:p.deadline});
   });
-  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)===0).forEach(p=>{
+  src.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)===0).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
     list.push({id:'td-'+p.id,type:'today',projId:p.id,title:`Bugun muddat: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
-  projects.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)>0&&deadlineDays(p.deadline)<=3).forEach(p=>{
+  src.filter(p=>p.status!=='done'&&p.deadline&&deadlineDays(p.deadline)>0&&deadlineDays(p.deadline)<=3).forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
     list.push({id:'soon-'+p.id,type:'soon',projId:p.id,title:`${deadlineDays(p.deadline)} kun qoldi: ${p.title}`,sub:d?.name||'',read:false,time:p.deadline});
   });
-  projects.filter(p=>p.status==='review').forEach(p=>{
+  src.filter(p=>p.status==='review').forEach(p=>{
     const d=designers.find(x=>x.id===p.designerId);
     list.push({id:'rev-'+p.id,type:'review',projId:p.id,title:`Ko'rib chiqish kerak: ${p.title}`,sub:d?.name||'',read:false,time:p.date});
+  });
+  src.filter(p=>p.penaltyApplied===true&&p.status!=='done').forEach(p=>{
+    list.push({id:'pen-'+p.id,type:'penalty',projId:p.id,title:`Jarima: ${p.title}`,sub:`Kechiktirilgani uchun ${fmtPrice(p.originalPricePerUnit*p.units)} → ${fmtPrice(p.pricePerUnit*p.units)} so'm (−30%)`,read:false,time:p.deadline});
   });
   const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
   list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
@@ -1280,7 +1301,7 @@ function renderNotifPanel(){
   const el=document.getElementById('notif-list');
   if(!el) return;
   if(!notifications.length){ el.innerHTML='<div class="notif-item" style="color:var(--muted2);font-size:12.5px">Bildirishnomalar yo\'q</div>'; return; }
-  const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)'};
+  const dotColor={overdue:'var(--error)',today:'var(--error)',soon:'var(--warning)',review:'var(--accent2)',penalty:'var(--error)'};
   el.innerHTML=notifications.map(n=>`
     <div class="notif-item${n.read?'':' unread'}" style="cursor:pointer" onclick="notifClick('${n.id}')">
       <div class="notif-item-title"><span class="notif-dot" style="background:${dotColor[n.type]||'var(--muted)'}"></span>${esc(n.title)}</div>
