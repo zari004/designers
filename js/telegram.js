@@ -199,20 +199,19 @@ async function tgSendSingle(channelId, file, caption, asPhoto, threadId){
 // Bir bo'lim fayllarini guruhlab yuborish: rasmlar albom, qolganlari hujjat.
 // forceDoc=true bo'lsa hammasi hujjat (original sifat) sifatida ketadi.
 async function tgSendSectionFiles(channelId, files, label, forceDoc, threadId){
+  if(label) { await tgSendMessage(channelId, label, threadId); await _tgDelay(300); }
+
   const PHOTO_MAX = 10 * 1024 * 1024;
   const photos = forceDoc ? [] : files.filter(f => f.type.startsWith('image/') && f.size <= PHOTO_MAX);
   const docs   = forceDoc ? files.slice() : files.filter(f => !(f.type.startsWith('image/') && f.size <= PHOTO_MAX));
-  let labelUsed = false;
 
   const sendChunks = async (arr, asPhoto) => {
     for(let i=0; i<arr.length; i+=10){
       const chunk = arr.slice(i, i+10);
-      const cap = labelUsed ? undefined : label;
-      labelUsed = true;
       if(chunk.length === 1){
-        await tgSendSingle(channelId, chunk[0], cap, asPhoto, threadId);
+        await tgSendSingle(channelId, chunk[0], undefined, asPhoto, threadId);
       } else {
-        await tgSendMediaGroup(channelId, chunk, cap, asPhoto, threadId);
+        await tgSendMediaGroup(channelId, chunk, undefined, asPhoto, threadId);
       }
       await _tgDelay(400);
     }
