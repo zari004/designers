@@ -72,24 +72,37 @@ function setupAuthListener(onLogin, onLogout){
   if(!auth){ onLogout(); return; }
   auth.onAuthStateChanged(fbUser => {
     if(fbUser){
-      // Firestore KUTILMAYDI — darhol Auth ma'lumotlaridan profil yaratib ilovani ochish.
-      // Firestore profili fonda yuklanadi.
-      const quickProfile = {
+      const cached = _getCachedProfile(fbUser.uid);
+      const quickProfile = cached || {
         uid: fbUser.uid, email: fbUser.email,
         displayName: fbUser.displayName || fbUser.email?.split('@')[0] || '?',
-        role: 'admin',
-        permissions: ROLE_DEFS['admin']?.perms || {designers:true,projects:true,payments:true,reports:true,users:true,settings:true},
+        role: 'viewer',
+        permissions: ROLE_DEFS['viewer']?.perms || {designers:false,projects:true,payments:false,reports:false,users:false,settings:false},
         createdAt: new Date().toISOString(),
       };
       _currentUser = quickProfile;
       onLogin(quickProfile);
-      // Fonda: Firestore profili bor bo'lsa — uni yuklash va yangilash
       _loadFirestoreProfile(fbUser.uid);
     } else {
       _currentUser = null;
       onLogout();
     }
   });
+}
+
+function _getCachedProfile(uid){
+  try {
+    const raw = localStorage.getItem('exon_user_profile_' + uid);
+    if(!raw) return null;
+    const p = JSON.parse(raw);
+    if(p && p.uid === uid && p.role) return p;
+  } catch {}
+  return null;
+}
+
+function _cacheProfile(profile){
+  if(!profile || !profile.uid) return;
+  try { localStorage.setItem('exon_user_profile_' + profile.uid, JSON.stringify(profile)); } catch {}
 }
 
 // Firestore profilini fonda yuklash (ilova allaqachon ochilgan)
@@ -103,6 +116,7 @@ async function _loadFirestoreProfile(uid){
     if(snap.exists){
       const profile = snap.data();
       _currentUser = profile;
+      _cacheProfile(profile);
       if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
       if(typeof rerenderActive==='function') rerenderActive();
     }
