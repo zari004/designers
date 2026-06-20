@@ -104,6 +104,7 @@ async function _loadFirestoreProfile(uid){
       const profile = snap.data();
       _currentUser = profile;
       if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
+      if(typeof rerenderActive==='function') rerenderActive();
     }
   } catch(e) { console.warn('Firestore profil:', e); }
   // Admin foydalanuvchilar ro'yxati
