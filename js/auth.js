@@ -72,12 +72,11 @@ function setupAuthListener(onLogin, onLogout){
   if(!auth){ onLogout(); return; }
   auth.onAuthStateChanged(fbUser => {
     if(fbUser){
-      const cached = _getCachedProfile(fbUser.uid);
-      const quickProfile = cached || {
+      const quickProfile = {
         uid: fbUser.uid, email: fbUser.email,
         displayName: fbUser.displayName || fbUser.email?.split('@')[0] || '?',
-        role: 'viewer',
-        permissions: ROLE_DEFS['viewer']?.perms || {designers:false,projects:true,payments:false,reports:false,users:false,settings:false},
+        role: '_loading',
+        permissions: {},
         createdAt: new Date().toISOString(),
       };
       _currentUser = quickProfile;
@@ -90,22 +89,7 @@ function setupAuthListener(onLogin, onLogout){
   });
 }
 
-function _getCachedProfile(uid){
-  try {
-    const raw = localStorage.getItem('exon_user_profile_' + uid);
-    if(!raw) return null;
-    const p = JSON.parse(raw);
-    if(p && p.uid === uid && p.role) return p;
-  } catch {}
-  return null;
-}
-
-function _cacheProfile(profile){
-  if(!profile || !profile.uid) return;
-  try { localStorage.setItem('exon_user_profile_' + profile.uid, JSON.stringify(profile)); } catch {}
-}
-
-// Firestore profilini fonda yuklash (ilova allaqachon ochilgan)
+// Firestore profilini yuklash — yuklanguncha skeleton ko'rinadi
 async function _loadFirestoreProfile(uid){
   try {
     if(!isFbReady()) return;
@@ -116,7 +100,6 @@ async function _loadFirestoreProfile(uid){
     if(snap.exists){
       const profile = snap.data();
       _currentUser = profile;
-      _cacheProfile(profile);
       if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
       if(typeof rerenderActive==='function') rerenderActive();
     }

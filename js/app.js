@@ -154,8 +154,9 @@ document.addEventListener('click',e=>{
 
 // ── HUQUQLAR ──
 function applyNavPermissions(user){
+  if(user.role==='_loading') return; // skeleton ko'rinishda nav yashirin
   const isDes = user.role==='designer';
-  if(typeof aiSetForRole==='function') aiSetForRole(isDes); // dizaynerga AI yordamchi ko'rinmasin
+  if(typeof aiSetForRole==='function') aiSetForRole(isDes);
   const map={
     'nav-designers':'designers',
     'nav-projects':'projects',
