@@ -267,30 +267,8 @@ function _renderDesignerDashboard(){
 }
 
 function _renderSkeletonDashboard(){
-  const panel=document.getElementById('panel-dashboard');
-  if(!panel) return;
-  const sk=(w,h,r)=>`<div class="skel" style="width:${w};height:${h}px;border-radius:${r||8}px"></div>`;
-  panel.innerHTML=`
-    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
-      ${sk('56px',56,28)}
-      <div style="flex:1">${sk('180px',18)}${sk('120px',13)}</div>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-card">${sk('50px',28)}${sk('90px',12)}</div>
-      <div class="stat-card">${sk('50px',28)}${sk('90px',12)}</div>
-      <div class="stat-card">${sk('80px',28)}${sk('90px',12)}</div>
-    </div>
-    <div class="card" style="margin-top:20px;padding:18px">
-      ${sk('140px',14)}
-      <div style="margin-top:14px">${sk('100%',10)}${sk('100%',10)}${sk('100%',10)}${sk('60%',10)}</div>
-    </div>
-    <div class="card" style="margin-top:14px;padding:18px">
-      ${sk('120px',14)}
-      <div style="margin-top:12px">
-        ${[1,2,3].map(()=>`<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">${sk('32px',32,16)}<div style="flex:1">${sk('60%',13)}${sk('40%',10)}</div>${sk('60px',20,10)}</div>`).join('')}
-      </div>
-    </div>
-  `;
+  // Bo'sh — skeleton ataylab olib tashlangan.
+  // Dashboard'ning statik HTML'ini buzmaslik uchun hech narsa chizilmaydi.
 }
 
 function _desMonthlyChart(projs){

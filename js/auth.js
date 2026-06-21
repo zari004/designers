@@ -150,9 +150,7 @@ async function _loadFirestoreProfile(uid){
   }
 
   // Haqiqiy rol — endi to'g'ri panel chiziladi, keyin overlay olib tashlanadi
-  if(typeof applyNavPermissions==='function') applyNavPermissions(profile);
-  _updateSidebarUser(profile);
-  if(typeof rerenderActive==='function') rerenderActive();
+  if(typeof _revealApp==='function') _revealApp(profile);
   _dismissAppLoading();
 
   // Admin foydalanuvchilar ro'yxati (rol kutayotganlar bildirishnomasi uchun ham)

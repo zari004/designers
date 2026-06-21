@@ -294,6 +294,24 @@ function initApp(user){
   document.getElementById('login-screen').style.display = 'none';
   const fbSetup = document.getElementById('fb-setup-screen');
   if(fbSetup) fbSetup.style.display = 'none';
+
+  if(user.role==='_loading'){
+    // MUHIM: Yuklanish paytida sidebar/main/topbar YASHIRIN qoladi.
+    // Faqat oq overlay ko'rinadi. UI profil yuklangandan keyin _revealApp() orqali ochiladi.
+    // Firebase xizmatlari esa ishga tushadi (ma'lumot fondan yuklanadi).
+    try{ if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync(); }catch(e){ console.error('realtime:', e); }
+    try{ if(typeof fbLoad === 'function') fbLoad(); }catch(e){ console.error('fbLoad:', e); }
+    try{ if(typeof syncSettingsFromFirestore === 'function') syncSettingsFromFirestore(); }catch(e){ console.error('settings:', e); }
+    window.dispatchEvent(new Event('exon-ready'));
+    return;
+  }
+
+  // Haqiqiy rol bilan — to'liq UI ochiladi
+  _revealApp(user);
+}
+
+function _revealApp(user){
+  document.getElementById('login-screen').style.display = 'none';
   document.getElementById('sidebar').style.visibility='';
   document.querySelector('.main').style.visibility='';
   document.querySelector('.topbar').style.visibility='';
@@ -303,18 +321,11 @@ function initApp(user){
   const sbu=document.getElementById('sidebar-username');
   const sba=document.getElementById('sidebar-avatar');
   const sFooter=document.querySelector('.sidebar-footer');
-  if(user.role==='_loading'){
-    if(sFooter) sFooter.style.opacity='0';
-    if(sbu) sbu.textContent='';
-    if(sba) sba.textContent='';
-  } else {
-    if(sFooter) sFooter.style.opacity='';
-    const name=user.displayName||user.username||user.email||'?';
-    if(sbu) sbu.textContent=name;
-    if(sba) sba.textContent=name.slice(0,2).toUpperCase();
-  }
+  if(sFooter) sFooter.style.opacity='';
+  const name=user.displayName||user.username||user.email||'?';
+  if(sbu) sbu.textContent=name;
+  if(sba) sba.textContent=name.slice(0,2).toUpperCase();
 
-  // UI render qismi — xato bo'lsa ham Firebase yuklash to'xtamasin
   try{
     applyNavPermissions(user);
     if(typeof updateNavVisibility === 'function') updateNavVisibility();
@@ -326,12 +337,11 @@ function initApp(user){
     _showFatal('UI: '+e.message);
   }
 
-  // Firebase real-vaqt sinxronizatsiya — UI xatosidan mustaqil ishga tushadi
+  // Firebase xizmatlari (agar hali ishga tushmagan bo'lsa)
   try{ if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync(); }catch(e){ console.error('realtime:', e); }
   try{ if(typeof fbLoad === 'function') fbLoad(); }catch(e){ console.error('fbLoad:', e); _showFatal('fbLoad: '+e.message); }
   try{ if(typeof syncSettingsFromFirestore === 'function') syncSettingsFromFirestore(); }catch(e){ console.error('settings:', e); }
 
-  // PWA shortcut uchun signal
   window.dispatchEvent(new Event('exon-ready'));
 }
 
