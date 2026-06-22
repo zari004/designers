@@ -472,46 +472,51 @@
     <div class="stg-layout">
       <!-- ── SIDEBAR ── -->
       <div class="stg-sidebar">
-        <div class="stg-sidebar-title">Asosiy</div>
-        <button class="stg-nav-item active" onclick="stgTab('general')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Umumiy
+        <div class="stg-sidebar-title">Shaxsiy</div>
+        <button class="stg-nav-item" onclick="stgTab('profile')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mening profilim
         </button>
         <button class="stg-nav-item" onclick="stgTab('security')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           Xavfsizlik
         </button>
-        <button class="stg-nav-item" onclick="stgTab('roles')">
+        <div class="stg-sidebar-title" data-stg-admin="1" style="margin-top:8px">Tizim</div>
+        <button class="stg-nav-item active" data-stg-admin="1" onclick="stgTab('general')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Umumiy
+        </button>
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('roles')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           Rollar
         </button>
-        <button class="stg-nav-item" onclick="stgTab('categories')">
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('categories')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           Kategoriyalar
         </button>
 
-        <div class="stg-sidebar-title" style="margin-top:8px">Integratsiyalar</div>
-        <button class="stg-nav-item" onclick="stgTab('ai')">
+        <div class="stg-sidebar-title" data-stg-admin="1" style="margin-top:8px">Integratsiyalar</div>
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('ai')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 18l-6.2 3 1.2-6.8L2 9.3l6.9-1z"/></svg>
           AI Yordamchi
           <span class="stg-nav-badge" id="stg-ai-badge">—</span>
         </button>
-        <button class="stg-nav-item" onclick="stgTab('firebase')">
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('firebase')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
           Firebase
           <span class="stg-nav-badge" id="stg-fb-badge">—</span>
         </button>
-        <button class="stg-nav-item" onclick="stgTab('sheets')">
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('sheets')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
           Google Sheets
           <span class="stg-nav-badge" id="stg-gs-badge">—</span>
         </button>
-        <button class="stg-nav-item" onclick="stgTab('notion')">
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('notion')">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="2" y="1.5" width="12" height="13" rx="1.5"/><path d="M5.5 11V5l5 6V5"/></svg>
           Notion
           <span class="stg-nav-badge" id="stg-nt-badge">—</span>
         </button>
-        <button class="stg-nav-item" onclick="stgTab('telegram')">
+        <button class="stg-nav-item" data-stg-admin="1" onclick="stgTab('telegram')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
           Telegram
           <span class="stg-nav-badge" id="stg-tg-badge">—</span>
@@ -521,8 +526,15 @@
       <!-- ── CONTENT ── -->
       <div class="stg-content">
 
+        <!-- MENING PROFILIM -->
+        <div class="stg-section" id="stg-profile">
+          <div class="stg-content-title">Mening profilim</div>
+          <div class="stg-content-sub">Shaxsiy ma'lumotlaringizni shu yerdan yangilang</div>
+          <div id="profile-form"></div>
+        </div>
+
         <!-- UMUMIY -->
-        <div class="stg-section active" id="stg-general">
+        <div class="stg-section active" data-stg-admin="1" id="stg-general">
           <div class="stg-content-title">Umumiy sozlamalar</div>
           <div class="stg-content-sub">Mavzu va interfeys sozlamalari</div>
           <div class="form-group">
@@ -550,7 +562,7 @@
         </div>
 
         <!-- ROLLAR -->
-        <div class="stg-section" id="stg-roles">
+        <div class="stg-section" data-stg-admin="1" id="stg-roles">
           <div class="stg-content-title">Rollar va Ruxsatlar</div>
           <div class="stg-content-sub">Har bir rol uchun qaysi bo'limlarni ko'ra olishini belgilang</div>
           <div class="settings-note" style="margin-bottom:12px">
@@ -560,14 +572,14 @@
         </div>
 
         <!-- KATEGORIYALAR -->
-        <div class="stg-section" id="stg-categories">
+        <div class="stg-section" data-stg-admin="1" id="stg-categories">
           <div class="stg-content-title">Kategoriyalar</div>
           <div class="stg-content-sub">Dizayner toifalari va narx diapazonlari</div>
           <div id="cat-price-editor"></div>
         </div>
 
         <!-- AI YORDAMCHI -->
-        <div class="stg-section" id="stg-ai">
+        <div class="stg-section" data-stg-admin="1" id="stg-ai">
           <div class="stg-content-title">AI Yordamchi</div>
           <div class="stg-content-sub">Groq LLaMA — bepul va tez AI yordamchi</div>
           <span id="ai-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
@@ -600,7 +612,7 @@
         </div>
 
         <!-- FIREBASE -->
-        <div class="stg-section" id="stg-firebase">
+        <div class="stg-section" data-stg-admin="1" id="stg-firebase">
           <div class="stg-content-title">Firebase ulanishi</div>
           <div class="stg-content-sub">Real-vaqtli sinxronizatsiya va ma'lumotlar bazasi</div>
           <span id="fb-status-badge" class="badge conn-badge">Ulangan</span>
@@ -619,7 +631,7 @@
         </div>
 
         <!-- GOOGLE SHEETS -->
-        <div class="stg-section" id="stg-sheets">
+        <div class="stg-section" data-stg-admin="1" id="stg-sheets">
           <div class="stg-content-title">Google Sheets</div>
           <div class="stg-content-sub">To'lovlar hisobotini eksport qilish</div>
           <span id="gs-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
@@ -645,7 +657,7 @@
         </div>
 
         <!-- NOTION -->
-        <div class="stg-section" id="stg-notion">
+        <div class="stg-section" data-stg-admin="1" id="stg-notion">
           <div class="stg-content-title">Notion ulanish</div>
           <div class="stg-content-sub">Loyihalarni Notionga chop etish</div>
           <span id="nt-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
@@ -675,7 +687,7 @@
         </div>
 
         <!-- TELEGRAM -->
-        <div class="stg-section" id="stg-telegram">
+        <div class="stg-section" data-stg-admin="1" id="stg-telegram">
           <div class="stg-content-title">Telegram integratsiya</div>
           <div class="stg-content-sub">Tayyor ishlarni dizayner guruhiga avtomatik yuborish</div>
           <span id="tg-status-badge" class="badge conn-badge" style="display:none">Ulanmagan</span>
@@ -781,14 +793,14 @@
 <script src="js/firebase.js?v=111"></script>
 <script src="js/data.js?v=76"></script>
 <script src="js/auth.js?v=112"></script>
-<script src="js/ui.js?v=113"></script>
+<script src="js/ui.js?v=114"></script>
 <script src="js/datepicker.js?v=76"></script>
 <script src="js/editor.js?v=98"></script>
 <script src="js/notion.js?v=76"></script>
 <script src="js/sheets.js?v=76"></script>
 <script src="js/telegram.js?v=105"></script>
 <script src="js/ai.js?v=104"></script>
-<script src="js/app.js?v=112"></script>
+<script src="js/app.js?v=114"></script>
 <script>
 // ── PWA: Service Worker ro'yxatdan o'tkazish ──
 // Yangi SW faollashganda — sahifa BIR MARTA qayta yuklanadi (cheksiz aylanma yo'q).

@@ -1150,7 +1150,24 @@ function _stgUpdateBadges(){
   }
 }
 
+// Rolga qarab sozlamalar tablarini ko'rsatish/yashirish.
+// Dizayner/viewer faqat "Mening profilim" va "Xavfsizlik" tablarini ko'radi.
+function applySettingsRoleView(){
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  document.querySelectorAll('[data-stg-admin]').forEach(el=>{
+    el.style.display = isDes ? 'none' : '';
+  });
+  if(isDes){
+    const activeSec = document.querySelector('.stg-section.active');
+    if(!activeSec || activeSec.hasAttribute('data-stg-admin')){
+      stgTab('profile');
+    }
+  }
+}
+
 function renderSettingsPage(){
+  applySettingsRoleView();
+  renderProfileTab();
   const _sBackLabels={dashboard:'← Asosiy sahifa',designers:'← Dizaynerlar',projects:'← Loyihalar',payments:"← To'lovlar",reports:'← Hisobotlar',users:'← Foydalanuvchilar'};
   const sBackBtn=document.getElementById('settings-back-btn');
   if(sBackBtn){
@@ -1199,6 +1216,95 @@ function renderSettingsPage(){
   renderCatManager();
   if(cur?.role === 'admin' && typeof renderRoleManager === 'function') renderRoleManager();
   if(typeof loadAiSettings==='function') loadAiSettings();
+}
+
+// ── MENING PROFILIM (shaxsiy kabinet) ──
+let profilePhoto = {};
+
+function renderProfileTab(){
+  const el=document.getElementById('profile-form');
+  if(!el) return;
+  const u=(typeof getCurrentUser==='function'?getCurrentUser():null)||{};
+  const d=(typeof getMyDesigner==='function')?getMyDesigner():null;
+  const photo=(d&&d.photo)||u.photo||null;
+  profilePhoto.temp=photo||null;
+  const name =(d&&d.name)      ||u.displayName||'';
+  const role =(d&&d.role)      ||u.title||'';
+  const phone=(d&&d.phone)     ||u.phone||'';
+  const card =(d&&d.cardNumber)||u.cardNumber||'';
+  const tg   =(d&&d.telegram)  ||u.telegram||'';
+  const catInfo = (d && CAT_INFO[d.category]) ? `<div class="form-hint" style="margin-top:6px">Toifa: <strong>${esc(CAT_INFO[d.category].label||d.category)}</strong> — toifani administrator belgilaydi</div>` : '';
+  const linkNote = d ? '' : `<div class="settings-note" style="margin-bottom:14px">Hisobingiz hali dizayner kartochkasiga bog'lanmagan. O'zgarishlar profilingizga saqlanadi va administrator sizni bog'lagach avtomatik ko'rinadi.</div>`;
+  el.innerHTML = linkNote + `
+    <div style="display:flex;gap:16px;margin-bottom:16px;align-items:flex-start">
+      <div>
+        <div class="photo-upload" id="pf-photo-prev" onclick="document.getElementById('pf-photo-file').click()">
+          ${photo?`<img src="${photo}"/>`:'<span class="photo-upload-label">Rasm yuklash</span>'}
+        </div>
+        <input type="file" id="pf-photo-file" accept="image/*" onchange="handleProfilePhoto(event)" style="display:none"/>
+      </div>
+      <div style="flex:1">
+        <div class="form-group"><label class="form-label">Ism Familiya</label><input class="form-input" id="pf-name" value="${esc(name)}" placeholder="Aziz Karimov"/></div>
+        <div class="form-group"><label class="form-label">Rol / Mutaxassislik</label><input class="form-input" id="pf-role" value="${esc(role)}" placeholder="UI/UX Designer"/></div>
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Telefon raqami</label><input class="form-input" id="pf-phone" type="tel" value="${esc(phone)}" placeholder="+998 90 123 45 67"/></div>
+      <div class="form-group"><label class="form-label">Karta raqami</label><input class="form-input" id="pf-card" inputmode="numeric" value="${esc(card)}" placeholder="8600 1234 5678 9012" maxlength="19" oninput="formatCard(this)"/></div>
+    </div>
+    <div class="form-group"><label class="form-label">Telegram (nickname)</label><input class="form-input" id="pf-tg" value="${esc(tg)}" placeholder="@username"/></div>
+    ${catInfo}
+    <div style="margin-top:14px"><button class="btn btn-primary btn-sm" onclick="saveMyProfile()">Saqlash</button></div>`;
+}
+
+function handleProfilePhoto(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    profilePhoto.temp=ev.target.result;
+    const p=document.getElementById('pf-photo-prev');
+    if(p) p.innerHTML=`<img src="${ev.target.result}"/>`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function saveMyProfile(){
+  const nameEl=document.getElementById('pf-name');
+  if(!nameEl){ return; }
+  const name=nameEl.value.trim();
+  if(!name){ toast("Ism Familiya kiritilmagan!"); return; }
+  const role =document.getElementById('pf-role').value.trim();
+  const phone=document.getElementById('pf-phone').value.trim();
+  const card =document.getElementById('pf-card').value.trim();
+  const tg   =document.getElementById('pf-tg').value.trim();
+  const photo=profilePhoto.temp||null;
+  const u=typeof getCurrentUser==='function'?getCurrentUser():null;
+
+  // 1) Bog'langan dizayner kartochkasini yangilash → dizaynerlar bo'limida ham o'zgaradi
+  const did=typeof getMyDesignerId==='function'?getMyDesignerId():null;
+  if(did){
+    designers=designers.map(d=>d.id===did?{...d,name,role,phone,cardNumber:card,telegram:tg,photo}:d);
+    persist();
+    if(typeof rerenderActive==='function') rerenderActive();
+  }
+
+  // 2) Foydalanuvchi profil hujjati (Firestore "users") — bog'lanmagan bo'lsa ham saqlanadi
+  if(u){
+    u.displayName=name; u.photo=photo; u.phone=phone; u.cardNumber=card; u.telegram=tg; u.title=role;
+    if(typeof saveFbUserProfile==='function' && u.uid){
+      saveFbUserProfile(u.uid,{displayName:name,photo,phone,cardNumber:card,telegram:tg,title:role})
+        .catch(e=>console.warn('Profil saqlash:',e));
+    }
+    try{
+      const fu=typeof getFbAuth==='function'?getFbAuth()?.currentUser:null;
+      if(fu) fu.updateProfile({displayName:name});
+    }catch(e){ console.warn('Auth displayName:',e); }
+  }
+
+  // 3) Yon paneldagi ism/avatarni yangilash
+  if(typeof _updateSidebarUser==='function' && u) _updateSidebarUser(u);
+  toast("Profil saqlandi");
 }
 
 // ── KATEGORIYA BOSHQARUVI ──
