@@ -77,7 +77,13 @@ function _updateSidebarUser(user){
   if(sFooter) sFooter.style.opacity='';
   const name=user.displayName||user.username||user.email||'?';
   if(sbu) sbu.textContent=name;
-  if(sba) sba.textContent=name.slice(0,2).toUpperCase();
+  if(sba){
+    // Profil rasmi yoki bog'langan dizayner rasmi bo'lsa — ko'rsatamiz, aks holda bosh harflar
+    let photo = user.photo || null;
+    if(!photo && typeof getMyDesigner==='function'){ const d=getMyDesigner(); if(d&&d.photo) photo=d.photo; }
+    if(photo){ sba.innerHTML=`<img src="${photo}" alt=""/>`; }
+    else { sba.innerHTML=''; sba.textContent=name.slice(0,2).toUpperCase(); }
+  }
 }
 
 // Firestore so'roviga timeout qo'yish

@@ -323,13 +323,7 @@ function _revealApp(user){
   document.getElementById('sync-bar').style.visibility='';
   const bn=document.getElementById('bottom-nav'); if(bn) bn.style.visibility='';
 
-  const sbu=document.getElementById('sidebar-username');
-  const sba=document.getElementById('sidebar-avatar');
-  const sFooter=document.querySelector('.sidebar-footer');
-  if(sFooter) sFooter.style.opacity='';
-  const name=user.displayName||user.username||user.email||'?';
-  if(sbu) sbu.textContent=name;
-  if(sba) sba.textContent=name.slice(0,2).toUpperCase();
+  if(typeof _updateSidebarUser==='function') _updateSidebarUser(user);
 
   try{
     applyNavPermissions(user);
@@ -385,7 +379,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v116';
+const APP_VER = 'v117';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){

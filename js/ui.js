@@ -1237,11 +1237,12 @@ function renderProfileTab(){
   const linkNote = d ? '' : `<div class="settings-note" style="margin-bottom:14px">Hisobingiz hali dizayner kartochkasiga bog'lanmagan. O'zgarishlar profilingizga saqlanadi va administrator sizni bog'lagach avtomatik ko'rinadi.</div>`;
   el.innerHTML = linkNote + `
     <div style="display:flex;gap:16px;margin-bottom:16px;align-items:flex-start">
-      <div>
+      <div style="width:96px">
         <div class="photo-upload" id="pf-photo-prev" onclick="document.getElementById('pf-photo-file').click()">
           ${photo?`<img src="${photo}"/>`:'<span class="photo-upload-label">Rasm yuklash</span>'}
         </div>
         <input type="file" id="pf-photo-file" accept="image/*" onchange="handleProfilePhoto(event)" style="display:none"/>
+        <button type="button" id="pf-photo-del" class="btn btn-ghost btn-xs" style="margin-top:8px;width:100%;${photo?'':'display:none'}" onclick="deleteMyProfilePhoto()">Rasmni o'chirish</button>
       </div>
       <div style="flex:1">
         <div class="form-group"><label class="form-label">Ism Familiya</label><input class="form-input" id="pf-name" value="${esc(name)}" placeholder="Aziz Karimov"/></div>
@@ -1265,8 +1266,22 @@ function handleProfilePhoto(e){
     profilePhoto.temp=ev.target.result;
     const p=document.getElementById('pf-photo-prev');
     if(p) p.innerHTML=`<img src="${ev.target.result}"/>`;
+    const del=document.getElementById('pf-photo-del');
+    if(del) del.style.display='';
   };
   reader.readAsDataURL(file);
+}
+
+// Profil rasmini o'chirish — darhol saqlaydi, shu sababli hamma joydan yo'qoladi
+function deleteMyProfilePhoto(){
+  profilePhoto.temp=null;
+  const p=document.getElementById('pf-photo-prev');
+  if(p) p.innerHTML='<span class="photo-upload-label">Rasm yuklash</span>';
+  const del=document.getElementById('pf-photo-del');
+  if(del) del.style.display='none';
+  const fileInp=document.getElementById('pf-photo-file');
+  if(fileInp) fileInp.value='';
+  saveMyProfile();
 }
 
 function saveMyProfile(){
@@ -1281,12 +1296,12 @@ function saveMyProfile(){
   const photo=profilePhoto.temp||null;
   const u=typeof getCurrentUser==='function'?getCurrentUser():null;
 
-  // 1) Bog'langan dizayner kartochkasini yangilash → dizaynerlar bo'limida ham o'zgaradi
+  // 1) Bog'langan dizayner kartochkasini yangilash → dizaynerlar bo'limi va
+  //    shaxsiy dashboard'dagi rasm/ma'lumot ham shu yerdan o'zgaradi
   const did=typeof getMyDesignerId==='function'?getMyDesignerId():null;
   if(did){
     designers=designers.map(d=>d.id===did?{...d,name,role,phone,cardNumber:card,telegram:tg,photo}:d);
     persist();
-    if(typeof rerenderActive==='function') rerenderActive();
   }
 
   // 2) Foydalanuvchi profil hujjati (Firestore "users") — bog'lanmagan bo'lsa ham saqlanadi
@@ -1302,8 +1317,10 @@ function saveMyProfile(){
     }catch(e){ console.warn('Auth displayName:',e); }
   }
 
-  // 3) Yon paneldagi ism/avatarni yangilash
+  // 3) Dashboard (hero avatar) va yon paneldagi ism/avatarni darhol yangilash
+  if(typeof renderDashboard==='function') renderDashboard();
   if(typeof _updateSidebarUser==='function' && u) _updateSidebarUser(u);
+  if(typeof updateCounts==='function') updateCounts();
   toast("Profil saqlandi");
 }
 
