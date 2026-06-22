@@ -108,11 +108,8 @@ function updateNavVisibility(){
 }
 
 function showPanel(name){
-  const freePanels = ['dashboard','detail','trash'];
-  // Sozlamalar — dizayner/viewer uchun shaxsiy kabinet sifatida ochiq
-  const _isDesNow = typeof isDesignerRole==='function' && isDesignerRole();
-  const allowed = freePanels.includes(name) || (name==='settings' && _isDesNow);
-  if(!allowed && typeof hasPermission === 'function' && typeof getCurrentUser === 'function' && getCurrentUser() && !hasPermission(name)){
+  const freePanels = ['dashboard','detail','trash','settings'];
+  if(!freePanels.includes(name) && typeof hasPermission === 'function' && typeof getCurrentUser === 'function' && getCurrentUser() && !hasPermission(name)){
     toast(`"${name}" bo'limiga kirish ruxsati yo'q`);
     return;
   }
@@ -181,8 +178,8 @@ function applyNavPermissions(user){
   Object.entries(map).forEach(([elId,perm])=>{
     const el=document.getElementById(elId);
     if(!el) return;
-    // Dizayner/viewer uchun "Sozlamalar" — shaxsiy kabinet sifatida ochiq qoladi
-    if(isDes && perm==='settings'){ el.style.display=''; return; }
+    // Sozlamalar — barcha foydalanuvchilarga ochiq (ichida profil + xavfsizlik bor)
+    if(perm==='settings'){ el.style.display=''; return; }
     if(isDes && (perm==='designers'||perm==='trash'||perm==='users'||perm==='reports')){
       el.style.display='none'; return;
     }
@@ -198,7 +195,7 @@ function applyNavPermissions(user){
   Object.entries(bmap).forEach(([elId,perm])=>{
     const el=document.getElementById(elId);
     if(!el) return;
-    if(isDes && perm==='settings'){ el.style.display=''; return; }
+    if(perm==='settings'){ el.style.display=''; return; }
     if(isDes && perm==='designers'){ el.style.display='none'; return; }
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
@@ -385,7 +382,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v114';
+const APP_VER = 'v115';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){
