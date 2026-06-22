@@ -100,10 +100,14 @@ function goBackFromSettings(){
 function updateNavVisibility(){
   const u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
   const perms = u?.permissions || {};
+  const isAdmin = u?.role === 'admin';
   const permMap = {designers:'nav-designers', projects:'nav-projects', payments:'nav-payments', reports:'nav-reports', users:'nav-users', settings:'nav-settings'};
   for(const [pKey, navId] of Object.entries(permMap)){
     const nav = document.getElementById(navId);
-    if(nav) nav.style.display = (perms[pKey] || pKey === 'dashboard') ? '' : 'none';
+    if(!nav) continue;
+    // Sozlamalar — barcha foydalanuvchilarga ochiq (shaxsiy kabinet)
+    if(pKey === 'settings'){ nav.style.display = ''; continue; }
+    nav.style.display = (isAdmin || perms[pKey]) ? '' : 'none';
   }
 }
 
@@ -329,7 +333,6 @@ function _revealApp(user){
 
   try{
     applyNavPermissions(user);
-    if(typeof updateNavVisibility === 'function') updateNavVisibility();
     updateCounts();
     renderDashboard();
     renderNotifPanel();
@@ -382,7 +385,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v115';
+const APP_VER = 'v116';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){
