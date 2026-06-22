@@ -164,7 +164,7 @@ function applyNavPermissions(user){
     return;
   }
 
-  const isDes = user.role==='designer';
+  const isDes = user.role==='designer' || user.role==='viewer';
   if(typeof aiSetForRole==='function') aiSetForRole(isDes);
   const map={
     'nav-designers':'designers',
@@ -381,7 +381,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v111';
+const APP_VER = 'v112';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){

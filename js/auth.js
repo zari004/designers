@@ -39,8 +39,12 @@ function hasPermission(key){
   return !!(u.permissions && u.permissions[key]);
 }
 
+// Cheklangan "o'z ko'rinishi" rollari: designer VA viewer.
+// Ikkalasi ham faqat o'ziga bog'langan ma'lumotni ko'radi —
+// Dizaynerlar bo'limi, AI yordamchi, qo'shish/tahrirlash tugmalari yashirin.
 function isDesignerRole(){
-  return _currentUser?.role === 'designer';
+  const r = _currentUser?.role;
+  return r === 'designer' || r === 'viewer';
 }
 
 function getMyDesignerId(){
@@ -307,7 +311,7 @@ async function renderFbUsersAdmin(){
       <div style="font-size:13px;color:#664d03;font-weight:600">${pendingUsers.length} ta foydalanuvchi rol kutmoqda — iltimos, rol belgilang</div>
     </div>` : '';
     el.innerHTML = warnHtml + _fbUsersCache.map(u => {
-      const isDesigner = u.role === 'designer';
+      const isDesigner = u.role === 'designer' || u.role === 'viewer';
       return `<div class="user-row" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);flex-wrap:wrap">
         <div class="user-avatar" style="font-size:12px;width:34px;height:34px;flex-shrink:0">${(u.displayName||u.email).slice(0,2).toUpperCase()}</div>
         <div style="flex:1;min-width:120px">
