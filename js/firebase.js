@@ -128,7 +128,7 @@ async function fbLoad(){
     if(renderErr){
       setSyncStatus('err', "Chizishda xato: " + renderErr);
     } else {
-      setSyncStatus('ok', "Yuklandi: " + dLen + " dizayner · " + pLen + " loyiha · " + new Date().toLocaleTimeString('uz'));
+      setSyncStatus('ok', "Yuklandi: " + dLen + " dizayner · " + pLen + " loyiha · " + new Date().toLocaleTimeString('uz') + (typeof APP_VER!=='undefined'?' · '+APP_VER:''));
     }
   }catch(e){
     setSyncStatus('err', "Yuklash xatosi: " + e.message);
