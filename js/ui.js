@@ -127,7 +127,7 @@ function maskCard(c){ if(!c) return '—'; return c.replace(/(\d{4})\s?(\d{4})\s
 // Faol panelni qayta chizish
 function rerenderActive(){
   const active = document.querySelector('.panel.active')?.id?.replace('panel-','');
-  const fns = {dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
+  const fns = {dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage,chat:renderChat};
   if(fns[active]) fns[active]();
   updateCounts();
 }
@@ -353,7 +353,10 @@ function _renderKanban(wip,review,done){
           </div>
           <div class="kanban-card-foot">
             ${p.penaltyApplied?`<span style="text-decoration:line-through;color:var(--muted);font-size:10px">${fmtPrice(p.originalPricePerUnit*p.units)}</span><span class="price-tag" style="color:var(--error)">${fmtPrice(p.pricePerUnit*p.units)} so'm</span>`:`<span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>`}
-            ${footRight}
+            <div style="display:flex;align-items:center;gap:6px">
+              <button class="kanban-chat-btn" onclick="event.stopPropagation();openChatForProject(${p.id})" title="Chat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg></button>
+              ${footRight}
+            </div>
           </div>
         </div>`;
       }).join(''):`<div style="text-align:center;padding:30px 10px;color:var(--muted);font-size:12px">Hozircha bo'sh</div>`}
@@ -613,6 +616,7 @@ function projCardHtml(p,showDesigner){
           <option value="done"${p.status==='done'?' selected':''}>Bajarildi</option>
         </select>`}
         <button class="btn btn-ghost btn-xs" onclick="openProjectPeek(${p.id})">Ochish</button>
+        <button class="btn btn-ghost btn-xs" onclick="openChatForProject(${p.id})" style="color:var(--accent2)">Chat</button>
         ${_isDes?'':`<button class="btn btn-danger btn-xs" onclick="deleteProject(${p.id})">×</button>`}
       </div>
     </div>
@@ -1508,4 +1512,317 @@ function markAllRead(){
   localStorage.setItem('exon_notif_read',JSON.stringify(notifications.map(n=>n.id)));
   renderNotifPanel();
   document.getElementById('notif-panel').classList.remove('open');
+}
+
+// ═══════════════ CHAT ═══════════════
+let _chatDesId = null;
+let _chatProjectCtx = null;
+let _chatUnsub = null;
+let _chatMessages = [];
+let _chatMobileView = 'list';
+
+function renderChat(){
+  const el = document.getElementById('chat-container');
+  if(!el) return;
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  if(isDes) _renderDesignerChat(el);
+  else _renderAdminChat(el);
+  initChatListener();
+}
+
+function _renderAdminChat(el){
+  const myDes = designers.filter(d=>d.status!=='deleted');
+  const sorted = [...myDes].sort((a,b)=>{
+    const la = _getLastMessage(a.id), lb = _getLastMessage(b.id);
+    return ((lb?.createdAt||'')).localeCompare(la?.createdAt||'');
+  });
+  el.innerHTML=`<div class="chat-layout">
+    <div class="chat-users" id="chat-users-panel">
+      <div class="chat-users-head">Dizaynerlar</div>
+      <div class="chat-users-list" id="chat-users-list">${_chatUserListHtml(sorted)}</div>
+    </div>
+    <div class="chat-main" id="chat-main-panel">
+      ${_chatDesId ? _renderChatArea(_chatDesId) : '<div class="chat-empty">Dizaynerni tanlang</div>'}
+    </div>
+  </div>`;
+  _applyChatMobileView();
+  if(_chatDesId) _scrollChatBottom();
+}
+
+function _renderDesignerChat(el){
+  const myDid = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+  if(!myDid){
+    el.innerHTML='<div class="chat-empty" style="height:300px">Hisobingiz dizayner kartochkasiga bog\'lanmagan</div>';
+    return;
+  }
+  el.innerHTML=`<div class="chat-layout">
+    <div class="chat-main" id="chat-main-panel" style="width:100%">${_renderChatArea(myDid)}</div>
+  </div>`;
+  _scrollChatBottom();
+}
+
+function _chatUserListHtml(list){
+  if(!list.length) return '<div class="chat-empty">Dizayner yo\'q</div>';
+  return list.map(d=>{
+    const lastMsg = _getLastMessage(d.id);
+    const unread = _getUnreadCount(d.id);
+    return `<div class="chat-user-item${_chatDesId===d.id?' active':''}" onclick="selectChatDesigner(${d.id})">
+      ${photoAvatar(d,36)}
+      <div style="flex:1;min-width:0">
+        <div class="chat-user-name">${esc(d.name)}</div>
+        <div class="chat-user-last">${lastMsg?esc(lastMsg.text).slice(0,40):'Hali xabar yo\'q'}</div>
+      </div>
+      ${unread>0?`<span class="chat-unread">${unread}</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+function _renderChatArea(designerId){
+  const d = designers.find(x=>x.id===designerId);
+  const msgs = _chatMessages.filter(m=>m.designerId===designerId);
+  const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
+  const myUid = u?.uid||'';
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+
+  return `<div class="chat-main-head">
+      ${!isDes?`<button id="chat-back-btn" onclick="_chatGoBack()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>`:''}
+      ${d?`${photoAvatar(d,30)}<div>
+        <div style="font-size:13px;font-weight:600">${esc(d.name)}</div>
+        <div style="font-size:11px;color:var(--muted)">${esc(d.role||'')}</div>
+      </div>`:'<div style="font-size:13px;font-weight:600">Chat</div>'}
+    </div>
+    ${_chatProjectCtx?`<div class="chat-project-ctx" id="chat-project-ctx">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"/><path d="M8 10h8M8 14h6"/></svg>
+      <span style="flex:1">${esc(_chatProjectCtx.title)}</span>
+      <button onclick="clearChatProjectCtx()">×</button>
+    </div>`:''}
+    <div class="chat-messages" id="chat-messages">
+      ${msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty">Hali xabar yo\'q — yozing!</div>'}
+    </div>
+    <div class="chat-input-area">
+      <input class="form-input" id="chat-input" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="chat-send-btn" onclick="sendChat()" title="Yuborish">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>`;
+}
+
+function _chatMsgsHtml(msgs, myUid){
+  let html='', lastDate='';
+  msgs.forEach(m=>{
+    const d = new Date(m.createdAt);
+    const dateStr = d.toLocaleDateString('uz',{day:'2-digit',month:'long'});
+    if(dateStr!==lastDate){
+      html+=`<div class="chat-date-sep">${dateStr}</div>`;
+      lastDate=dateStr;
+    }
+    const isMine = m.senderUid===myUid;
+    html+=`<div class="chat-msg ${isMine?'mine':'theirs'}">
+      ${!isMine?`<div class="chat-msg-name">${esc(m.senderName)}</div>`:''}
+      ${m.projectId?`<div class="chat-msg-project" onclick="openProjectPeek(${m.projectId})">${esc(m.projectTitle||'Loyiha #'+m.projectId)}</div>`:''}
+      <div>${esc(m.text)}</div>
+      <div class="chat-msg-time">${_chatTimeFormat(m.createdAt)}</div>
+    </div>`;
+  });
+  return html;
+}
+
+function selectChatDesigner(did){
+  _chatDesId = did;
+  _markChatRead(did);
+  _chatMobileView = 'chat';
+  renderChat();
+  _scrollChatBottom();
+}
+
+function _chatGoBack(){
+  _chatMobileView = 'list';
+  _applyChatMobileView();
+}
+
+function _applyChatMobileView(){
+  if(window.innerWidth>768) return;
+  const users = document.getElementById('chat-users-panel');
+  const main = document.getElementById('chat-main-panel');
+  const backBtn = document.getElementById('chat-back-btn');
+  if(!users||!main) return;
+  if(_chatMobileView==='list'){
+    users.classList.remove('hidden');
+    main.classList.add('hidden');
+  } else {
+    users.classList.add('hidden');
+    main.classList.remove('hidden');
+    if(backBtn) backBtn.style.display='';
+  }
+}
+
+function sendChat(){
+  const inp = document.getElementById('chat-input');
+  if(!inp) return;
+  const text = inp.value.trim();
+  if(!text) return;
+  const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
+  if(!u) return;
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  let designerId;
+  if(isDes){
+    designerId = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+    if(!designerId){ toast("Hisobingiz dizaynerga bog'lanmagan"); return; }
+  } else {
+    designerId = _chatDesId;
+    if(!designerId){ toast("Dizayner tanlang"); return; }
+  }
+  const msg = {
+    designerId: designerId,
+    senderUid: u.uid,
+    senderName: u.displayName||u.email||'?',
+    isAdmin: u.role==='admin',
+    text: text,
+    projectId: _chatProjectCtx?.id||null,
+    projectTitle: _chatProjectCtx?.title||null,
+    createdAt: new Date().toISOString()
+  };
+  inp.value = '';
+  _chatProjectCtx = null;
+  const ctxEl = document.getElementById('chat-project-ctx');
+  if(ctxEl) ctxEl.remove();
+  if(typeof sendChatMessage==='function'){
+    sendChatMessage(msg).catch(e=>{
+      console.error('Chat xato:', e);
+      toast("Xabar yuborilmadi: "+e.message);
+    });
+  }
+}
+
+function openChatForProject(projectId){
+  const p = projects.find(x=>x.id===projectId);
+  if(!p) return;
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  _chatProjectCtx = {id:p.id, title:p.title};
+  if(!isDes) _chatDesId = p.designerId;
+  showPanel('chat');
+  setTimeout(()=>{
+    _scrollChatBottom();
+    const inp = document.getElementById('chat-input');
+    if(inp) inp.focus();
+  },100);
+}
+
+function clearChatProjectCtx(){
+  _chatProjectCtx = null;
+  const el = document.getElementById('chat-project-ctx');
+  if(el) el.remove();
+}
+
+function initChatListener(){
+  if(_chatUnsub) return;
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  if(isDes){
+    const myDid = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+    if(!myDid) return;
+    if(typeof subscribeChatMessages==='function'){
+      _chatUnsub = subscribeChatMessages(myDid, msgs=>{
+        _chatMessages = msgs.sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+        _refreshChatUI();
+      });
+    }
+  } else {
+    if(typeof subscribeAllChatMessages==='function'){
+      _chatUnsub = subscribeAllChatMessages(msgs=>{
+        _chatMessages = msgs.sort((a,b)=>(a.createdAt||'').localeCompare(b.createdAt||''));
+        _refreshChatUI();
+        _updateChatBadge();
+      });
+    }
+  }
+}
+
+function _refreshChatUI(){
+  const panel = document.getElementById('panel-chat');
+  if(!panel||!panel.classList.contains('active')){
+    _updateChatBadge();
+    return;
+  }
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
+  const myUid = u?.uid||'';
+  if(isDes){
+    const myDid = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+    if(!myDid) return;
+    const msgEl = document.getElementById('chat-messages');
+    if(msgEl){
+      const msgs = _chatMessages.filter(m=>m.designerId===myDid);
+      msgEl.innerHTML = msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty">Hali xabar yo\'q — yozing!</div>';
+      _scrollChatBottom();
+    }
+  } else {
+    _updateChatUserList();
+    if(_chatDesId){
+      _markChatRead(_chatDesId);
+      const msgEl = document.getElementById('chat-messages');
+      if(msgEl){
+        const msgs = _chatMessages.filter(m=>m.designerId===_chatDesId);
+        msgEl.innerHTML = msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty">Hali xabar yo\'q — yozing!</div>';
+        _scrollChatBottom();
+      }
+    }
+  }
+}
+
+function _updateChatUserList(){
+  const list = document.getElementById('chat-users-list');
+  if(!list) return;
+  const myDes = designers.filter(d=>d.status!=='deleted');
+  const sorted = [...myDes].sort((a,b)=>{
+    const la = _getLastMessage(a.id), lb = _getLastMessage(b.id);
+    return ((lb?.createdAt||'')).localeCompare(la?.createdAt||'');
+  });
+  list.innerHTML = _chatUserListHtml(sorted);
+}
+
+function _getLastMessage(designerId){
+  const msgs = _chatMessages.filter(m=>m.designerId===designerId);
+  return msgs.length ? msgs[msgs.length-1] : null;
+}
+
+function _getUnreadCount(designerId){
+  const lastRead = localStorage.getItem('chat_read_'+designerId)||'';
+  return _chatMessages.filter(m=>m.designerId===designerId && !m.isAdmin && m.createdAt>lastRead).length;
+}
+
+function _markChatRead(designerId){
+  localStorage.setItem('chat_read_'+designerId, new Date().toISOString());
+  _updateChatBadge();
+}
+
+function _updateChatBadge(){
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  let total = 0;
+  if(isDes){
+    const myDid = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+    if(myDid){
+      const lastRead = localStorage.getItem('chat_read_'+myDid)||'';
+      total = _chatMessages.filter(m=>m.designerId===myDid && m.isAdmin && m.createdAt>lastRead).length;
+    }
+  } else {
+    designers.forEach(d=>{ total += _getUnreadCount(d.id); });
+  }
+  const badge = document.getElementById('nav-count-chat');
+  if(badge){
+    badge.textContent = total;
+    badge.style.display = total>0 ? '' : 'none';
+  }
+}
+
+function _scrollChatBottom(){
+  const el = document.getElementById('chat-messages');
+  if(el) setTimeout(()=>{ el.scrollTop=el.scrollHeight; },50);
+}
+
+function _chatTimeFormat(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleTimeString('uz',{hour:'2-digit',minute:'2-digit'});
 }

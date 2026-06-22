@@ -262,3 +262,33 @@ async function deleteFbUserProfile(uid){
   if(!isFbReady()) return;
   await _db.collection('users').doc(uid).delete();
 }
+
+// ── CHAT XABARLARI ──
+async function sendChatMessage(msg){
+  if(!isFbReady()) throw new Error('Firebase tayyor emas');
+  await _db.collection('chatMessages').add(_sanitizeForFirestore(msg));
+}
+
+function subscribeChatMessages(designerId, callback){
+  if(!isFbReady()) return ()=>{};
+  return _db.collection('chatMessages')
+    .where('designerId','==',designerId)
+    .onSnapshot(snap=>{
+      const msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      callback(msgs);
+    }, err=>{
+      console.warn('Chat onSnapshot xato:', err);
+    });
+}
+
+function subscribeAllChatMessages(callback){
+  if(!isFbReady()) return ()=>{};
+  return _db.collection('chatMessages')
+    .orderBy('createdAt')
+    .onSnapshot(snap=>{
+      const msgs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      callback(msgs);
+    }, err=>{
+      console.warn('Chat onSnapshot xato:', err);
+    });
+}

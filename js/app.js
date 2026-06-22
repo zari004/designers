@@ -101,18 +101,17 @@ function updateNavVisibility(){
   const u = typeof getCurrentUser === 'function' ? getCurrentUser() : null;
   const perms = u?.permissions || {};
   const isAdmin = u?.role === 'admin';
-  const permMap = {designers:'nav-designers', projects:'nav-projects', payments:'nav-payments', reports:'nav-reports', users:'nav-users', settings:'nav-settings'};
+  const permMap = {designers:'nav-designers', projects:'nav-projects', chat:'nav-chat', payments:'nav-payments', reports:'nav-reports', users:'nav-users', settings:'nav-settings'};
   for(const [pKey, navId] of Object.entries(permMap)){
     const nav = document.getElementById(navId);
     if(!nav) continue;
-    // Sozlamalar — barcha foydalanuvchilarga ochiq (shaxsiy kabinet)
-    if(pKey === 'settings'){ nav.style.display = ''; continue; }
+    if(pKey === 'settings' || pKey === 'chat'){ nav.style.display = ''; continue; }
     nav.style.display = (isAdmin || perms[pKey]) ? '' : 'none';
   }
 }
 
 function showPanel(name){
-  const freePanels = ['dashboard','detail','trash','settings'];
+  const freePanels = ['dashboard','detail','trash','settings','chat'];
   if(!freePanels.includes(name) && typeof hasPermission === 'function' && typeof getCurrentUser === 'function' && getCurrentUser() && !hasPermission(name)){
     toast(`"${name}" bo'limiga kirish ruxsati yo'q`);
     return;
@@ -128,10 +127,10 @@ function showPanel(name){
   if(nav) nav.classList.add('active');
   const bnav=document.querySelector(`.bnav-item[data-panel="${navName}"]`);
   if(bnav) bnav.classList.add('active');
-  const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',trash:'Chiqitdon',detail:'Dizayner profili',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
+  const titles={dashboard:'Asosiy sahifa',designers:'Dizaynerlar',projects:'Loyihalar',chat:'Chat',trash:'Chiqitdon',detail:'Dizayner profili',payments:"To'lovlar",reports:'Hisobotlar',users:'Foydalanuvchilar',settings:'Sozlamalar'};
   document.getElementById('topbar-title').textContent=titles[name]||'';
   updateTopbar(name);
-  const fns={dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
+  const fns={dashboard:renderDashboard,designers:renderDesigners,projects:renderProjects,chat:renderChat,trash:renderTrash,detail:renderDetail,payments:renderPayments,reports:renderReports,users:renderUsers,settings:renderSettingsPage};
   if(fns[name]) fns[name]();
   updateCounts();
   const main=document.querySelector('.main');
@@ -158,8 +157,8 @@ document.addEventListener('click',e=>{
 
 // ── HUQUQLAR ──
 function applyNavPermissions(user){
-  const allNav=['nav-designers','nav-projects','nav-settings','nav-users','nav-reports','nav-payments','nav-trash'];
-  const allBnav=['bnav-designers','bnav-projects','bnav-payments','bnav-settings'];
+  const allNav=['nav-designers','nav-projects','nav-chat','nav-settings','nav-users','nav-reports','nav-payments','nav-trash'];
+  const allBnav=['bnav-designers','bnav-projects','bnav-chat','bnav-payments','bnav-settings'];
 
   if(user.role==='_loading'||user.role==='pending'){
     allNav.concat(allBnav).forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
@@ -173,6 +172,7 @@ function applyNavPermissions(user){
   const map={
     'nav-designers':'designers',
     'nav-projects':'projects',
+    'nav-chat':'chat',
     'nav-settings':'settings',
     'nav-users':'users',
     'nav-reports':'reports',
@@ -182,8 +182,7 @@ function applyNavPermissions(user){
   Object.entries(map).forEach(([elId,perm])=>{
     const el=document.getElementById(elId);
     if(!el) return;
-    // Sozlamalar — barcha foydalanuvchilarga ochiq (ichida profil + xavfsizlik bor)
-    if(perm==='settings'){ el.style.display=''; return; }
+    if(perm==='settings' || perm==='chat'){ el.style.display=''; return; }
     if(isDes && (perm==='designers'||perm==='trash'||perm==='users'||perm==='reports')){
       el.style.display='none'; return;
     }
@@ -193,13 +192,14 @@ function applyNavPermissions(user){
   const bmap={
     'bnav-designers':'designers',
     'bnav-projects':'projects',
+    'bnav-chat':'chat',
     'bnav-payments':'payments',
     'bnav-settings':'settings',
   };
   Object.entries(bmap).forEach(([elId,perm])=>{
     const el=document.getElementById(elId);
     if(!el) return;
-    if(perm==='settings'){ el.style.display=''; return; }
+    if(perm==='settings' || perm==='chat'){ el.style.display=''; return; }
     if(isDes && perm==='designers'){ el.style.display='none'; return; }
     const ok=(user.role==='admin')||!!(user.permissions&&user.permissions[perm]);
     el.style.display=ok?'':'none';
@@ -339,6 +339,7 @@ function _revealApp(user){
   try{ if(typeof fbSetupRealtimeSync === 'function') fbSetupRealtimeSync(); }catch(e){ console.error('realtime:', e); }
   try{ if(typeof fbLoad === 'function') fbLoad(); }catch(e){ console.error('fbLoad:', e); _showFatal('fbLoad: '+e.message); }
   try{ if(typeof syncSettingsFromFirestore === 'function') syncSettingsFromFirestore(); }catch(e){ console.error('settings:', e); }
+  setTimeout(()=>{ try{ if(typeof initChatListener==='function') initChatListener(); }catch(e){ console.error('chat:', e); } }, 2500);
 
   window.dispatchEvent(new Event('exon-ready'));
 }
@@ -379,7 +380,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v121';
+const APP_VER = 'v122';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){
