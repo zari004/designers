@@ -1310,6 +1310,7 @@ function buildNotifications(){
   }
   const saved=JSON.parse(localStorage.getItem('exon_notif_read')||'[]');
   list.forEach(n=>{ if(saved.includes(n.id)) n.read=true; });
+  list.sort((a,b)=>(b.time||'').localeCompare(a.time||''));
   notifications=list;
 }
 
