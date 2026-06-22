@@ -22,6 +22,36 @@ function toast(msg){
   setTimeout(()=>{ el.style.animation='toastOut .25s ease forwards'; setTimeout(()=>el.remove(),250); },2600);
 }
 
+// Rasmni kichik avatar o'lchamiga siqish (Firestore 1MB hujjat limitidan oshmaslik uchun).
+// Telefon rasmlari base64 ko'rinishida juda katta bo'lib, butun ma'lumot hujjatini
+// limitdan oshirib yuboradi va saqlash JIM ravishda muvaffaqiyatsiz tugaydi —
+// shu sababli rasm faqat lokal ko'rinib, boshqalarga sinxronlanmaydi.
+function _compressImage(file, maxSize, quality){
+  return new Promise((resolve, reject)=>{
+    if(!file){ reject(new Error('Fayl yo\'q')); return; }
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error('Faylni o\'qib bo\'lmadi'));
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error('Rasmni yuklab bo\'lmadi'));
+      img.onload=()=>{
+        const m=maxSize||400;
+        let w=img.width, h=img.height;
+        if(w>h){ if(w>m){ h=Math.round(h*m/w); w=m; } }
+        else   { if(h>m){ w=Math.round(w*m/h); h=m; } }
+        const cv=document.createElement('canvas');
+        cv.width=w; cv.height=h;
+        const ctx=cv.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        try{ resolve(cv.toDataURL('image/jpeg', quality||0.82)); }
+        catch(e){ resolve(ev.target.result); }
+      };
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function photoAvatar(d,size){
   const r = size>40?10:6;
   if(d.photo) return `<div style="width:${size}px;height:${size}px;border-radius:${r}px;overflow:hidden;flex-shrink:0;border:1px solid var(--border)"><img src="${d.photo}" style="width:100%;height:100%;object-fit:cover"/></div>`;
@@ -853,12 +883,11 @@ function openDesignerModal(id=null){
 function handlePhoto(e){
   const file=e.target.files[0];
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    photoData.tempPhoto=ev.target.result;
-    document.getElementById('photo-prev').innerHTML=`<img src="${ev.target.result}"/>`;
-  };
-  reader.readAsDataURL(file);
+  _compressImage(file, 400, 0.82).then(dataUrl=>{
+    photoData.tempPhoto=dataUrl;
+    const prev=document.getElementById('photo-prev');
+    if(prev) prev.innerHTML=`<img src="${dataUrl}"/>`;
+  }).catch(err=>{ console.error('Rasm siqish:',err); toast("Rasmni yuklab bo'lmadi"); });
 }
 
 function selectCat(c, el){
@@ -1261,15 +1290,13 @@ function renderProfileTab(){
 function handleProfilePhoto(e){
   const file=e.target.files[0];
   if(!file) return;
-  const reader=new FileReader();
-  reader.onload=ev=>{
-    profilePhoto.temp=ev.target.result;
+  _compressImage(file, 400, 0.82).then(dataUrl=>{
+    profilePhoto.temp=dataUrl;
     const p=document.getElementById('pf-photo-prev');
-    if(p) p.innerHTML=`<img src="${ev.target.result}"/>`;
+    if(p) p.innerHTML=`<img src="${dataUrl}"/>`;
     const del=document.getElementById('pf-photo-del');
     if(del) del.style.display='';
-  };
-  reader.readAsDataURL(file);
+  }).catch(err=>{ console.error('Rasm siqish:',err); toast("Rasmni yuklab bo'lmadi"); });
 }
 
 // Profil rasmini o'chirish — darhol saqlaydi, shu sababli hamma joydan yo'qoladi

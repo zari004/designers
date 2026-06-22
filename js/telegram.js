@@ -648,7 +648,7 @@ function _tgMiniEnsure(){
   if(!wrap){
     wrap = document.createElement('div');
     wrap.id = 'tg-mini-wrap';
-    wrap.style.cssText = 'position:fixed;left:18px;bottom:18px;right:auto';
+    wrap.style.cssText = 'position:fixed;right:18px;bottom:18px;left:auto';
     document.body.appendChild(wrap);
   }
   return wrap;

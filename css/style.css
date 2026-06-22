@@ -843,8 +843,8 @@ select.prop-input{cursor:pointer}
 
 /* ── FONDA YUBORISH — KICHIK QALQOVCHI OYNACHA (mini) ── */
 @keyframes tgSpin{to{transform:rotate(360deg)}}
-@keyframes tgMiniIn{from{opacity:0;transform:translateX(-26px)}to{opacity:1;transform:none}}
-#tg-mini-wrap{position:fixed;left:18px;bottom:18px;z-index:150;display:none;flex-direction:column;gap:10px;width:330px;max-width:calc(100vw - 36px);pointer-events:none}
+@keyframes tgMiniIn{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+#tg-mini-wrap{position:fixed;right:18px;bottom:18px;z-index:150;display:none;flex-direction:column;gap:10px;width:330px;max-width:calc(100vw - 36px);pointer-events:none}
 .tg-mini-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow-lg);overflow:hidden;pointer-events:auto;animation:tgMiniIn .22s ease}
 .tg-mini-card.done{border-color:color-mix(in srgb,var(--success) 35%,var(--border))}
 .tg-mini-card.error{border-color:color-mix(in srgb,var(--error) 35%,var(--border))}

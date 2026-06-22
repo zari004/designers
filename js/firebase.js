@@ -65,12 +65,21 @@ function isFbReady(){ return _fbReady && !!_db && !!_auth; }
 function getDb(){ return _db; }
 function getFbAuth(){ return _auth; }
 
+// Firestore uchun ma'lumotni tozalash:
+// · undefined, funksiya, Symbol qiymatlarini olib tashlaydi
+// · barcha qiymatlarni oddiy (plain) obyekt/massivga aylantiradi
+// Bu "Property array contains an invalid nested entity" xatosining oldini oladi.
+function _sanitizeForFirestore(data){
+  try{ return JSON.parse(JSON.stringify(data)); }
+  catch(e){ console.error('sanitize:', e); return data; }
+}
+
 // ── FIRESTORE: SAQLASH ──
 async function fbSave(){
   if(!isFbReady()) return;
   setSyncStatus('load', "Saqlanmoqda...");
   try{
-    const data = snapshot();
+    const data = _sanitizeForFirestore(snapshot());
     _echoTs = data.savedAt;
     await _db.collection('exon').doc('data').set(data);
     dataSavedAt = data.savedAt;
