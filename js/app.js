@@ -379,7 +379,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v120';
+const APP_VER = 'v121';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){

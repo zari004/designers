@@ -199,7 +199,7 @@ async function tgSendSingle(channelId, file, caption, asPhoto, threadId){
 // Bir bo'lim fayllarini guruhlab yuborish: rasmlar albom, qolganlari hujjat.
 // forceDoc=true bo'lsa hammasi hujjat (original sifat) sifatida ketadi.
 async function tgSendSectionFiles(channelId, files, label, forceDoc, threadId){
-  if(label) { await tgSendMessage(channelId, label, threadId); await _tgDelay(300); }
+  if(label) { await tgSendMessage(channelId, label, threadId); await _tgDelay(700); }
 
   const PHOTO_MAX = 10 * 1024 * 1024;
   const photos = forceDoc ? [] : files.filter(f => f.type.startsWith('image/') && f.size <= PHOTO_MAX);
@@ -213,7 +213,9 @@ async function tgSendSectionFiles(channelId, files, label, forceDoc, threadId){
       } else {
         await tgSendMediaGroup(channelId, chunk, undefined, asPhoto, threadId);
       }
-      await _tgDelay(400);
+      // Telegram flood-cheklovga tushmaslik uchun guruhlar orasida uzunroq tanaffus.
+      // Albom 10 ta xabar sifatida hisoblanadi — qisqa tanaffus cheklovni keltirib chiqaradi.
+      await _tgDelay(2500);
     }
   };
 
@@ -338,6 +340,8 @@ async function tgDeliverProject(projectId){
         });
       });
       sentSize += f.size;
+      // Flood-cheklovga tushmaslik uchun fayllar orasida tanaffus
+      if(i < files.length - 1) await _tgDelay(1500);
     }
 
     if(figmaLink){
@@ -796,11 +800,11 @@ async function _tgRunDeliveryJob(p, d, channelId, sections, materials, figmaLink
     // 1) Guruhda loyiha uchun yangi mavzu ochish
     begin(idx);
     topicId = await tgCreateTopic(channelId, p.title);
-    finish(idx); await _tgDelay(300); idx++;
+    finish(idx); await _tgDelay(800); idx++;
 
     begin(idx);
     await tgSendMessage(channelId, tgBuildCaption(p, d), topicId);
-    finish(idx); await _tgDelay(350); idx++;
+    finish(idx); await _tgDelay(900); idx++;
 
     for(let si = 0; si < sections.length; si++){
       const sec = sections[si];
@@ -808,12 +812,12 @@ async function _tgRunDeliveryJob(p, d, channelId, sections, materials, figmaLink
       const label = `📂 *Bo'lim ${si+1}${name}* — ${sec.files.length} ta rasm`;
       begin(idx);
       await tgSendSectionFiles(channelId, sec.files, label, true, topicId);
-      finish(idx); await _tgDelay(350); idx++;
+      finish(idx); await _tgDelay(1500); idx++;
     }
 
     begin(idx);
     await tgSendSectionFiles(channelId, materials, `📦 *Materiallar va PSD* — ${materials.length} ta fayl`, true, topicId);
-    finish(idx); await _tgDelay(350); idx++;
+    finish(idx); await _tgDelay(1500); idx++;
 
     if(figmaLink){
       begin(idx);
