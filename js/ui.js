@@ -353,11 +353,12 @@ function _renderKanban(wip,review,done){
           </div>
           <div class="kanban-card-foot">
             ${p.penaltyApplied?`<span style="text-decoration:line-through;color:var(--muted);font-size:10px">${fmtPrice(p.originalPricePerUnit*p.units)}</span><span class="price-tag" style="color:var(--error)">${fmtPrice(p.pricePerUnit*p.units)} so'm</span>`:`<span class="price-tag">${fmtPrice(p.units*p.pricePerUnit)} so'm</span>`}
-            <div style="display:flex;align-items:center;gap:6px">
-              <button class="kanban-chat-btn" onclick="event.stopPropagation();openChatForProject(${p.id})" title="Chat"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg></button>
-              ${footRight}
-            </div>
+            ${footRight}
           </div>
+          <button class="kanban-card-chat" onclick="event.stopPropagation();openChatForProject(${p.id})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+            Muhokama qilish
+          </button>
         </div>`;
       }).join(''):`<div style="text-align:center;padding:30px 10px;color:var(--muted);font-size:12px">Hozircha bo'sh</div>`}
     </div>`;
@@ -1542,7 +1543,7 @@ function _renderAdminChat(el){
       <div class="chat-users-list" id="chat-users-list">${_chatUserListHtml(sorted)}</div>
     </div>
     <div class="chat-main" id="chat-main-panel">
-      ${_chatDesId ? _renderChatArea(_chatDesId) : '<div class="chat-empty">Dizaynerni tanlang</div>'}
+      ${_chatDesId ? _renderChatArea(_chatDesId) : '<div class="chat-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Dizaynerni tanlang</div>'}
     </div>
   </div>`;
   _applyChatMobileView();
@@ -1555,8 +1556,8 @@ function _renderDesignerChat(el){
     el.innerHTML='<div class="chat-empty" style="height:300px">Hisobingiz dizayner kartochkasiga bog\'lanmagan</div>';
     return;
   }
-  el.innerHTML=`<div class="chat-layout">
-    <div class="chat-main" id="chat-main-panel" style="width:100%">${_renderChatArea(myDid)}</div>
+  el.innerHTML=`<div class="chat-layout chat-layout-single">
+    <div class="chat-main" id="chat-main-panel">${_renderChatArea(myDid)}</div>
   </div>`;
   _scrollChatBottom();
 }
@@ -1585,7 +1586,7 @@ function _renderChatArea(designerId){
   const isDes = typeof isDesignerRole==='function' && isDesignerRole();
 
   return `<div class="chat-main-head">
-      ${!isDes?`<button id="chat-back-btn" onclick="_chatGoBack()" style="display:none;background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;line-height:0">
+      ${!isDes?`<button id="chat-back-btn" class="chat-back-btn" onclick="_chatGoBack()" style="display:none">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </button>`:''}
       ${d?`${photoAvatar(d,30)}<div>
@@ -1599,7 +1600,8 @@ function _renderChatArea(designerId){
       <button onclick="clearChatProjectCtx()">×</button>
     </div>`:''}
     <div class="chat-messages" id="chat-messages">
-      ${msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty">Hali xabar yo\'q — yozing!</div>'}
+      <div class="chat-messages-spacer"></div>
+      ${msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Hali xabar yo\'q — yozing!</div>'}
     </div>
     <div class="chat-input-area">
       <input class="form-input" id="chat-input" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')sendChat()"/>
@@ -1748,13 +1750,15 @@ function _refreshChatUI(){
   const isDes = typeof isDesignerRole==='function' && isDesignerRole();
   const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
   const myUid = u?.uid||'';
+  const spacer = '<div class="chat-messages-spacer"></div>';
+  const emptyHtml = '<div class="chat-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Hali xabar yo\'q — yozing!</div>';
   if(isDes){
     const myDid = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
     if(!myDid) return;
     const msgEl = document.getElementById('chat-messages');
     if(msgEl){
       const msgs = _chatMessages.filter(m=>m.designerId===myDid);
-      msgEl.innerHTML = msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty">Hali xabar yo\'q — yozing!</div>';
+      msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid) : emptyHtml);
       _scrollChatBottom();
     }
   } else {
@@ -1764,7 +1768,7 @@ function _refreshChatUI(){
       const msgEl = document.getElementById('chat-messages');
       if(msgEl){
         const msgs = _chatMessages.filter(m=>m.designerId===_chatDesId);
-        msgEl.innerHTML = msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty">Hali xabar yo\'q — yozing!</div>';
+        msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid) : emptyHtml);
         _scrollChatBottom();
       }
     }
