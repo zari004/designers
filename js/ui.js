@@ -1554,6 +1554,7 @@ function _renderAdminChat(el){
         <div class="chat-empty-sub">Chap paneldan dizaynerni tanlang va suhbatni boshlang</div>
       </div>`}
     </div>
+    ${_chatDesId ? `<div class="chat-info" id="chat-info-panel">${_renderChatInfoPanel(_chatDesId)}</div>` : ''}
   </div>`;
   _applyChatMobileView();
   if(_chatDesId) _scrollChatBottom();
@@ -1585,7 +1586,7 @@ function _chatUserListHtml(list){
           <span class="chat-user-time">${timeStr}</span>
         </div>
         <div class="chat-user-bottom">
-          <div class="chat-user-last">${lastMsg?esc(lastMsg.text).slice(0,45):'Hali xabar yo\'q'}</div>
+          <div class="chat-user-last">${lastMsg?(lastMsg.imageUrl&&!lastMsg.text?'🖼 Rasm':esc(lastMsg.text).slice(0,45)):'Hali xabar yo\'q'}</div>
           ${unread>0?`<span class="chat-unread">${unread}</span>`:''}
         </div>
       </div>
@@ -1629,6 +1630,10 @@ function _renderChatArea(designerId){
       </div>`}
     </div>
     <div class="chat-input-area">
+      <input type="file" id="chat-file-input" accept="image/*" multiple style="display:none" onchange="chatHandleFiles(this.files)"/>
+      <button class="chat-attach-btn" onclick="document.getElementById('chat-file-input').click()" title="Rasm yuborish">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </button>
       <input id="chat-input" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')sendChat()"/>
       <button class="chat-send-btn" onclick="sendChat()" title="Yuborish">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -1642,9 +1647,17 @@ function _chatMsgsHtml(msgs, myUid, designerId){
   const adminAvatar = '<div style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent2) 12%,transparent);color:var(--accent2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>';
   const isDes = typeof isDesignerRole==='function' && isDesignerRole();
   const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
-  const myName = u?.displayName||u?.email||'';
-  const myInitials = myName.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
-  const myAvatar = `<div style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent2) 12%,transparent);color:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${myInitials}</div>`;
+  const myDesigner = isDes && typeof getMyDesigner==='function' ? getMyDesigner() : null;
+  let myAvatar;
+  if(myDesigner && myDesigner.photo){
+    myAvatar = `<div style="width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;border:1px solid var(--border)"><img src="${myDesigner.photo}" style="width:100%;height:100%;object-fit:cover"/></div>`;
+  } else if(!isDes && des){
+    myAvatar = adminAvatar;
+  } else {
+    const myName = u?.displayName||u?.email||'';
+    const myInitials = myName.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
+    myAvatar = `<div style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent2) 12%,transparent);color:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${myInitials}</div>`;
+  }
   msgs.forEach((m,i)=>{
     const d = new Date(m.createdAt);
     const dateStr = d.toLocaleDateString('uz',{day:'2-digit',month:'long'});
@@ -1661,12 +1674,14 @@ function _chatMsgsHtml(msgs, myUid, designerId){
     else if(isDes) avatarHtml = adminAvatar;
     else if(des) avatarHtml = photoAvatar(des,32);
     else avatarHtml = adminAvatar;
+    const imageHtml = m.imageUrl ? `<div class="chat-msg-img" onclick="openImageViewerSrc('${m.imageUrl}')"><img src="${m.imageUrl}"/></div>` : '';
     html+=`<div class="chat-msg-row ${isMine?'mine':'theirs'}${consecutive?' consecutive':''}">
       <div class="chat-msg-avatar">${avatarHtml}</div>
       <div class="chat-bubble">
         <div class="chat-msg-sender">${esc(m.senderName)}</div>
         ${m.projectId?`<div class="chat-msg-project" onclick="openProjectPeek(${m.projectId})">${esc(m.projectTitle||'Loyiha #'+m.projectId)}</div>`:''}
-        <div class="chat-msg-text">${esc(m.text)}</div>
+        ${imageHtml}
+        ${m.text?`<div class="chat-msg-text">${esc(m.text)}</div>`:''}
         <div class="chat-msg-meta">${_chatTimeFormat(m.createdAt)}</div>
       </div>
     </div>`;
@@ -1814,6 +1829,8 @@ function _refreshChatUI(){
         msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid, _chatDesId) : emptyHtml);
         _scrollChatBottom();
       }
+      const infoEl = document.getElementById('chat-info-panel');
+      if(infoEl) infoEl.innerHTML = _renderChatInfoPanel(_chatDesId);
     }
   }
 }
@@ -1865,6 +1882,101 @@ function _updateChatBadge(){
 function _scrollChatBottom(){
   const el = document.getElementById('chat-messages');
   if(el) setTimeout(()=>{ el.scrollTop=el.scrollHeight; },50);
+}
+
+async function chatHandleFiles(fileList){
+  if(!fileList||!fileList.length) return;
+  const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
+  if(!u) return;
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  let designerId;
+  if(isDes){
+    designerId = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
+    if(!designerId){ toast("Hisobingiz dizaynerga bog'lanmagan"); return; }
+  } else {
+    designerId = _chatDesId;
+    if(!designerId){ toast("Dizayner tanlang"); return; }
+  }
+  if(typeof fbUploadChatImage!=='function'||typeof isStorageReady!=='function'||!isStorageReady()){
+    toast("Storage tayyor emas"); return;
+  }
+  for(let i=0;i<fileList.length;i++){
+    const file=fileList[i];
+    if(!file.type.startsWith('image/')){ toast("Faqat rasm fayllar qo'llaniladi"); continue; }
+    toast("Rasm yuklanmoqda...");
+    try{
+      const blob = typeof _compressToBlob==='function' ? await _compressToBlob(file,1200,0.8) : file;
+      const {url, path} = await fbUploadChatImage(designerId, blob);
+      const msg = {
+        designerId,
+        senderUid: u.uid,
+        senderName: u.displayName||u.email||'?',
+        isAdmin: u.role==='admin',
+        text: '',
+        imageUrl: url,
+        imagePath: path,
+        projectId: _chatProjectCtx?.id||null,
+        projectTitle: _chatProjectCtx?.title||null,
+        createdAt: new Date().toISOString()
+      };
+      if(typeof sendChatMessage==='function') await sendChatMessage(msg);
+      toast("Rasm yuborildi");
+    }catch(e){
+      console.error('Chat rasm yuklash xato:',e);
+      toast("Rasmni yuklab bo'lmadi: "+e.message);
+    }
+  }
+  const inp=document.getElementById('chat-file-input');
+  if(inp) inp.value='';
+}
+
+function _renderChatInfoPanel(designerId){
+  const d = designers.find(x=>x.id===designerId);
+  if(!d) return '';
+  const dProjs = projects.filter(p=>p.designerId===designerId);
+  const wip = dProjs.filter(p=>p.status==='wip');
+  const done = dProjs.filter(p=>p.status==='done');
+  const ci = catOf(d.category);
+  const chatImgs = _chatMessages.filter(m=>m.designerId===designerId&&m.imageUrl).slice(-12);
+
+  return `<div class="chat-info-header">
+      <div class="chat-info-avatar">${d.photo?`<img src="${d.photo}"/>`:esc(d.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase())}</div>
+      <div class="chat-info-name">${esc(d.name)}</div>
+      <div class="chat-info-role">${esc(d.role||'Dizayner')}</div>
+      <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        ${statusBadge(d.status)}
+        <span class="d-cat-badge ${ci.cls}">${d.category}</span>
+      </div>
+    </div>
+    <div class="chat-info-section">
+      <div class="chat-info-section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h8M8 14h6"/></svg>
+        Loyihalar
+        <span class="chat-info-count">${dProjs.length}</span>
+      </div>
+      ${wip.length?wip.slice(0,5).map(p=>`<div class="chat-info-proj" onclick="openProjectPeek(${p.id})">
+        <div class="chat-info-proj-title">${esc(p.title)}</div>
+        <div style="display:flex;gap:4px;align-items:center">${projStatusBadge(p.status)}${deadlineBadge(p)}</div>
+      </div>`).join(''):''}
+      ${done.length?`<div style="font-size:11px;color:var(--muted);padding:6px 0">${done.length} ta bajarilgan</div>`:''}
+      ${!dProjs.length?'<div style="font-size:12px;color:var(--muted2);padding:8px 0">Loyiha yo\'q</div>':''}
+    </div>
+    <div class="chat-info-section">
+      <div class="chat-info-section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        Media
+        <span class="chat-info-count">${chatImgs.length}</span>
+      </div>
+      ${chatImgs.length?`<div class="chat-info-media">${chatImgs.map(m=>`<div class="chat-info-media-thumb" onclick="openImageViewerSrc('${m.imageUrl}')"><img src="${m.imageUrl}"/></div>`).join('')}</div>`:'<div style="font-size:12px;color:var(--muted2);padding:8px 0">Hali media yo\'q</div>'}
+    </div>
+    <div class="chat-info-section">
+      <div class="chat-info-section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/></svg>
+        Aloqa
+      </div>
+      <div class="chat-info-contact">${d.phone?`<span>Tel: ${esc(d.phone)}</span>`:''}${d.telegram?`<span>TG: ${esc(d.telegram)}</span>`:''}</div>
+      ${d.cardNumber?`<div class="chat-info-contact"><span>Karta: <span class="card-num">${maskCard(d.cardNumber)}</span></span></div>`:''}
+    </div>`;
 }
 
 function _chatTimeFormat(iso){
