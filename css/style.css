@@ -1016,6 +1016,35 @@ body:has(.main.chat-mode) .ai-chat-fab{display:none}
 .chat-date-sep{text-align:center;padding:14px 0;font-size:11px;color:var(--muted2);font-weight:600;position:relative}
 .chat-date-sep span{background:var(--bg);padding:2px 14px;position:relative;z-index:1;border-radius:10px;border:1px solid var(--border)}
 .chat-date-sep::before{content:'';position:absolute;top:50%;left:0;right:0;height:1px;background:var(--border)}
+/* Chat rasm xabarlari */
+.chat-msg-img{margin:4px 0 6px;border-radius:12px;overflow:hidden;cursor:pointer;max-width:260px}
+.chat-msg-img img{display:block;width:100%;height:auto;max-height:280px;object-fit:cover;border-radius:12px;transition:opacity .2s}
+.chat-msg-img:hover img{opacity:.88}
+.chat-attach-btn{width:42px;height:42px;border-radius:50%;border:none;background:color-mix(in srgb,var(--accent2) 10%,transparent);color:var(--accent2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s,transform .15s}
+.chat-attach-btn:hover{background:color-mix(in srgb,var(--accent2) 18%,transparent);transform:scale(1.06)}
+.chat-attach-btn:active{transform:scale(.94)}
+/* Chat info panel (o'ng tomon) */
+.chat-info{width:300px;border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--panel);overflow-y:auto}
+.chat-info-header{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 20px 20px;border-bottom:1px solid var(--border)}
+.chat-info-avatar{width:72px;height:72px;border-radius:50%;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;overflow:hidden;flex-shrink:0}
+.chat-info-avatar img{width:100%;height:100%;object-fit:cover}
+.chat-info-name{font-size:15px;font-weight:700}
+.chat-info-role{font-size:12px;color:var(--muted)}
+.chat-info-section{padding:16px 18px;border-bottom:1px solid var(--border)}
+.chat-info-section-title{font-size:11.5px;font-weight:700;color:var(--muted2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.chat-info-count{font-size:10px;background:var(--hover);padding:1px 7px;border-radius:10px;font-weight:600;color:var(--muted)}
+.chat-info-proj{padding:8px 10px;border-radius:8px;cursor:pointer;transition:background .12s;margin-bottom:2px}
+.chat-info-proj:hover{background:var(--hover)}
+.chat-info-proj-title{font-size:12.5px;font-weight:600;margin-bottom:4px}
+.chat-info-media{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.chat-info-media-thumb{aspect-ratio:1;border-radius:6px;overflow:hidden;cursor:pointer}
+.chat-info-media-thumb img{width:100%;height:100%;object-fit:cover;transition:opacity .15s}
+.chat-info-media-thumb:hover img{opacity:.8}
+.chat-info-contact{font-size:12.5px;color:var(--muted);display:flex;flex-direction:column;gap:4px;padding:4px 0}
+.chat-info-contact span{display:block}
+@media(max-width:1100px){
+  .chat-info{display:none}
+}
 .kanban-card-chat{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;padding:9px 12px;margin-top:10px;border:none;border-radius:var(--radius);background:color-mix(in srgb,var(--accent2) 9%,transparent);color:var(--accent2);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.2px}
 .kanban-card-chat:hover{background:color-mix(in srgb,var(--accent2) 16%,transparent);box-shadow:0 2px 8px color-mix(in srgb,var(--accent2) 15%,transparent)}
 .kanban-card-chat:active{transform:scale(.97)}

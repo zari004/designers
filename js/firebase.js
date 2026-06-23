@@ -309,6 +309,16 @@ async function fbUploadProjectImage(folder, file){
   return { url, path };
 }
 
+async function fbUploadChatImage(designerId, file){
+  if(!_storage) throw new Error('Storage tayyor emas');
+  const safe = (file.name||'image').replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path = `chatMedia/${designerId}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safe}`;
+  const ref = _storage.ref().child(path);
+  const snap = await ref.put(file, { contentType: file.type||'image/jpeg' });
+  const url = await snap.ref.getDownloadURL();
+  return { url, path };
+}
+
 // Storage'dan rasmni o'chiradi
 async function fbDeleteStorageFile(path){
   if(!_storage || !path) return;
