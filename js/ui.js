@@ -1637,8 +1637,12 @@ function _renderChatArea(designerId){
 function _chatMsgsHtml(msgs, myUid, designerId){
   let html='', lastDate='', lastSender='';
   const des = designerId ? designers.find(x=>x.id===designerId) : null;
-  const adminAvatar = '<div style="width:30px;height:30px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>';
+  const adminAvatar = '<div style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent2) 12%,transparent);color:var(--accent2);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>';
   const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
+  const myName = u?.displayName||u?.email||'';
+  const myInitials = myName.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'?';
+  const myAvatar = `<div style="width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--accent2) 12%,transparent);color:var(--accent2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${myInitials}</div>`;
   msgs.forEach((m,i)=>{
     const d = new Date(m.createdAt);
     const dateStr = d.toLocaleDateString('uz',{day:'2-digit',month:'long'});
@@ -1650,15 +1654,15 @@ function _chatMsgsHtml(msgs, myUid, designerId){
     const isMine = m.senderUid===myUid;
     const consecutive = lastSender===m.senderUid;
     lastSender = m.senderUid;
-    let avatarHtml = '';
-    if(!isMine){
-      if(isDes) avatarHtml = adminAvatar;
-      else if(des) avatarHtml = photoAvatar(des,30);
-    }
+    let avatarHtml;
+    if(isMine) avatarHtml = myAvatar;
+    else if(isDes) avatarHtml = adminAvatar;
+    else if(des) avatarHtml = photoAvatar(des,32);
+    else avatarHtml = adminAvatar;
     html+=`<div class="chat-msg-row ${isMine?'mine':'theirs'}${consecutive?' consecutive':''}">
       <div class="chat-msg-avatar">${avatarHtml}</div>
       <div class="chat-bubble">
-        ${!isMine?`<div class="chat-msg-sender">${esc(m.senderName)}</div>`:''}
+        <div class="chat-msg-sender">${esc(m.senderName)}</div>
         ${m.projectId?`<div class="chat-msg-project" onclick="openProjectPeek(${m.projectId})">${esc(m.projectTitle||'Loyiha #'+m.projectId)}</div>`:''}
         <div class="chat-msg-text">${esc(m.text)}</div>
         <div class="chat-msg-meta">${_chatTimeFormat(m.createdAt)}</div>
