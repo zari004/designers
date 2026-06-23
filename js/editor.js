@@ -11,6 +11,8 @@ const byId = id => document.getElementById(id);
 let peekProjId = null;   // hozir ochiq loyiha (null = yangi)
 let peekTags = [];
 let peekVaraqs = {};
+let peekImages = [];     // loyiha rasmlari: [{url, path}]
+let _peekImgFolder = ''; // Storage papkasi (loyiha uchun barqaror)
 let _peekSnapshot = '';  // ochilgandagi holat — saqlanmagan o'zgarishni aniqlash uchun     // ochiq loyihaning varaqlari (xotirada — loyiha hali saqlanmagan bo'lsa ham)
 
 // ── TEGLAR ──
@@ -37,6 +39,100 @@ function renderPeekTags(focus){
   if(focus) byId('pk-tag-inp').focus();
 }
 
+// ── LOYIHA RASMLARI GALEREYASI ──
+function renderPeekGallery(){
+  const el = byId('pk-gallery');
+  if(!el) return;
+  const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  if(!peekImages.length){
+    el.innerHTML = `<div class="pk-gallery-empty">Hali rasm yo'q${_isDes?'':' — "Rasm qo\'shish" tugmasini bosing'}</div>`;
+    return;
+  }
+  el.innerHTML = peekImages.map((im,i)=>`
+    <div class="pk-thumb" onclick="openImageViewer(${i})">
+      <img src="${im.url}" loading="lazy"/>
+      ${_isDes?'':`<button class="pk-thumb-del" title="O'chirish" onclick="event.stopPropagation();peekRemoveImage(${i})">&times;</button>`}
+    </div>`).join('');
+}
+
+async function peekAddImages(fileList){
+  if(typeof isDesignerRole==='function' && isDesignerRole()){ toast("Ruxsat yo'q"); return; }
+  const files = Array.from(fileList||[]).filter(f=>f.type.startsWith('image/'));
+  if(!files.length) return;
+  if(typeof isStorageReady==='function' && !isStorageReady()){
+    toast("Rasm ombori (Storage) tayyor emas"); return;
+  }
+  const el = byId('pk-gallery');
+  for(const f of files){
+    const tmpId = 'tmp'+Math.random().toString(36).slice(2,7);
+    if(el) el.insertAdjacentHTML('beforeend', `<div class="pk-thumb pk-thumb-loading" id="${tmpId}"><div class="pk-spin"></div></div>`);
+    try{
+      // Siqish: katta rasmlarni 1600px gacha kichraytirib JPEG (sifat 0.82)
+      const blob = await _compressToBlob(f, 1600, 0.82);
+      const up = await fbUploadProjectImage(_peekImgFolder, blob);
+      peekImages.push(up);
+    }catch(e){
+      console.error('Rasm yuklash:', e);
+      toast("Rasm yuklanmadi: "+(e.message||e));
+    }
+    document.getElementById(tmpId)?.remove();
+  }
+  renderPeekGallery();
+  const inp = byId('pk-img-input'); if(inp) inp.value='';
+}
+
+function peekRemoveImage(i){
+  if(typeof isDesignerRole==='function' && isDesignerRole()){ toast("Ruxsat yo'q"); return; }
+  const im = peekImages[i];
+  if(!im) return;
+  if(!confirm("Rasm o'chirilsinmi?")) return;
+  peekImages.splice(i,1);
+  if(im.path && typeof fbDeleteStorageFile==='function') fbDeleteStorageFile(im.path);
+  renderPeekGallery();
+}
+
+// To'liq rasmni ko'rish (oddiy lightbox)
+function openImageViewer(i){
+  const im = peekImages[i];
+  if(!im) return;
+  let ov = document.getElementById('img-viewer');
+  if(!ov){
+    ov = document.createElement('div');
+    ov.id = 'img-viewer';
+    ov.className = 'img-viewer';
+    ov.onclick = ()=>ov.remove();
+    document.body.appendChild(ov);
+  }
+  ov.innerHTML = `<img src="${im.url}"/><button class="img-viewer-close">&times;</button>`;
+}
+
+// Rasmni siqib Blob qaytaradi (Storage'ga yuklash uchun)
+function _compressToBlob(file, maxSize, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=>reject(new Error("Faylni o'qib bo'lmadi"));
+    reader.onload = ev=>{
+      const img = new Image();
+      img.onerror = ()=>reject(new Error("Rasmni yuklab bo'lmadi"));
+      img.onload = ()=>{
+        const m = maxSize||1600;
+        let w=img.width, h=img.height;
+        if(w>h){ if(w>m){ h=Math.round(h*m/w); w=m; } }
+        else   { if(h>m){ w=Math.round(w*m/h); h=m; } }
+        const cv = document.createElement('canvas');
+        cv.width=w; cv.height=h;
+        cv.getContext('2d').drawImage(img,0,0,w,h);
+        cv.toBlob(b=>{
+          if(b){ b.name = (file.name||'image').replace(/\.[^.]+$/,'')+'.jpg'; resolve(b); }
+          else reject(new Error('Siqib bo\'lmadi'));
+        }, 'image/jpeg', quality||0.82);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 function tagKey(e){
   if(e.key === 'Enter' || e.key === ','){
     e.preventDefault();
@@ -56,6 +152,9 @@ function sanitizeHtml(html){
   const t = document.createElement('div');
   t.innerHTML = html || '';
   t.querySelectorAll('script,style,iframe,object,embed,form,meta,link').forEach(n=>n.remove());
+  // Rasm tahrirlash asboblarini (handle/toolbar) saqlangan HTML'dan olib tashlash
+  t.querySelectorAll('.rte-img-handle,.rte-img-tools').forEach(n=>n.remove());
+  t.querySelectorAll('.rte-img.selected').forEach(n=>n.classList.remove('selected'));
   t.querySelectorAll('*').forEach(n=>{
     [...n.attributes].forEach(a=>{
       if(/^on/i.test(a.name)) n.removeAttribute(a.name);
@@ -112,6 +211,8 @@ function openProjectPeek(id = null, preDesignerId = null){
   peekProjId = p ? p.id : null;
   peekTags = [...(p?.tags||[])];
   peekVaraqs = p && p.varaqs ? JSON.parse(JSON.stringify(p.varaqs)) : {};
+  peekImages = p && Array.isArray(p.images) ? JSON.parse(JSON.stringify(p.images)) : [];
+  _peekImgFolder = (p?.id ? 'p'+p.id : 'n'+Date.now()+Math.random().toString(36).slice(2,6));
   const defDId = preDesignerId || p?.designerId || designers[0].id;
   const defDesigner = designers.find(d=>d.id===parseInt(defDId));
   let defCat = p?.category || defDesigner?.category || firstCat();
@@ -151,6 +252,12 @@ function openProjectPeek(id = null, preDesignerId = null){
       ${propRow('Teglar','cat',`<div class="tags-wrap" id="pk-tags" onclick="byId('pk-tag-inp')?.focus()"></div>`)}
       ${propRow('Fayllar','clip',`<input class="prop-input" id="pk-files" value="${esc(p?.files?.join(', ')||'')}" placeholder="design.fig, export.zip"/>`)}
     </div>
+    <div class="section-label" style="display:flex;align-items:center;justify-content:space-between;margin:18px 0 8px">
+      <span>Rasmlar</span>
+      ${_isDes0?'':`<button type="button" class="btn btn-ghost btn-xs" onclick="byId('pk-img-input').click()" style="gap:4px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Rasm qo'shish</button>`}
+    </div>
+    <input type="file" id="pk-img-input" accept="image/*" multiple style="display:none" onchange="peekAddImages(this.files)"/>
+    <div class="pk-gallery" id="pk-gallery"></div>
     <div class="section-label" style="display:block;margin:18px 0 8px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span>Tavsif <span class="rte-tip">— matnni belgilang yoki yangi qatorda <b>/</b> bosing</span></span>
       <button class="btn btn-ghost btn-xs" id="peek-ru-btn" onclick="peekTranslate()" style="font-size:11px;display:flex;align-items:center;gap:4px"><svg width="16" height="11" viewBox="0 0 16 11" style="border-radius:2px;flex-shrink:0"><rect width="16" height="3.67" fill="#fff" stroke="#e0e0e0" stroke-width="0.3"/><rect y="3.67" width="16" height="3.67" fill="#0039A6"/><rect y="7.33" width="16" height="3.67" fill="#D52B1E"/></svg> Ruscha tarjima</button>
@@ -172,6 +279,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   refreshVaraqRefs(byId('pk-rte'));
   try{ document.execCommand('styleWithCSS', false, true); }catch(e){}
   renderPeekTags(false);
+  renderPeekGallery();
   calcPeekTotal();
   ensureBubble();
   ensureSlash();
@@ -253,7 +361,7 @@ function _peekFingerprint(){
   const s = byId('pk-status')?.value||'';
   const u = byId('pk-units')?.value||'';
   const pr = byId('pk-price')?.value||'';
-  return t+'|'+d.slice(0,500)+'|'+s+'|'+u+'|'+pr+'|'+peekTags.join(',');
+  return t+'|'+d.slice(0,500)+'|'+s+'|'+u+'|'+pr+'|'+peekTags.join(',')+'|'+peekImages.map(im=>im.path).join(',');
 }
 
 function _peekHasChanges(){
@@ -342,6 +450,7 @@ function collectPeekProject(){
     files: byId('pk-files').value.split(',').map(s=>s.trim()).filter(Boolean),
     tags: [...peekTags],
     varaqs: JSON.parse(JSON.stringify(peekVaraqs)),
+    images: JSON.parse(JSON.stringify(peekImages)),
   };
 }
 
@@ -470,6 +579,128 @@ function rteLink(){
   const u = prompt('Havola manzili (URL):', 'https://');
   if(u && u !== 'https://') rte('createLink', u);
 }
+
+// ══════════════════════════════════════════
+// INLINE RASM / GALEREYA (matn ichida)
+// ══════════════════════════════════════════
+function rteInsertImagePick(){
+  if(typeof isDesignerRole==='function' && isDesignerRole()){ toast("Ruxsat yo'q"); return; }
+  if(typeof isStorageReady==='function' && !isStorageReady()){ toast("Rasm ombori (Storage) tayyor emas"); return; }
+  rteSaveSel();
+  const inp = document.createElement('input');
+  inp.type='file'; inp.accept='image/*'; inp.multiple=true;
+  inp.onchange = async ()=>{
+    const files = Array.from(inp.files||[]).filter(f=>f.type.startsWith('image/'));
+    if(!files.length) return;
+    const phId = 'imgph'+Date.now();
+    rte('insertHTML', `<p id="${phId}" class="rte-img-loading">⏳ Rasm yuklanmoqda…</p>`);
+    const uploaded=[];
+    for(const f of files){
+      try{ const blob=await _compressToBlob(f,1600,0.82); uploaded.push(await fbUploadProjectImage(_peekImgFolder, blob)); }
+      catch(e){ console.error('Rasm:', e); toast("Rasm yuklanmadi: "+(e.message||e)); }
+    }
+    const ph=document.getElementById(phId);
+    if(ph){
+      if(uploaded.length) ph.outerHTML = _rteImagesHtml(uploaded);
+      else ph.remove();
+    }
+    _rteSyncAfterImg();
+  };
+  inp.click();
+}
+
+function _rteImagesHtml(images){
+  if(!images.length) return '';
+  if(images.length===1){
+    return `<figure class="rte-img" contenteditable="false" data-align="center" style="width:55%"><img src="${images[0].url}"></figure><p><br></p>`;
+  }
+  return `<div class="rte-gallery" contenteditable="false">${images.map(im=>`<img src="${im.url}">`).join('')}</div><p><br></p>`;
+}
+
+// Rasmni tanlash + asboblar paneli (o'lcham, oqim, o'chirish)
+function _selectRteImage(fig){
+  document.querySelectorAll('.rte-img.selected').forEach(f=>{
+    f.classList.remove('selected');
+    f.querySelector('.rte-img-handle')?.remove();
+    f.querySelector('.rte-img-tools')?.remove();
+  });
+  if(!fig) return;
+  if(typeof isDesignerRole==='function' && isDesignerRole()){
+    openImageViewerSrc(fig.querySelector('img')?.src); return;
+  }
+  fig.classList.add('selected');
+  const tools=document.createElement('div');
+  tools.className='rte-img-tools'; tools.contentEditable='false';
+  tools.innerHTML=`
+    <button onmousedown="event.preventDefault()" onclick="rteImgAlign(this,'left')" title="Chapga — matn o'ngdan oqadi">⬅</button>
+    <button onmousedown="event.preventDefault()" onclick="rteImgAlign(this,'center')" title="Markazga">▭</button>
+    <button onmousedown="event.preventDefault()" onclick="rteImgAlign(this,'right')" title="O'ngga — matn chapdan oqadi">➡</button>
+    <span class="rte-img-sep"></span>
+    <button onmousedown="event.preventDefault()" onclick="rteImgSize(this,30)" title="Kichik">S</button>
+    <button onmousedown="event.preventDefault()" onclick="rteImgSize(this,55)" title="O'rta">M</button>
+    <button onmousedown="event.preventDefault()" onclick="rteImgSize(this,100)" title="Katta">L</button>
+    <span class="rte-img-sep"></span>
+    <button onmousedown="event.preventDefault()" onclick="rteImgDelete(this)" title="O'chirish">🗑</button>`;
+  fig.appendChild(tools);
+  const h=document.createElement('span');
+  h.className='rte-img-handle'; h.contentEditable='false';
+  h.addEventListener('pointerdown', _rteImgResizeStart);
+  fig.appendChild(h);
+}
+
+let _rteResize=null;
+function _rteImgResizeStart(e){
+  e.preventDefault(); e.stopPropagation();
+  const fig=e.target.closest('.rte-img'); if(!fig) return;
+  const ed=fig.closest('.rte');
+  _rteResize={fig, startX:e.clientX, startW:fig.offsetWidth, edW:(ed?.clientWidth||fig.offsetWidth*2)};
+  document.addEventListener('pointermove', _rteImgResizeMove);
+  document.addEventListener('pointerup', _rteImgResizeEnd);
+}
+function _rteImgResizeMove(e){
+  if(!_rteResize) return;
+  let w=_rteResize.startW + (e.clientX-_rteResize.startX);
+  w=Math.max(80, Math.min(_rteResize.edW, w));
+  _rteResize.fig.style.width=Math.round(w/_rteResize.edW*100)+'%';
+}
+function _rteImgResizeEnd(){
+  document.removeEventListener('pointermove', _rteImgResizeMove);
+  document.removeEventListener('pointerup', _rteImgResizeEnd);
+  if(_rteResize){ _rteResize=null; _rteSyncAfterImg(); }
+}
+
+function rteImgAlign(btn,a){ const fig=btn.closest('.rte-img'); if(fig){ fig.dataset.align=a; _rteSyncAfterImg(); } }
+function rteImgSize(btn,pct){ const fig=btn.closest('.rte-img'); if(fig){ fig.style.width=pct+'%'; _rteSyncAfterImg(); } }
+function rteImgDelete(btn){ const fig=btn.closest('.rte-img'); if(fig){ fig.remove(); _rteSyncAfterImg(); } }
+
+// Rasm o'zgargach descHtml'ni yangilash (asboblarsiz — sanitizeHtml tozalaydi)
+function _rteSyncAfterImg(){
+  if(_activeRteId==='varaq-rte'){ saveVaraqNow(); return; }
+  const ed=byId('pk-rte');
+  if(ed && peekProjId){
+    const pi=projects.findIndex(x=>x.id===peekProjId);
+    if(pi>=0){ projects[pi].descHtml=sanitizeHtml(ed.innerHTML); persist(); }
+  }
+}
+
+// To'liq rasmni ko'rish (URL bo'yicha)
+function openImageViewerSrc(src){
+  if(!src) return;
+  let ov=document.getElementById('img-viewer');
+  if(!ov){ ov=document.createElement('div'); ov.id='img-viewer'; ov.className='img-viewer'; ov.onclick=()=>ov.remove(); document.body.appendChild(ov); }
+  ov.innerHTML=`<img src="${src}"/><button class="img-viewer-close">&times;</button>`;
+}
+
+// Rasm tanlovini bekor qilish (tashqariga bosilganda)
+document.addEventListener('mousedown', e=>{
+  if(e.target.closest && !e.target.closest('.rte-img')){
+    document.querySelectorAll('.rte-img.selected').forEach(f=>{
+      f.classList.remove('selected');
+      f.querySelector('.rte-img-handle')?.remove();
+      f.querySelector('.rte-img-tools')?.remove();
+    });
+  }
+}, true);
 
 // ── SUZUVCHI ASBOBLAR PANELI (matn belgilanganda) ──
 let bubbleTimer = null;
@@ -735,6 +966,7 @@ const SLASH_ITEMS = [
   {k:'table', label:'Jadval', desc:'3×3 jadval (o\'ng klik → tahrirlash)', ic:'▦', run:()=>rte('insertHTML','<table><tbody>'+('<tr>'+'<td><br></td>'.repeat(3)+'</tr>').repeat(3)+'</tbody></table><p><br></p>')},
   {k:'toggle', label:'Ochiladigan blok', desc:'Yashirinadigan matn', ic:'▸', run:()=>rte('insertHTML','<details open><summary>Sarlavha</summary><div>Matn...</div></details><p><br></p>')},
   {k:'divider', label:'Ajratuvchi chiziq', desc:'Bo\'limlarni ajratish', ic:'—', run:()=>rte('insertHorizontalRule')},
+  {k:'image', label:'Rasm / Galereya', desc:'Bitta rasm yoki bir nechta (galereya)', ic:'🖼', run:()=>rteInsertImagePick()},
   {k:'page', label:'Varaq', desc:'Sahifa (bosib ichiga kirish mumkin)', ic:'📄', run:()=>{
     const vid='v'+Date.now();
     rte('insertHTML',`<p class="rte-page-ref" contenteditable="false" data-vid="${vid}" data-title="Yangi sahifa">📄&nbsp;Yangi sahifa</p><p><br></p>`);
@@ -1001,6 +1233,14 @@ function _onTblCtx(e){
 function _onRteClick(e){
   const ref=e.target.closest('.rte-page-ref');
   if(ref){ openVaraqPanel(ref.dataset.vid, ref.dataset.title||ref.innerText.replace('📄','').trim()); return; }
+  // Galereya rasmi — to'liq ko'rish
+  const gimg=e.target.closest('.rte-gallery img');
+  if(gimg){ openImageViewerSrc(gimg.src); return; }
+  // Bitta inline rasm — tanlash (admin) yoki ko'rish (dizayner)
+  const fig=e.target.closest('.rte-img');
+  if(fig && !e.target.closest('.rte-img-tools') && !e.target.closest('.rte-img-handle')){
+    _selectRteImage(fig); return;
+  }
   closeTblMenu();
 }
 

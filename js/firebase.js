@@ -17,6 +17,7 @@ const FB_DEFAULT_CFG = {
 
 let _db   = null;
 let _auth = null;
+let _storage = null;
 let _fbReady = false;
 let _realtimeUnsub = null;
 let _echoTs = null; // o'z yozuvimizning aksini o'tkazib yuborish uchun
@@ -48,6 +49,7 @@ async function initFirebase(){
     if(!firebase.apps.length) firebase.initializeApp(cfg);
     _auth = firebase.auth();
     _db   = firebase.firestore();
+    try{ if(firebase.storage) _storage = firebase.storage(); }catch(e){ console.warn('Storage init:', e); }
     // IndexedDB oflayn kesh (enablePersistence) BUTUNLAY olib tashlandi.
     // Sabab: synchronizeTabs ba'zi brauzerlarda Firestore ulanishini
     // butunlay qotirib qo'yadi (Auth ishlaydi, lekin .get() abadiy kutadi).
@@ -291,4 +293,25 @@ function subscribeAllChatMessages(callback){
     }, err=>{
       console.warn('Chat onSnapshot xato:', err);
     });
+}
+
+// ── LOYIHA RASMLARI (Firebase Storage) ──
+function isStorageReady(){ return !!_storage; }
+
+// Faylni Storage'ga yuklaydi, {url, path} qaytaradi
+async function fbUploadProjectImage(folder, file){
+  if(!_storage) throw new Error('Storage tayyor emas');
+  const safe = (file.name||'image').replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path = `projectImages/${folder}/${Date.now()}_${Math.random().toString(36).slice(2,7)}_${safe}`;
+  const ref = _storage.ref().child(path);
+  const snap = await ref.put(file, { contentType: file.type||'image/jpeg' });
+  const url = await snap.ref.getDownloadURL();
+  return { url, path };
+}
+
+// Storage'dan rasmni o'chiradi
+async function fbDeleteStorageFile(path){
+  if(!_storage || !path) return;
+  try{ await _storage.ref().child(path).delete(); }
+  catch(e){ console.warn('Storage delete:', e.message); }
 }

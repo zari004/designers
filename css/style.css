@@ -470,7 +470,43 @@ select.prop-input{cursor:pointer}
 .rte{min-height:46vh;border:1px solid var(--border);border-radius:10px;padding:16px 18px;outline:none;background:var(--card);transition:border-color .12s}
 .rte:focus{border-color:var(--accent)}
 .rte:empty::before{content:attr(data-placeholder);color:var(--muted2);pointer-events:none}
+.rte::after{content:'';display:block;clear:both}
 .rte-tip{font-size:11px;color:var(--muted2);font-weight:400;text-transform:none;letter-spacing:0}
+
+/* ── INLINE RASM (matn ichida) ── */
+.rte-img{position:relative;display:block;width:55%;max-width:100%;margin:12px auto;clear:both}
+.rte-img[data-align="left"]{float:left;margin:6px 18px 10px 0}
+.rte-img[data-align="right"]{float:right;margin:6px 0 10px 18px}
+.rte-img[data-align="center"]{float:none;margin:12px auto}
+.rte-img img{display:block;width:100%;border-radius:8px;border:1px solid var(--border)}
+.rte-img.selected img{outline:2px solid var(--accent2);outline-offset:1px}
+.rte-img-handle{position:absolute;right:-7px;bottom:-7px;width:16px;height:16px;border-radius:50%;background:var(--accent2);border:2px solid #fff;cursor:nwse-resize;box-shadow:0 1px 5px rgba(0,0,0,.35);z-index:3;touch-action:none}
+.rte-img-tools{position:absolute;top:-42px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:1px;background:var(--card);border:1px solid var(--border2);border-radius:9px;padding:4px;box-shadow:var(--shadow-lg);z-index:4;white-space:nowrap}
+.rte-img-tools button{border:none;background:none;cursor:pointer;min-width:28px;height:28px;border-radius:6px;font-size:14px;color:var(--text);display:flex;align-items:center;justify-content:center;font-weight:600}
+.rte-img-tools button:hover{background:var(--hover);color:var(--accent2)}
+.rte-img-sep{width:1px;height:18px;background:var(--border);margin:0 3px}
+.rte-img-loading{color:var(--muted);font-style:italic}
+/* Inline galereya (bir nechta rasm) */
+.rte-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin:12px 0;clear:both}
+.rte-gallery img{width:100%;height:130px;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;transition:transform .12s}
+.rte-gallery img:hover{transform:scale(1.02)}
+
+/* ── LOYIHA RASMLARI GALEREYASI (peek) ── */
+.pk-gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-bottom:6px}
+.pk-gallery-empty{color:var(--muted);font-size:12.5px;padding:8px 0}
+.pk-thumb{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;border:1px solid var(--border);cursor:zoom-in;background:var(--hover)}
+.pk-thumb img{width:100%;height:100%;object-fit:cover}
+.pk-thumb-del{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
+.pk-thumb-del:hover{background:var(--error)}
+.pk-thumb-loading{display:flex;align-items:center;justify-content:center;cursor:default}
+.pk-spin{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── RASM KO'RUVCHI (lightbox) ── */
+.img-viewer{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;display:flex;align-items:center;justify-content:center;padding:30px;cursor:zoom-out}
+.img-viewer img{max-width:95%;max-height:95%;border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.img-viewer-close{position:fixed;top:18px;right:24px;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:26px;width:44px;height:44px;border-radius:50%;cursor:pointer}
+.img-viewer-close:hover{background:rgba(255,255,255,.28)}
 
 /* Suzuvchi asboblar paneli (matn belgilanganda) */
 .rte-bubble{position:fixed;z-index:300;display:none;align-items:center;gap:1px;padding:4px;background:var(--panel);border:1px solid var(--border2);border-radius:9px;box-shadow:var(--shadow-lg)}
