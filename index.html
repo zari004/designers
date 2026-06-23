@@ -238,7 +238,10 @@
     <span>Loyihalar</span>
   </button>
   <button class="bnav-item" id="bnav-chat" data-panel="chat" onclick="showPanel('chat')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+    <span style="position:relative">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+      <span class="bnav-badge" id="bnav-badge-chat" style="display:none">0</span>
+    </span>
     <span>Chat</span>
   </button>
   <button class="bnav-item" id="bnav-payments" data-panel="payments" onclick="showPanel('payments')">
@@ -387,10 +390,6 @@
 
   <!-- CHAT -->
   <div class="panel" id="panel-chat">
-    <div class="page-header" id="chat-page-header">
-      <div class="page-title">Chat</div>
-      <div class="page-sub">Loyiha bo'yicha muloqot</div>
-    </div>
     <div id="chat-container"></div>
   </div>
 

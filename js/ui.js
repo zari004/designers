@@ -617,7 +617,7 @@ function projCardHtml(p,showDesigner){
           <option value="done"${p.status==='done'?' selected':''}>Bajarildi</option>
         </select>`}
         <button class="btn btn-ghost btn-xs" onclick="openProjectPeek(${p.id})">Ochish</button>
-        <button class="btn btn-ghost btn-xs" onclick="openChatForProject(${p.id})" style="color:var(--accent2)">Chat</button>
+        <button class="btn btn-ghost btn-xs" onclick="openChatForProject(${p.id})" style="color:var(--accent2);gap:3px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Chat</button>
         ${_isDes?'':`<button class="btn btn-danger btn-xs" onclick="deleteProject(${p.id})">×</button>`}
       </div>
     </div>
@@ -1603,7 +1603,12 @@ function _renderChatArea(designerId){
       ${!isDes?`<button id="chat-back-btn" class="chat-back-btn" onclick="_chatGoBack()" style="display:none">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </button>`:''}
-      ${d?`${photoAvatar(d,36)}<div class="chat-head-info">
+      ${isDes?`<div style="width:36px;height:36px;border-radius:8px;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div><div class="chat-head-info">
+        <div class="chat-head-name">Boshqaruvchi</div>
+        <div class="chat-head-sub">${msgCount} ta xabar</div>
+      </div>`:d?`${photoAvatar(d,36)}<div class="chat-head-info">
         <div class="chat-head-name">${esc(d.name)}</div>
         <div class="chat-head-sub">${esc(d.role||'Dizayner')} · ${msgCount} ta xabar</div>
       </div>`:'<div class="chat-head-name">Chat</div>'}
@@ -1632,6 +1637,8 @@ function _renderChatArea(designerId){
 function _chatMsgsHtml(msgs, myUid, designerId){
   let html='', lastDate='', lastSender='';
   const des = designerId ? designers.find(x=>x.id===designerId) : null;
+  const adminAvatar = '<div style="width:30px;height:30px;border-radius:6px;background:var(--accent-soft);color:var(--accent-text);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>';
+  const isDes = typeof isDesignerRole==='function' && isDesignerRole();
   msgs.forEach((m,i)=>{
     const d = new Date(m.createdAt);
     const dateStr = d.toLocaleDateString('uz',{day:'2-digit',month:'long'});
@@ -1643,7 +1650,11 @@ function _chatMsgsHtml(msgs, myUid, designerId){
     const isMine = m.senderUid===myUid;
     const consecutive = lastSender===m.senderUid;
     lastSender = m.senderUid;
-    const avatarHtml = !isMine && des ? photoAvatar(des,30) : '';
+    let avatarHtml = '';
+    if(!isMine){
+      if(isDes) avatarHtml = adminAvatar;
+      else if(des) avatarHtml = photoAvatar(des,30);
+    }
     html+=`<div class="chat-msg-row ${isMine?'mine':'theirs'}${consecutive?' consecutive':''}">
       <div class="chat-msg-avatar">${avatarHtml}</div>
       <div class="chat-bubble">
@@ -1839,11 +1850,10 @@ function _updateChatBadge(){
   } else {
     designers.forEach(d=>{ total += _getUnreadCount(d.id); });
   }
-  const badge = document.getElementById('nav-count-chat');
-  if(badge){
-    badge.textContent = total;
-    badge.style.display = total>0 ? '' : 'none';
-  }
+  ['nav-count-chat','bnav-badge-chat'].forEach(id=>{
+    const b = document.getElementById(id);
+    if(b){ b.textContent=total; b.style.display=total>0?'':'none'; }
+  });
 }
 
 function _scrollChatBottom(){
