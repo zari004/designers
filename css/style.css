@@ -913,10 +913,11 @@ select.prop-input{cursor:pointer}
 
 /* ── CHAT ── */
 /* Chat bo'limi to'liq ekranni egallaydi (main paddingni bekor qiladi) */
-.main.chat-mode{padding:var(--topbar) 0 0;overflow:hidden}
+.main.chat-mode{padding:var(--topbar) 0 40px;overflow:hidden}
 /* AI yordamchi FAB chat inputni to'smasligi uchun chat bo'limida yashiriladi */
 body:has(.main.chat-mode) .ai-chat-fab{display:none}
-.main.chat-mode #panel-chat{height:calc(100vh - var(--topbar))}
+.main.chat-mode #panel-chat{height:calc(100vh - var(--topbar) - 40px)}
+.main.chat-mode #chat-container{height:100%}
 .chat-layout{display:flex;height:calc(100vh - var(--topbar) - 120px);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--card);position:relative;box-shadow:var(--shadow)}
 .main.chat-mode .chat-layout{height:100%;border:none;border-radius:0;box-shadow:none}
 .chat-users{width:320px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--panel)}
