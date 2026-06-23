@@ -10,7 +10,8 @@ const byId = id => document.getElementById(id);
 
 let peekProjId = null;   // hozir ochiq loyiha (null = yangi)
 let peekTags = [];
-let peekVaraqs = {};     // ochiq loyihaning varaqlari (xotirada — loyiha hali saqlanmagan bo'lsa ham)
+let peekVaraqs = {};
+let _peekSnapshot = '';  // ochilgandagi holat — saqlanmagan o'zgarishni aniqlash uchun     // ochiq loyihaning varaqlari (xotirada — loyiha hali saqlanmagan bo'lsa ham)
 
 // ── TEGLAR ──
 const TAG_COLORS = ['#16a34a','#0284c7','#7c3aed','#db2777','#dc2626','#ea580c','#ca8a04','#64748b'];
@@ -201,6 +202,7 @@ function openProjectPeek(id = null, preDesignerId = null){
   byId('peek').classList.add('open');
   document.body.style.overflow = 'hidden';
   if(!p && !_isDes) setTimeout(()=>byId('pk-title')?.focus(), 280);
+  setTimeout(()=>{ _peekSnapshot = _peekFingerprint(); }, 100);
 }
 
 // Notion tugmasi yozuvini holatga qarab yangilash
@@ -245,7 +247,24 @@ function peekTranslate(){
   else toast("AI moduli yuklanmagan");
 }
 
-function closePeek(){
+function _peekFingerprint(){
+  const t = byId('pk-title')?.value||'';
+  const d = byId('pk-rte')?.innerText||'';
+  const s = byId('pk-status')?.value||'';
+  const u = byId('pk-units')?.value||'';
+  const pr = byId('pk-price')?.value||'';
+  return t+'|'+d.slice(0,500)+'|'+s+'|'+u+'|'+pr+'|'+peekTags.join(',');
+}
+
+function _peekHasChanges(){
+  if(!_peekSnapshot) return false;
+  return _peekFingerprint() !== _peekSnapshot;
+}
+
+function closePeek(force){
+  if(!force && _peekHasChanges()){
+    if(!confirm("Saqlanmagan o'zgarishlar bor. Yopilsinmi?")) return;
+  }
   hideBubble(); hideSlash(); hideBubbleTrPop();
   document.getElementById('varaq-panel')?.remove();
   _varaqStack = []; _activeRteId = 'pk-rte'; savedRange = null;
@@ -254,6 +273,7 @@ function closePeek(){
   document.body.style.overflow = '';
   peekProjId = null;
   peekVaraqs = {};
+  _peekSnapshot = '';
   if(typeof editingCmt !== 'undefined') editingCmt = null;
 }
 
@@ -348,7 +368,7 @@ function savePeekProject(){
     peekProjId = obj.id;
     toast("Loyiha qo'shildi");
   }
-  closePeek();
+  closePeek(true);
   persist();
   rerenderActive();
 }
@@ -358,7 +378,7 @@ function deleteProjectFromPeek(){
   if(typeof isDesignerRole==='function'&&isDesignerRole()){ toast("Ruxsat yo'q"); return; }
   if(!confirm("Loyiha chiqitdonga tashlansinmi? Chiqitdondan tiklash mumkin.")) return;
   trashProject(peekProjId);
-  closePeek();
+  closePeek(true);
   persist();
   rerenderActive();
   toast("Loyiha chiqitdonga tashlandi");
