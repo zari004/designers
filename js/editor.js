@@ -1031,13 +1031,15 @@ function syncPeekVaraqs(){
 }
 
 function openVaraqPanel(vid, title){
-  if(_varaqStack.length > 0) saveVaraqNow(); // joriy sahifani saqlash
+  const _isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  if(!_isDes && _varaqStack.length > 0) saveVaraqNow();
   const vdata=peekVaraqs[vid]||{title:title||'Yangi sahifa',descHtml:''};
   _varaqStack.push({vid, title: vdata.title});
   _renderVaraqPanel(vid, vdata);
 }
 
 function _renderVaraqPanel(vid, vdata){
+  const _vIsDesigner = typeof isDesignerRole==='function' && isDesignerRole();
   let panel=document.getElementById('varaq-panel');
   if(!panel){
     panel=document.createElement('div');
@@ -1059,18 +1061,14 @@ function _renderVaraqPanel(vid, vdata){
       <div class="varaq-breadcrumb">${breadcrumb} /</div>
       <input class="varaq-title-inp" id="varaq-title-inp" placeholder="Sahifa nomi..."
         value="${esc(vdata.title)}"
-        oninput="varaqAutoSave()"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('varaq-rte')?.focus()}"/>
+        ${_vIsDesigner?'readonly':'oninput="varaqAutoSave()" onkeydown="if(event.key===\'Enter\'){event.preventDefault();document.getElementById(\'varaq-rte\')?.focus()}"'}/>
       <button class="icon-btn varaq-share" onclick="shareVaraq('${vid}')" title="Bu sahifani ulashish — havola orqali ko'rish">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
       </button>
     </div>
-    <div class="rte rich" id="varaq-rte" contenteditable="true"
-      data-placeholder="Bu sahifaga yozing. Formatlash uchun matnni belgilang, blok qo'shish uchun / bosing."
-      oninput="rteInput();varaqAutoSave()"
-      onkeydown="rteKeydown(event)"
-      onkeyup="rteSaveSel()"
-      onmouseup="rteSaveSel()"></div>`;
+    <div class="rte rich" id="varaq-rte" contenteditable="${_vIsDesigner?'false':'true'}"
+      data-placeholder="${_vIsDesigner?'Faqat ko\'rish rejimi':'Bu sahifaga yozing. Formatlash uchun matnni belgilang, blok qo\'shish uchun / bosing.'}"
+      ${_vIsDesigner?'':'oninput="rteInput();varaqAutoSave()" onkeydown="rteKeydown(event)" onkeyup="rteSaveSel()" onmouseup="rteSaveSel()"'}></div>`;
 
   const vrte=document.getElementById('varaq-rte');
   if(vrte){ vrte.innerHTML=vdata.descHtml||''; refreshVaraqRefs(vrte); try{document.execCommand('styleWithCSS',false,true);}catch(e){} }
@@ -1102,6 +1100,7 @@ function varaqAutoSave(){
 }
 
 function saveVaraqNow(){
+  if(typeof isDesignerRole==='function' && isDesignerRole()) return;
   const panel=document.getElementById('varaq-panel'); if(!panel) return;
   const vid=panel.dataset.vid; if(!vid) return;
   const title=document.getElementById('varaq-title-inp')?.value||'Yangi sahifa';
