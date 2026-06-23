@@ -356,8 +356,8 @@ function _renderKanban(wip,review,done){
             ${footRight}
           </div>
           <button class="kanban-card-chat" onclick="event.stopPropagation();openChatForProject(${p.id})">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
-            Muhokama qilish
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+            Muhokama qilish${_chatMessages.filter(x=>x.projectId===p.id).length?` (${_chatMessages.filter(x=>x.projectId===p.id).length})`:''}
           </button>
         </div>`;
       }).join(''):`<div style="text-align:center;padding:30px 10px;color:var(--muted);font-size:12px">Hozircha bo'sh</div>`}
@@ -1539,11 +1539,18 @@ function _renderAdminChat(el){
   });
   el.innerHTML=`<div class="chat-layout">
     <div class="chat-users" id="chat-users-panel">
-      <div class="chat-users-head">Dizaynerlar</div>
+      <div class="chat-users-head">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+        Xabarlar
+      </div>
       <div class="chat-users-list" id="chat-users-list">${_chatUserListHtml(sorted)}</div>
     </div>
     <div class="chat-main" id="chat-main-panel">
-      ${_chatDesId ? _renderChatArea(_chatDesId) : '<div class="chat-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Dizaynerni tanlang</div>'}
+      ${_chatDesId ? _renderChatArea(_chatDesId) : `<div class="chat-empty">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+        Dizaynerni tanlang
+        <div class="chat-empty-sub">Chap paneldan dizaynerni tanlang va suhbatni boshlang</div>
+      </div>`}
     </div>
   </div>`;
   _applyChatMobileView();
@@ -1567,13 +1574,19 @@ function _chatUserListHtml(list){
   return list.map(d=>{
     const lastMsg = _getLastMessage(d.id);
     const unread = _getUnreadCount(d.id);
+    const timeStr = lastMsg ? _chatTimeFormat(lastMsg.createdAt) : '';
     return `<div class="chat-user-item${_chatDesId===d.id?' active':''}" onclick="selectChatDesigner(${d.id})">
-      ${photoAvatar(d,36)}
-      <div style="flex:1;min-width:0">
-        <div class="chat-user-name">${esc(d.name)}</div>
-        <div class="chat-user-last">${lastMsg?esc(lastMsg.text).slice(0,40):'Hali xabar yo\'q'}</div>
+      ${photoAvatar(d,42)}
+      <div class="chat-user-info">
+        <div class="chat-user-top">
+          <div class="chat-user-name">${esc(d.name)}</div>
+          <span class="chat-user-time">${timeStr}</span>
+        </div>
+        <div class="chat-user-bottom">
+          <div class="chat-user-last">${lastMsg?esc(lastMsg.text).slice(0,45):'Hali xabar yo\'q'}</div>
+          ${unread>0?`<span class="chat-unread">${unread}</span>`:''}
+        </div>
       </div>
-      ${unread>0?`<span class="chat-unread">${unread}</span>`:''}
     </div>`;
   }).join('');
 }
@@ -1584,48 +1597,61 @@ function _renderChatArea(designerId){
   const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
   const myUid = u?.uid||'';
   const isDes = typeof isDesignerRole==='function' && isDesignerRole();
+  const msgCount = msgs.length;
 
   return `<div class="chat-main-head">
       ${!isDes?`<button id="chat-back-btn" class="chat-back-btn" onclick="_chatGoBack()" style="display:none">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
       </button>`:''}
-      ${d?`${photoAvatar(d,30)}<div>
-        <div style="font-size:13px;font-weight:600">${esc(d.name)}</div>
-        <div style="font-size:11px;color:var(--muted)">${esc(d.role||'')}</div>
-      </div>`:'<div style="font-size:13px;font-weight:600">Chat</div>'}
+      ${d?`${photoAvatar(d,36)}<div class="chat-head-info">
+        <div class="chat-head-name">${esc(d.name)}</div>
+        <div class="chat-head-sub">${esc(d.role||'Dizayner')} · ${msgCount} ta xabar</div>
+      </div>`:'<div class="chat-head-name">Chat</div>'}
     </div>
     ${_chatProjectCtx?`<div class="chat-project-ctx" id="chat-project-ctx">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5z"/><path d="M8 10h8M8 14h6"/></svg>
       <span style="flex:1">${esc(_chatProjectCtx.title)}</span>
-      <button onclick="clearChatProjectCtx()">×</button>
+      <button onclick="clearChatProjectCtx()">&times;</button>
     </div>`:''}
     <div class="chat-messages" id="chat-messages">
       <div class="chat-messages-spacer"></div>
-      ${msgs.length ? _chatMsgsHtml(msgs, myUid) : '<div class="chat-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Hali xabar yo\'q — yozing!</div>'}
+      ${msgs.length ? _chatMsgsHtml(msgs, myUid, designerId) : `<div class="chat-empty">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
+        Hali xabar yo\\'q
+        <div class="chat-empty-sub">Birinchi xabarni yozing va suhbatni boshlang</div>
+      </div>`}
     </div>
     <div class="chat-input-area">
-      <input class="form-input" id="chat-input" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')sendChat()"/>
+      <input id="chat-input" placeholder="Xabar yozing..." onkeydown="if(event.key==='Enter')sendChat()"/>
       <button class="chat-send-btn" onclick="sendChat()" title="Yuborish">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
       </button>
     </div>`;
 }
 
-function _chatMsgsHtml(msgs, myUid){
-  let html='', lastDate='';
-  msgs.forEach(m=>{
+function _chatMsgsHtml(msgs, myUid, designerId){
+  let html='', lastDate='', lastSender='';
+  const des = designerId ? designers.find(x=>x.id===designerId) : null;
+  msgs.forEach((m,i)=>{
     const d = new Date(m.createdAt);
     const dateStr = d.toLocaleDateString('uz',{day:'2-digit',month:'long'});
     if(dateStr!==lastDate){
-      html+=`<div class="chat-date-sep">${dateStr}</div>`;
+      html+=`<div class="chat-date-sep"><span>${dateStr}</span></div>`;
       lastDate=dateStr;
+      lastSender='';
     }
     const isMine = m.senderUid===myUid;
-    html+=`<div class="chat-msg ${isMine?'mine':'theirs'}">
-      ${!isMine?`<div class="chat-msg-name">${esc(m.senderName)}</div>`:''}
-      ${m.projectId?`<div class="chat-msg-project" onclick="openProjectPeek(${m.projectId})">${esc(m.projectTitle||'Loyiha #'+m.projectId)}</div>`:''}
-      <div>${esc(m.text)}</div>
-      <div class="chat-msg-time">${_chatTimeFormat(m.createdAt)}</div>
+    const consecutive = lastSender===m.senderUid;
+    lastSender = m.senderUid;
+    const avatarHtml = !isMine && des ? photoAvatar(des,30) : '';
+    html+=`<div class="chat-msg-row ${isMine?'mine':'theirs'}${consecutive?' consecutive':''}">
+      <div class="chat-msg-avatar">${avatarHtml}</div>
+      <div class="chat-bubble">
+        ${!isMine?`<div class="chat-msg-sender">${esc(m.senderName)}</div>`:''}
+        ${m.projectId?`<div class="chat-msg-project" onclick="openProjectPeek(${m.projectId})">${esc(m.projectTitle||'Loyiha #'+m.projectId)}</div>`:''}
+        <div class="chat-msg-text">${esc(m.text)}</div>
+        <div class="chat-msg-meta">${_chatTimeFormat(m.createdAt)}</div>
+      </div>
     </div>`;
   });
   return html;
@@ -1751,14 +1777,14 @@ function _refreshChatUI(){
   const u = typeof getCurrentUser==='function' ? getCurrentUser() : null;
   const myUid = u?.uid||'';
   const spacer = '<div class="chat-messages-spacer"></div>';
-  const emptyHtml = '<div class="chat-empty"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Hali xabar yo\'q — yozing!</div>';
+  const emptyHtml = '<div class="chat-empty"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>Hali xabar yo\'q<div class="chat-empty-sub">Birinchi xabarni yozing</div></div>';
   if(isDes){
     const myDid = typeof getMyDesignerId==='function' ? getMyDesignerId() : null;
     if(!myDid) return;
     const msgEl = document.getElementById('chat-messages');
     if(msgEl){
       const msgs = _chatMessages.filter(m=>m.designerId===myDid);
-      msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid) : emptyHtml);
+      msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid, myDid) : emptyHtml);
       _scrollChatBottom();
     }
   } else {
@@ -1768,7 +1794,7 @@ function _refreshChatUI(){
       const msgEl = document.getElementById('chat-messages');
       if(msgEl){
         const msgs = _chatMessages.filter(m=>m.designerId===_chatDesId);
-        msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid) : emptyHtml);
+        msgEl.innerHTML = spacer + (msgs.length ? _chatMsgsHtml(msgs, myUid, _chatDesId) : emptyHtml);
         _scrollChatBottom();
       }
     }
