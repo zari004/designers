@@ -912,7 +912,13 @@ select.prop-input{cursor:pointer}
 }
 
 /* ── CHAT ── */
+/* Chat bo'limi to'liq ekranni egallaydi (main paddingni bekor qiladi) */
+.main.chat-mode{padding:var(--topbar) 0 0;overflow:hidden}
+/* AI yordamchi FAB chat inputni to'smasligi uchun chat bo'limida yashiriladi */
+body:has(.main.chat-mode) .ai-chat-fab{display:none}
+.main.chat-mode #panel-chat{height:calc(100vh - var(--topbar))}
 .chat-layout{display:flex;height:calc(100vh - var(--topbar) - 120px);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--card);position:relative;box-shadow:var(--shadow)}
+.main.chat-mode .chat-layout{height:100%;border:none;border-radius:0;box-shadow:none}
 .chat-users{width:320px;border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;background:var(--panel)}
 .chat-users-head{padding:18px 20px;border-bottom:1px solid var(--border);font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px}
 .chat-users-head svg{color:var(--accent)}
@@ -977,6 +983,10 @@ select.prop-input{cursor:pointer}
 .kanban-card-chat:hover{background:color-mix(in srgb,var(--accent2) 16%,transparent);box-shadow:0 2px 8px color-mix(in srgb,var(--accent2) 15%,transparent)}
 .kanban-card-chat:active{transform:scale(.97)}
 .kanban-card-chat svg{flex-shrink:0}
+@media(max-width:880px){
+  /* Mobil: chat pastki navigatsiya ustida tugaydi */
+  .main.chat-mode #panel-chat{height:calc(100vh - var(--topbar) - 62px - env(safe-area-inset-bottom,0px))}
+}
 @media(max-width:768px){
   .chat-layout{height:calc(100vh - var(--topbar) - 80px);border:none;border-radius:0;box-shadow:none}
   .chat-users{width:100%;position:absolute;inset:0;z-index:5;background:var(--card)}

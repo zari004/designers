@@ -134,7 +134,10 @@ function showPanel(name){
   if(fns[name]) fns[name]();
   updateCounts();
   const main=document.querySelector('.main');
-  if(main) main.style.overflow = name==='settings' ? 'hidden' : '';
+  if(main){
+    main.style.overflow = name==='settings' ? 'hidden' : '';
+    main.classList.toggle('chat-mode', name==='chat');
+  }
 }
 
 function toggleSidebar(){
@@ -380,7 +383,7 @@ function showFbSetup(){
 }
 
 // ── SAHIFA YUKLANGANDA ──
-const APP_VER = 'v126';
+const APP_VER = 'v127';
 
 // Kutilmagan global xatolarni status barda ko'rsatish — sokin qulashning oldini oladi
 function _showFatal(msg){

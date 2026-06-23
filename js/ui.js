@@ -193,13 +193,15 @@ function renderDashboard(){
   if(typeof isDesignerRole==='function' && isDesignerRole()) return _renderDesignerDashboard();
   const vd = _visibleDesigners();
   const vp = _visibleProjects();
-  document.getElementById('st-active').textContent = vd.filter(d=>d.status==='active').length;
-  document.getElementById('st-total').textContent = vd.length;
-  document.getElementById('st-wip').textContent = vp.filter(p=>p.status==='wip').length;
+  const _set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  _set('st-active', vd.filter(d=>d.status==='active').length);
+  _set('st-total', vd.length);
+  _set('st-wip', vp.filter(p=>p.status==='wip').length);
   const total = vp.filter(p=>p.status==='done').reduce((s,p)=>s+p.units*p.pricePerUnit,0);
-  document.getElementById('st-budget').textContent = fmtPrice(total);
+  _set('st-budget', fmtPrice(total));
 
   const dd = document.getElementById('dash-designers');
+  if(!dd) return;
   dd.innerHTML = vd.length ? vd.map(d=>`
     <div class="table-row" style="grid-template-columns:1fr auto auto;cursor:pointer" onclick="openDetail(${d.id})">
       <div style="display:flex;align-items:center;gap:10px">
