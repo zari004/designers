@@ -816,7 +816,7 @@ async function _tgRunDeliveryJob(p, d, channelId, sections, materials, figmaLink
     }
 
     begin(idx);
-    await tgSendSectionFiles(channelId, materials, `📦 *Materiallar va PSD* — ${materials.length} ta fayl`, true, topicId);
+    await tgSendSectionFiles(channelId, materials, `📦 *Materiallar va PSD* — ${materials.length} ta fayl`, false, topicId);
     finish(idx); await _tgDelay(1500); idx++;
 
     if(figmaLink){
